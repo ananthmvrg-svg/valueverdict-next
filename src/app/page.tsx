@@ -1,69 +1,62 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog";
+import { STORES } from "@/lib/config";
+import { CatIcon } from "@/components/Icon";
+import CategoryCard from "@/components/CategoryCard";
 
-export default function Home() {
+export const metadata = { alternates: { canonical: "/" } };
+
+export default async function Home() {
+  const db = await getCatalog();
+  const brands = new Set(db.prods.map((p) => p.brand).filter(Boolean)).size;
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <div className="hero">
+        <div className="wrap">
+          <div>
+            <span className="eyebrow">● Festive sale picks, updated</span>
+            <h1>Honest picks, <span>sorted by your budget.</span></h1>
+            <p>Value Verdict hand-picks the best-value appliances in India and sorts them by price band, energy rating and capacity, so you can decide in minutes and check today&apos;s price on {STORES}.</p>
+            <div className="trust">
+              <div><b>{db.prods.length}</b>hand-picked products</div>
+              <div><b>{brands}</b>trusted brands</div>
+              <div><b>{db.cats.length}</b>categories</div>
+            </div>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="hero-logo" src="/hero-logo.jpg" alt="Value Verdict" />
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+      <section>
+        <div className="wrap">
+          <div className="hero-card how">
+            <h3>How it works</h3>
+            <div className="step"><i>1</i><div><strong>Pick a category &amp; budget</strong>Washing machines, home appliances and more, sorted by price band.</div></div>
+            <div className="step"><i>2</i><div><strong>Compare and sort</strong>By type, energy rating or brand.</div></div>
+            <div className="step"><i>3</i><div><strong>Check today&apos;s price</strong>On {STORES}, with bank offers.</div></div>
+          </div>
+          <div className="sec-head" style={{ marginTop: 36 }}><div><h2>All categories</h2><p>Choose a category, then a budget.</p></div></div>
+          <div className="cats">
+            {db.cats.map((c) => {
+              const n = prodsOfCat(db, c.category_id).length;
+              return (
+                <CategoryCard key={c.slug} href={`/${c.slug}`}>
+                  <Link className="cat-top" href={`/${c.slug}`}>
+                    <div className="cat-icon"><CatIcon cat={c} /></div>
+                    <div><h3>{c.name}</h3><div className="count">{!n && isYes(c.amazon_deals) ? "Live deals" : `${n} products`}</div></div>
+                  </Link>
+                  <p>{c.description}</p>
+                  <div className="chips">
+                    {subsOf(db, c.category_id).map((s) => (
+                      <Link key={s.slug} className="chip" href={`/${c.slug}/${s.slug}`}>{s.name}<small>{prodsOfSub(db, s.subcategory_id).length}</small></Link>
+                    ))}
+                  </div>
+                </CategoryCard>
+              );
+            })}
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+    </>
   );
 }
