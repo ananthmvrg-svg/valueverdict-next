@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { SHOW_FLIPKART } from "./config";
+import { SHOW_CATALOG, SHOW_FLIPKART } from "./config";
 import { select } from "./db";
 
 import { isOn, num, safeUrl, type Catalog, type Category, type Product, type Row, type Subcategory } from "./products";
@@ -28,7 +28,7 @@ export async function getCatalog(): Promise<Catalog> {
   const [c, s, p] = await Promise.all([
     select("categories", "order=category_id"),
     select("subcategories", "order=subcategory_id"),
-    select("products", "order=product_id"),
+    SHOW_CATALOG ? select("products", "order=product_id") : Promise.resolve([]), /* off: live Amazon deals only */
   ]);
   const now = Date.now();
   const cats = c.filter((x) => x.category_id && isOn(x.active)).sort(ord) as Category[];

@@ -74,8 +74,8 @@ select{font:inherit;font-weight:600;font-size:14px;padding:10px 34px 10px 12px;b
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
 .card:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(15,23,42,.1)}
-.thumb{position:relative;aspect-ratio:4/3;background:linear-gradient(160deg,#f8fafc,#eef2f7);display:grid;place-items:center}
-.thumb img{max-width:78%;max-height:85%;object-fit:contain}
+.thumb{position:relative;overflow:hidden;aspect-ratio:4/3;background:linear-gradient(160deg,#f8fafc,#eef2f7);display:grid;place-items:center}
+.thumb img{position:absolute;top:7.5%;left:11%;width:78%;height:85%;object-fit:contain}
 .ph{display:flex;flex-direction:column;align-items:center;gap:6px;color:#94a3b8}
 .ph .fridge{width:64px;height:96px;border-radius:10px;border:3px solid #cbd5e1;position:relative;background:#fff}
 .ph .fridge:before{content:"";position:absolute;left:0;right:0;top:34%;border-top:3px solid #cbd5e1}
@@ -112,7 +112,7 @@ select{font:inherit;font-weight:600;font-size:14px;padding:10px 34px 10px 12px;b
 .btn.fk{background:var(--flip);color:#fff}
 .price-note{font-size:11.5px;color:#94a3b8;text-align:center}
 /* live Amazon deal cards (Amazon Finds page) */
-.deal h4{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.deal h4{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .deal-price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:auto}
 .deal-price b{font-size:20px;letter-spacing:-.02em}
 .deal-price s{color:var(--muted);font-size:13px}
@@ -170,3 +170,24 @@ footer .wrap{display:flex;flex-direction:column;gap:10px}
 @media (max-width:520px){.sk-select{flex:1 1 45%;width:auto}}
 .clear-filters{border:0;background:none;color:var(--brand-2);font:inherit;font-size:14px;font-weight:700;cursor:pointer;padding:6px 4px}
 .clear-filters:hover{text-decoration:underline}
+
+/* live Amazon deals: heading on category pages, "Show more deals" */
+.live-deals{margin-top:12px}
+.deals-heading{font-size:22px;letter-spacing:-.02em;margin:40px 0 0;padding-top:24px;border-top:1px solid var(--line)}
+.more-row{display:flex;justify-content:center;margin-top:18px}
+.more-btn{font:inherit;font-weight:700;font-size:14.5px;color:var(--brand);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:10px 22px;cursor:pointer;box-shadow:var(--shadow)}
+.more-btn:hover{border-color:var(--brand-2);color:var(--brand-2)}
+
+/* deal cards: feature bullets, offer chips, claimed bar */
+.deal-features{margin:0;padding:0;list-style:none;color:var(--muted);font:400 13px/1.45 inherit;display:flex;flex-direction:column;gap:4px}
+.deal-features li{position:relative;padding-left:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.deal-features li::before{content:"";position:absolute;left:2px;top:.6em;width:4px;height:4px;border-radius:50%;background:#94a3b8}
+.deal-tags{display:flex;flex-wrap:wrap;gap:6px}
+.deal-tag{font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.deal-tag.offer{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.deal-tag.timer{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.deal-tag.prime{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.deal-tag.stock{background:#fefce8;color:#a16207;border:1px solid #fde68a}
+.claimed{position:relative;height:18px;border-radius:999px;background:#f1f5f9;overflow:hidden}
+.claimed i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#fb923c,#ef4444)}
+.claimed span{position:relative;display:block;text-align:center;font-size:11px;font-weight:800;line-height:18px;color:#0f172a}

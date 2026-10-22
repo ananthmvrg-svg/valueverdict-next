@@ -7,6 +7,10 @@ export const SITE_URL = "https://valueverdict.in";
 export const SUPABASE_URL = process.env.SUPABASE_URL || "https://ntgvnmkehpoexthqzasl.supabase.co";
 export const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_t1ldjRuClUY7mZ1nd0ZFPg_F9aDtxpC";
 
+/* Catalog switch. false = the site shows only live Amazon deals from the API; the products in the
+   Supabase "products" table (from the old Google Sheet) stay saved but are hidden everywhere. */
+export const SHOW_CATALOG = false;
+
 /* Flipkart switch. false = Amazon-only site: no Flipkart buttons, Flipkart-only products hidden. */
 export const SHOW_FLIPKART = false;
 export const STORES = SHOW_FLIPKART ? "Amazon or Flipkart" : "Amazon";
@@ -25,6 +29,13 @@ export const PICK_PROMISE = {
   title: "Hand-picked by Value Verdict",
   text: "We researched specs, energy ratings, buyer reviews and brand service to shortlist {n} best-value {cat} at every budget, so you don't have to scroll through hundreds of listings.",
   points: ["🔬 Specs & energy ratings compared", "⭐ Buyer reviews checked", "🛠️ Brand service & warranty considered", "💰 Sorted by budget"],
+};
+
+/* same box when the site shows only live Amazon deals (SHOW_CATALOG = false); {cat} = category name */
+export const DEALS_PROMISE = {
+  title: "Today's deals, filtered for you",
+  text: "Live deals on {cat} from Amazon.in, filtered to well-rated products with a real discount. Prices refresh every hour.",
+  points: ["🔥 Real discounts only", "⭐ Well-rated products", "💰 Sorted by budget", "🔄 Refreshed every hour"],
 };
 
 /* one banner per category page, above the product grid */

@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { getCatalog } from "@/lib/catalog";
-import { SITE_URL } from "@/lib/config";
+import { SHOW_CATALOG, SITE_URL } from "@/lib/config";
 import Nav from "@/components/Nav";
 import Tracking from "@/components/Tracking";
 import LegacyHashRedirect from "@/components/LegacyHashRedirect";
@@ -14,11 +14,13 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Value Verdict – Best Appliance Deals in India, Sorted by Budget",
-  description: "Hand-picked washing machines and home appliances sorted by budget. Compare type, energy rating and brand, then check today's price on Amazon.",
+  description: SHOW_CATALOG
+    ? "Hand-picked washing machines and home appliances sorted by budget. Compare type, energy rating and brand, then check today's price on Amazon."
+    : "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs and laptops, filtered to well-rated products and sorted by budget.",
   icons: { icon: "/favicon.png" },
   openGraph: {
     title: "Value Verdict – Best Deals Sorted by Budget",
-    description: "Hand-picked appliances sorted by budget. Compare and check today's price on Amazon.",
+    description: SHOW_CATALOG ? "Hand-picked appliances sorted by budget. Compare and check today's price on Amazon." : "Live Amazon.in deals on appliances and laptops, sorted by budget.",
     images: ["/hero-logo.jpg"],
     siteName: "Value Verdict",
     type: "website",
@@ -49,8 +51,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main>{children}</main>
         <section className="about" id="about">
           <div className="wrap">
-            <div><h4>🔎 Hand-picked, not dumped</h4><p>We shortlist appliances by energy rating, capacity and brand reliability so you don&apos;t scroll through hundreds of listings.</p></div>
-            <div><h4>💰 Sorted by budget</h4><p>Every pick sits in a clear price band, so you only see what fits your wallet.</p></div>
+            {SHOW_CATALOG
+              ? <div><h4>🔎 Hand-picked, not dumped</h4><p>We shortlist appliances by energy rating, capacity and brand reliability so you don&apos;t scroll through hundreds of listings.</p></div>
+              : <div><h4>🔎 Filtered, not dumped</h4><p>Only well-rated products with a real discount make it in, so you don&apos;t scroll through hundreds of listings.</p></div>}
+            <div><h4>💰 Sorted by budget</h4><p>Every {SHOW_CATALOG ? "pick" : "deal"} sits in a clear price band, so you only see what fits your wallet.</p></div>
             <div><h4>🛒 Buy where you trust</h4><p>Check today&apos;s price and offers on Amazon. You pay the same price; we may earn a small commission.</p></div>
           </div>
         </section>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog";
-import { STORES } from "@/lib/config";
+import { SHOW_CATALOG, STORES } from "@/lib/config";
 import { CatIcon } from "@/components/Icon";
 import CategoryCard from "@/components/CategoryCard";
 
@@ -14,14 +14,28 @@ export default async function Home() {
       <div className="hero">
         <div className="wrap">
           <div>
-            <span className="eyebrow">● Festive sale picks, updated</span>
-            <h1>Honest picks, <span>sorted by your budget.</span></h1>
-            <p>Value Verdict hand-picks the best-value appliances in India and sorts them by price band, energy rating and capacity, so you can decide in minutes and check today&apos;s price on {STORES}.</p>
-            <div className="trust">
-              <div><b>{db.prods.length}</b>hand-picked products</div>
-              <div><b>{brands}</b>trusted brands</div>
-              <div><b>{db.cats.length}</b>categories</div>
-            </div>
+            <span className="eyebrow">● Festive sale {SHOW_CATALOG ? "picks" : "deals"}, updated</span>
+            {SHOW_CATALOG ? (
+              <>
+                <h1>Honest picks, <span>sorted by your budget.</span></h1>
+                <p>Value Verdict hand-picks the best-value appliances in India and sorts them by price band, energy rating and capacity, so you can decide in minutes and check today&apos;s price on {STORES}.</p>
+                <div className="trust">
+                  <div><b>{db.prods.length}</b>hand-picked products</div>
+                  <div><b>{brands}</b>trusted brands</div>
+                  <div><b>{db.cats.length}</b>categories</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1>Today&apos;s best deals, <span>sorted by your budget.</span></h1>
+                <p>Value Verdict brings you live Amazon.in deals on appliances, TVs and laptops, filtered to well-rated products with real discounts and sorted by price band, so you can decide in minutes.</p>
+                <div className="trust">
+                  <div><b>Live</b>Amazon.in prices</div>
+                  <div><b>Hourly</b>deal refresh</div>
+                  <div><b>{db.cats.length}</b>categories</div>
+                </div>
+              </>
+            )}
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="hero-logo" src="/hero-logo.jpg" alt="Value Verdict" />
@@ -32,7 +46,7 @@ export default async function Home() {
           <div className="hero-card how">
             <h3>How it works</h3>
             <div className="step"><i>1</i><div><strong>Pick a category &amp; budget</strong>Washing machines, home appliances and more, sorted by price band.</div></div>
-            <div className="step"><i>2</i><div><strong>Compare and sort</strong>By type, energy rating or brand.</div></div>
+            <div className="step"><i>2</i><div><strong>{SHOW_CATALOG ? "Compare and sort" : "Compare live deals"}</strong>{SHOW_CATALOG ? "By type, energy rating or brand." : "Price, discount and product side by side."}</div></div>
             <div className="step"><i>3</i><div><strong>Check today&apos;s price</strong>On {STORES}, with bank offers.</div></div>
           </div>
           <div className="sec-head" style={{ marginTop: 36 }}><div><h2>All categories</h2><p>Choose a category, then a budget.</p></div></div>
@@ -48,7 +62,7 @@ export default async function Home() {
                   <p>{c.description}</p>
                   <div className="chips">
                     {subsOf(db, c.category_id).map((s) => (
-                      <Link key={s.slug} className="chip" href={`/${c.slug}/${s.slug}`}>{s.name}<small>{prodsOfSub(db, s.subcategory_id).length}</small></Link>
+                      <Link key={s.slug} className="chip" href={`/${c.slug}/${s.slug}`}>{s.name}{SHOW_CATALOG && <small>{prodsOfSub(db, s.subcategory_id).length}</small>}</Link>
                     ))}
                   </div>
                 </CategoryCard>
