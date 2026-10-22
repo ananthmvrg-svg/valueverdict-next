@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { SHEET_ID } from "@/lib/config";
+import { select } from "@/lib/db";
 
 /* Live Amazon deals for the "Amazon Finds" page, from the Amazon Creators API.
    The page calls /api/amazon-deals; this runs on the server so the keys stay secret.
@@ -10,8 +10,8 @@ import { SHEET_ID } from "@/lib/config";
      AMAZON_PARTNER_TAG        optional, defaults to valueverdic03-21
      AMAZON_TOKEN_URL          optional, India (credential version 3.2) uses the default below
 
-   What to search comes from the "AmazonDeals" tab of the Google Sheet (columns below), so deals
-   can be changed without code. If that tab is missing, DEFAULT_SECTIONS is used.
+   What to search comes from the "amazon_deal_searches" table in Supabase (columns below), so deals
+   can be changed without code. If the table can't be read or is empty, DEFAULT_SECTIONS is used.
      section | keywords | search_index | min_saving_percent | max_price | sort_by | sort_order | active
    Results are cached on Netlify's CDN for an hour, so Amazon is asked at most about once an hour. */
 
@@ -32,29 +32,11 @@ const DEFAULT_SECTIONS: Section[] = [
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const isOn = (v?: string) => String(v ?? "").trim().toUpperCase() !== "FALSE";
 
-function parseCSV(text: string): Record<string, string>[] {
-  const rows: string[][] = []; let row: string[] = [], f = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c == '"') { if (text[i + 1] == '"') { f += '"'; i++; } else q = false; } else f += c; }
-    else if (c == '"') q = true; else if (c == ",") { row.push(f); f = ""; }
-    else if (c == "\n" || c == "\r") { if (c == "\r" && text[i + 1] == "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
-    else f += c;
-  }
-  if (f || row.length) { row.push(f); rows.push(row); }
-  const h = (rows.shift() || []).map(x => x.trim());
-  return rows.filter(r => r.some(x => x.trim())).map(r => Object.fromEntries(h.map((k, i) => [k, (r[i] || "").trim()])));
-}
-
 async function sections(): Promise<Section[]> {
   try {
-    const r = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=AmazonDeals`);
-    if (r.ok) {
-      const rows = parseCSV(await r.text()).filter(x => x.section && x.keywords && isOn(x.active));
-      /* gviz returns the first tab when "AmazonDeals" doesn't exist, so require this tab's own columns */
-      if (rows.length) return rows.sort((a: Section, b: Section) => (parseFloat(a.sort_order) || 999) - (parseFloat(b.sort_order) || 999));
-    }
-  } catch (e) { console.warn("AmazonDeals tab not loaded", e); }
+    const rows = (await select("amazon_deal_searches", "order=id")).filter(x => x.section && x.keywords && isOn(x.active));
+    if (rows.length) return rows.sort((a: Section, b: Section) => (parseFloat(a.sort_order) || 999) - (parseFloat(b.sort_order) || 999));
+  } catch (e) { console.warn("amazon_deal_searches not loaded", e); }
   return DEFAULT_SECTIONS;
 }
 

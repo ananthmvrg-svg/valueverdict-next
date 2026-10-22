@@ -30,7 +30,7 @@ export async function categoryMetadata(catSlug: string, subSlug?: string): Promi
 export default async function CategoryPage({ catSlug, subSlug }: { catSlug: string; subSlug?: string }) {
   const { db, cat, subs, sub } = await find(catSlug, subSlug);
   const base = sub ? prodsOfSub(db, sub.subcategory_id) : prodsOfCat(db, cat.category_id);
-  /* Categories column "amazon_deals" = TRUE: also show live Amazon deals; sheet products (if any) still show below */
+  /* Categories column "amazon_deals" = TRUE: also show live Amazon deals; catalog products (if any) still show below */
   const live = isYes(cat.amazon_deals), showSheet = base.length > 0 || !live;
   const title = sub ? `${cat.name} ${sub.name}` : cat.name;
   const groups = (sub ? [sub] : subs).map((s) => ({ sub: s, items: prodsOfSub(db, s.subcategory_id) }));

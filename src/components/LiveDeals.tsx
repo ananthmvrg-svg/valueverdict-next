@@ -2,6 +2,7 @@
 /* Live Amazon deals (from /api/amazon-deals). Amazon requires the "prices as of" time shown under them. */
 import { useEffect, useState } from "react";
 import { safeUrl } from "@/lib/products";
+import { GridSkeleton } from "./Skeleton";
 
 type Deal = { asin: string; title: string; image: string; url: string; price: number | null; was: number | null; off: number | null; deal: string };
 type Deals = { updated?: string; sections?: { title: string; items: Deal[] }[]; error?: string };
@@ -40,7 +41,12 @@ export default function LiveDeals({ only }: { only: boolean }) {
   useEffect(() => {
     fetch("/api/amazon-deals").then((r) => r.json()).catch(() => ({ sections: [] })).then(setD);
   }, []);
-  if (!d) return <div className="empty">Loading today&apos;s Amazon deals…</div>;
+  if (!d) return (
+    <div role="status" aria-label="Loading today's Amazon deals">
+      <div className="group-title"><span className="sk" style={{ width: 160, height: 18 }} /></div>
+      <GridSkeleton n={4} />
+    </div>
+  );
   if (!d.sections?.length) {
     if (d.error) console.warn("Amazon deals:", d.error);
     return only ? <div className="empty">Today&apos;s deals are being refreshed. Please check back in a little while.</div> : null;

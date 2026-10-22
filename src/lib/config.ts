@@ -2,9 +2,10 @@
 
 export const SITE_URL = "https://valueverdict.in";
 
-/* Google Sheet the catalog is read from until the database is connected.
-   Share > General access > "Anyone with the link" > Viewer. */
-export const SHEET_ID = "18OHK7FC4hZdG5XuVxcMgyZn6dAUFRzWmCPkwl9Nb2jg";
+/* Supabase database the catalog is read from (edit products in the Supabase table editor).
+   This key is the public "publishable" key: the tables only allow reading with it, never changes. */
+export const SUPABASE_URL = process.env.SUPABASE_URL || "https://ntgvnmkehpoexthqzasl.supabase.co";
+export const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_t1ldjRuClUY7mZ1nd0ZFPg_F9aDtxpC";
 
 /* Flipkart switch. false = Amazon-only site: no Flipkart buttons, Flipkart-only products hidden. */
 export const SHOW_FLIPKART = false;

@@ -1,5 +1,5 @@
 /* Product/category icons, picked from the category name / product type (door_type) / product name.
-   The sheet's "icon" column can override: an image URL, an emoji, or one of the keys below. */
+   A product's "icon" column can override: an image URL, an emoji, or one of the keys below. */
 import type { Category, Product } from "@/lib/products";
 
 const PATHS: Record<string, string> = {

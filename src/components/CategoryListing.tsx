@@ -34,8 +34,16 @@ export default function CategoryListing({ groups, cat, groupTitles, offersBanner
   const keep = (p: Product) =>
     (!ql || [p.name, p.brand, p.door_type, p.capacity_l].join(" ").toLowerCase().includes(ql)) &&
     (!brand || p.brand === brand) && (!door || p.door_type === door);
-  const shown = groups.map((g) => ({ ...g, items: g.items.filter(keep).sort(SORTS[sort][1]) })).filter((g) => g.items.length);
+  /* "Featured" keeps the budget groups; any other sort ranks all budgets together in one list,
+     otherwise it would only sort inside each group (each card still shows its budget tag) */
+  const grouped = groupTitles && sort === "featured";
+  const items = (g: Group) => g.items.filter(keep).map((p) => ({ p, sub: g.sub }));
+  const shown = grouped
+    ? groups.map((g) => ({ sub: g.sub, items: items(g) })).filter((g) => g.items.length)
+    : [{ sub: groups[0]?.sub, items: groups.flatMap(items).sort((a, b) => SORTS[sort][1](a.p, b.p)) }].filter((g) => g.items.length);
   const n = shown.reduce((t, g) => t + g.items.length, 0);
+  const filtered = q || brand || door || sort !== "featured";
+  const clear = () => { setQ(""); setSort("featured"); setBrand(""); setDoor(""); };
 
   return (
     <>
@@ -56,18 +64,23 @@ export default function CategoryListing({ groups, cat, groupTitles, offersBanner
             {doors.map((d) => <option key={d}>{d}</option>)}
           </select>
         )}
-        <span className="result-count">{n} product{n === 1 ? "" : "s"}</span>
+        <span className="result-count">
+          {filtered && <button type="button" className="clear-filters" onClick={clear}>Clear</button>}
+          {n} product{n === 1 ? "" : "s"}
+        </span>
       </div>
       {offersBanner && <div className="offers-banner">{offersBanner}</div>}
       {n ? (
-        shown.map((g) => (
-          <div key={g.sub.subcategory_id}>
-            {groupTitles && <div className="group-title"><h3>{g.sub.name}</h3><span>{g.items.length} picks</span></div>}
-            <div className="grid">{g.items.map((p) => <ProductCard key={p.product_id} p={p} sub={g.sub} cat={cat} />)}</div>
+        shown.map((g, i) => (
+          <div key={grouped ? g.sub.subcategory_id : i}>
+            {grouped && <div className="group-title"><h3>{g.sub.name}</h3><span>{g.items.length} pick{g.items.length === 1 ? "" : "s"}</span></div>}
+            <div className="grid">{g.items.map(({ p, sub }) => <ProductCard key={p.product_id} p={p} sub={sub} cat={cat} />)}</div>
           </div>
         ))
       ) : (
-        <div className="empty">No products match. Try clearing the filters.</div>
+        <div className="empty">
+          No products match. <button type="button" className="clear-filters" onClick={clear}>Clear the filters</button>
+        </div>
       )}
     </>
   );
