@@ -16,6 +16,19 @@ type Paging = { page: number; more: boolean; busy: boolean };
 
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 
+/* some sellers write bullets (or their heading before ":") in ALL CAPS; show those in sentence case */
+const shouting = (t: string) => {
+  const letters = t.replace(/[^a-z]/gi, "");
+  return letters.length > 8 && letters.replace(/[^A-Z]/g, "").length / letters.length > 0.7;
+};
+const sentence = (t: string) => t.toLowerCase().replace(/^[^a-z]*[a-z]/, (c) => c.toUpperCase());
+const tidy = (f: string) => {
+  if (shouting(f)) return sentence(f);
+  /* heading ends at the first ":" or dash */
+  const cut = Math.min(...[":", " – ", " — ", " - "].map((sep) => f.indexOf(sep)).filter((i) => i > 0), Infinity);
+  return cut < Infinity && shouting(f.slice(0, cut)) ? sentence(f.slice(0, cut)) + f.slice(cut) : f;
+};
+
 /* "Ends in 5h 20m" for deals ending within 3 days */
 function endsIn(iso: string | null, now: number) {
   const ms = iso ? Date.parse(iso) - now : NaN;
@@ -35,7 +48,8 @@ const SORTS: Record<string, [string, Sorter | null]> = {
 };
 const DISCOUNTS = [0, 20, 30, 40, 50];
 
-function DealCard({ x, now }: { x: Deal; now: number }) {
+/* rank and reason: AI picks ("#1", "Why we picked it") */
+export function DealCard({ x, now, rank, reason }: { x: Deal; now: number; rank?: number; reason?: string }) {
   const url = safeUrl(x.url), img = safeUrl(x.image);
   if (!url) return null;
   const timer = endsIn(x.dealEnds, now);
@@ -45,11 +59,13 @@ function DealCard({ x, now }: { x: Deal; now: number }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {img && <img src={img} alt={x.title} loading="lazy" />}
         {x.off ? <span className="badge">-{Math.round(x.off)}%</span> : null}
+        {rank ? <span className="rank">#{rank}</span> : null}
       </div>
       <div className="body">
         {x.brand && <div className="brand">{x.brand}</div>}
         <h4 title={x.title}>{x.title}</h4>
-        {x.features.length > 0 && <ul className="deal-features">{x.features.map((f) => <li key={f}>{f}</li>)}</ul>}
+        {reason && <p className="pick-reason"><b>Why we picked it:</b> {reason}</p>}
+        {x.features.length > 0 && <ul className="deal-features">{x.features.map((f) => <li key={f}>{tidy(f)}</li>)}</ul>}
         {(x.deal || timer || x.primeOnly || x.lowStock) && (
           <div className="deal-tags">
             {x.deal && <span className="deal-tag offer">🏷️ {x.deal}</span>}
@@ -85,6 +101,8 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
   const [sort, setSort] = useState("featured");
   const [brand, setBrand] = useState("");
   const [minOff, setMinOff] = useState(0);
+  /* deals shown per section; "Show more" reveals the next ones already loaded, then asks the server */
+  const [limits, setLimits] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetch(`/api/amazon-deals/${category}${sub ? `/${sub}` : ""}`).then((r) => r.json()).catch(() => ({ sections: [] })).then((x: Deals) => {
@@ -161,13 +179,18 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
       {banner && <div className="offers-banner">{banner}</div>}
       {n ? shown.map((g) => {
         const pg = paging[g.id];
+        const cap = limits[g.id] ?? (shown.length > 2 ? 8 : 12), hidden = g.list.length > cap;
+        const showMore = () => {
+          setLimits((cur) => ({ ...cur, [g.id]: cap + 12 }));
+          if (!hidden && pg?.more) loadMore(g.id);
+        };
         if (!g.list.length) return null;
         return (
           <div key={g.id}>
             {g.title && <div className="group-title"><h3>{g.title}</h3><span>{g.list.length} deal{g.list.length === 1 ? "" : "s"}</span></div>}
-            <div className="grid">{g.list.map((x) => <DealCard key={x.asin} x={x} now={now} />)}</div>
+            <div className="grid">{g.list.slice(0, cap).map((x) => <DealCard key={x.asin} x={x} now={now} />)}</div>
             {pg?.busy && <div style={{ marginTop: 16 }}><GridSkeleton n={4} /></div>}
-            {pg?.more && !pg.busy && !filtered && <div className="more-row"><button type="button" className="more-btn" onClick={() => loadMore(g.id)}>Show more deals</button></div>}
+            {(hidden || (pg?.more && !filtered)) && !pg?.busy && <div className="more-row"><button type="button" className="more-btn" onClick={showMore}>Show more deals</button></div>}
           </div>
         );
       }) : (
@@ -176,4 +199,21 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
       <p className="deals-note">Prices from Amazon.in as of {at} IST. Prices and availability can change; the price on Amazon at the time of purchase applies.</p>
     </div>
   );
+}
+
+/* AI picks grid (server-rendered pages pass the picks in). Timers start after the page loads. */
+export function PickGrid({ items }: { items: (Deal & { rank: number; reason: string })[] }) {
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    const tick = () => setNow(Date.now()), first = setTimeout(tick, 0), t = setInterval(tick, 60000);
+    return () => { clearTimeout(first); clearInterval(t); };
+  }, []);
+  return <div className="grid">{items.map((x) => <DealCard key={x.asin} x={x} now={now} rank={x.rank} reason={x.reason} />)}</div>;
+}
+
+/* "See all deals" under the AI picks: loads every saved candidate (with search and filters) only when asked */
+export function SeeAllDeals({ category, sub, label }: { category: string; sub?: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  if (!open) return <div className="more-row"><button type="button" className="more-btn" onClick={() => setOpen(true)}>{label}</button></div>;
+  return <LiveDeals category={category} sub={sub} only={false} heading="All deals" />;
 }

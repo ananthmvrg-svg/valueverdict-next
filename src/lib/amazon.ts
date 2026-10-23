@@ -1,4 +1,4 @@
-import { select } from "./db";
+import { select, selectJson } from "./db";
 import { isOn, num, type Row } from "./products";
 
 /* Live Amazon deals from the Amazon Creators API (server only, keys stay secret).
@@ -47,19 +47,24 @@ const amountIn = (t: string) => {
 };
 
 /* a budget page's limits: price band from the budgets' max_price, or extra search words for size budgets */
-type Budget = { lo: number | null; hi: number | null; words: string };
+export type Budget = { lo: number | null; hi: number | null; words: string };
 async function budgetFor(categoryId: string, subSlug: string): Promise<Budget | null> {
-  const subs = (await select("subcategories", `category_id=eq.${encodeURIComponent(categoryId)}`)).filter((x) => isOn(x.active));
+  return budgetFrom(await select("subcategories", `category_id=eq.${encodeURIComponent(categoryId)}`), subSlug);
+}
+/* same, from a category's budget rows already loaded (the refresh job loads them once) */
+export function budgetFrom(allSubs: Row[], subSlug: string): Budget | null {
+  const subs = allSubs.filter((x) => isOn(x.active));
   const sub = subs.find((x) => x.slug === subSlug);
   if (!sub) return null;
   const maxes = subs.map((x) => rupees(x.max_price)).filter((n): n is number => n != null);
   const hi = rupees(sub.max_price);
-  if (hi) return { lo: Math.max(0, ...maxes.filter((n) => n < hi)) || null, hi, words: "" };
+  /* from 70% of the next lower budget's limit, so each budget page has enough candidates (bands overlap a little) */
+  if (hi) return { lo: Math.round(0.7 * Math.max(0, ...maxes.filter((n) => n < hi))) || null, hi, words: "" };
   if (/^above-/.test(sub.slug)) return { lo: amountIn(sub.name) ?? (Math.max(0, ...maxes) || null), hi: null, words: "" };
   return { lo: null, hi: null, words: sub.name.replace(/[″"]/g, " inch").replace(/\btvs?\b/gi, "").replace(/\s+/g, " ").trim() };
 }
 
-const limit = (r: Row, b: Budget | null): Row => !b ? r : {
+export const limit = (r: Row, b: Budget | null): Row => !b ? r : {
   ...r,
   min_price: String(Math.max(rupees(r.min_price) || 0, b.lo || 0) || ""),
   max_price: String(b.hi ?? r.max_price ?? ""),
@@ -106,7 +111,7 @@ async function getToken(): Promise<string> {
   return t;
 }
 
-async function search(s: Row, page = 1) {
+export async function search(s: Row, page = 1) {
   const body: Record<string, unknown> = { partnerTag: PARTNER_TAG, marketplace: MARKETPLACE, keywords: s.keywords, itemCount: 10, itemPage: page, resources: RESOURCES, availability: "Available", condition: "New" };
   if (s.search_index) body.searchIndex = s.search_index;
   if (s.brand) body.brand = s.brand;
@@ -116,16 +121,20 @@ async function search(s: Row, page = 1) {
   /* prices go to Amazon in paise: ₹999 → 99900 */
   const min = rupees(s.min_price); if (min) body.minPrice = Math.round(min * 100);
   const max = rupees(s.max_price); if (max) body.maxPrice = Math.round(max * 100);
+  /* e.g. dishwashers (from ₹15,000) on an "Under ₹10,000" page: nothing can match, so don't ask Amazon */
+  if (min && max && min >= max) return { items: [] as Deal[], more: false };
   const r = await fetch(SEARCH_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json", "x-marketplace": MARKETPLACE },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(9000), /* a slow answer must not push a scheduled run past Netlify's 30 seconds */
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(`search ${r.status} ${(j.errors?.[0]?.code || j.code || j.message || "").toString()}`.trim());
   /* Amazon's price filters match any offer; keep only items whose shown price is inside them */
   const raw = (j.searchResult?.items || []) as unknown[];
-  const inside = (x: Deal) => x.price == null || ((!min || x.price >= min) && (!max || x.price <= max));
+  /* a deal needs a price (some listings have none) inside the page's price range */
+  const inside = (x: Deal) => x.price != null && (!min || x.price >= min) && (!max || x.price <= max);
   const sized = (x: Deal) => !s.title_has || new RegExp(`(^|[^0-9])${s.title_has}([^0-9]|$)`).test(x.title);
   /* a full page of 10 means Amazon may have more */
   return { items: raw.map(item).filter((x) => x.asin && x.title && inside(x) && sized(x) && titleOk(x.title, s.must_include)), more: raw.length === 10 && page < MAX_PAGE };
@@ -195,4 +204,30 @@ export async function getDealPage(id: string, page: number, subSlug?: string): P
   const budget = subSlug ? await budgetFor(rows[0].category_id, subSlug) : null;
   if (subSlug && !budget) return { items: [], more: false };
   return search(limit(rows[0], budget), page);
+}
+
+/* Deals saved by the scheduled refresh (lib/refresh.ts) for a category page or one of its budget pages.
+   Visitors read only these, so a page never waits for Amazon. Rows older than 24 hours are ignored
+   (Amazon's rules: shown prices must be recent). Empty sections = not refreshed yet. */
+export async function getStoredDeals(slug: string, subSlug?: string): Promise<{ sections: DealSection[]; updated: string | null }> {
+  const cat = (await select("categories", `slug=eq.${encodeURIComponent(slug)}`)).find((c) => isOn(c.active));
+  if (!cat) return { sections: [], updated: null };
+  const searches = (await select("amazon_deal_searches", `active=eq.true&category_id=eq.${encodeURIComponent(cat.category_id)}&order=sort_order.asc.nullslast,id.asc`))
+    .filter((r) => r.section && r.keywords);
+  if (!searches.length) return { sections: [], updated: null };
+  const since = new Date(Date.now() - 24 * 36e5).toISOString();
+  type Stored = { search_id: number; page: number; position: number; asin: string; data: Deal; fetched_at: string };
+  const rows = await selectJson<Stored>("deals",
+    `select=search_id,page,position,asin,data,fetched_at&search_id=in.(${searches.map((s) => s.id).join(",")})` +
+    `&sub_slug=eq.${encodeURIComponent(subSlug || "")}&fetched_at=gte.${encodeURIComponent(since)}&order=page.asc,position.asc&limit=2000`);
+  const seen = new Set<string>(), sections: DealSection[] = [];
+  let oldest: string | null = null;
+  for (const s of searches) {
+    const mine = rows.filter((r) => String(r.search_id) === s.id);
+    const items = mine.map((r) => r.data).filter((x) => x?.asin && !seen.has(x.asin) && seen.add(x.asin));
+    if (!items.length) continue;
+    for (const r of mine) if (!oldest || r.fetched_at < oldest) oldest = r.fetched_at;
+    sections.push({ id: s.id, title: s.section, category: slug, items, more: false, page: Math.max(...mine.map((r) => r.page)) });
+  }
+  return { sections, updated: oldest };
 }

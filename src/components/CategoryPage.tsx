@@ -5,7 +5,8 @@ import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog
 import { OFFERS_BANNER, SHOW_CATALOG } from "@/lib/config";
 import PromiseBox from "./PromiseBox";
 import CategoryListing from "./CategoryListing";
-import LiveDeals from "./LiveDeals";
+import LiveDeals, { PickGrid, SeeAllDeals } from "./LiveDeals";
+import { getPicks, pickedAt, picksIn, type DealPick } from "@/lib/picks";
 
 async function find(catSlug: string, subSlug?: string) {
   const db = await getCatalog();
@@ -63,13 +64,78 @@ export default async function CategoryPage({ catSlug, subSlug }: { catSlug: stri
             {live && !sub && <LiveDeals category={cat.slug} only={false} heading={`Today's ${cat.name} deals on Amazon`} />}
           </>
         ) : (
-          /* live Amazon deals only: the category's searches, limited to the budget on a budget page */
           <>
             {chips}
-            {live ? <LiveDeals key={`${cat.slug}/${sub?.slug ?? ""}`} category={cat.slug} sub={sub?.slug} only banner={OFFERS_BANNER} /> : <div className="empty">Deals for this category are coming soon.</div>}
+            {!live
+              ? <div className="empty">Deals for this category are coming soon.</div>
+              : <DealsWithPicks catSlug={cat.slug} subs={subs.map((s) => ({ slug: s.slug, name: s.name }))} sub={sub && { slug: sub.slug, name: sub.name }} />}
           </>
         )}
       </div>
     </section>
+  );
+}
+
+/* Deals-only pages: today's AI picks first (server-rendered, so search engines see them), then "See all deals".
+   Budget page: its top 5. Category page: each budget's top 5. A category without budgets (Amazon Finds): its picks
+   by section. Before the first AI run there are no picks, and the page shows all saved deals as before. */
+async function DealsWithPicks({ catSlug, subs, sub }: { catSlug: string; subs: { slug: string; name: string }[]; sub?: { slug: string; name: string } }) {
+  const { picks, at } = await getPicks();
+  /* "picked by AI" wording is switched off for now; to show it again, use this note instead:
+     Picked by AI from Amazon.in deals on {pickedAt(at)} IST, judging specs, brand, price and discount. Prices change often; the price on Amazon at checkout applies. */
+  const note = <p className="picks-note">Deals from Amazon.in as of {pickedAt(at)} IST. Prices change often; the price on Amazon at checkout applies.</p>;
+  const all = <LiveDeals key={`${catSlug}/${sub?.slug ?? ""}`} category={catSlug} sub={sub?.slug} only banner={OFFERS_BANNER} />;
+
+  if (sub) {
+    const top = picksIn(picks, `${catSlug}/${sub.slug}`);
+    if (!top.length) return all;
+    return (
+      <>
+        <div className="offers-banner">{OFFERS_BANNER}</div>
+        <div className="picks-head"><h3>Top {top.length} picks · {sub.name}</h3></div>
+        <PickGrid items={top} />
+        {note}
+        <SeeAllDeals category={catSlug} sub={sub.slug} label={`See all deals ${sub.name.toLowerCase().startsWith("under") || sub.name.toLowerCase().startsWith("above") ? sub.name.toLowerCase() : `in ${sub.name}`}`} />
+      </>
+    );
+  }
+
+  if (subs.length) {
+    const groups = subs.map((s) => ({ ...s, top: picksIn(picks, `${catSlug}/${s.slug}`) })).filter((g) => g.top.length);
+    if (!groups.length) return all;
+    return (
+      <>
+        <div className="offers-banner">{OFFERS_BANNER}</div>
+        {groups.map((g) => (
+          <div key={g.slug}>
+            <div className="picks-head"><h3>{g.name} · top {g.top.length}</h3><Link href={`/${catSlug}/${g.slug}`}>See all {g.name} →</Link></div>
+            <PickGrid items={g.top} />
+          </div>
+        ))}
+        {note}
+      </>
+    );
+  }
+
+  const top = picksIn(picks, catSlug);
+  if (!top.length) return all;
+  /* group by section, sections in the order of their best pick */
+  const sections: { name: string; items: DealPick[] }[] = [];
+  for (const p of top) {
+    const s = sections.find((x) => x.name === p.section) || sections[sections.push({ name: p.section, items: [] }) - 1];
+    s.items.push(p);
+  }
+  return (
+    <>
+      <div className="offers-banner">{OFFERS_BANNER}</div>
+      {sections.map((s) => (
+        <div key={s.name}>
+          <div className="picks-head"><h3>{s.name || "Picks"} · {s.items.length}</h3></div>
+          <PickGrid items={s.items} />
+        </div>
+      ))}
+      {note}
+      <SeeAllDeals category={catSlug} label="See all deals" />
+    </>
   );
 }

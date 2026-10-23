@@ -34,8 +34,11 @@ export const PICK_PROMISE = {
 /* same box when the site shows only live Amazon deals (SHOW_CATALOG = false); {cat} = category name */
 export const DEALS_PROMISE = {
   title: "Today's deals, filtered for you",
-  text: "Live deals on {cat} from Amazon.in, filtered to well-rated products with a real discount. Prices refresh every hour.",
-  points: ["🔥 Real discounts only", "⭐ Well-rated products", "💰 Sorted by budget", "🔄 Refreshed every hour"],
+  /* "picked by AI" wording is switched off for now; to show it again, use these two lines instead:
+  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with the top picks chosen by AI from specs, brand, price and discount. Updated at 5 AM and 5 PM.",
+  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks by AI", "🔄 Updated twice a day"], */
+  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with our top picks for every budget. Updated at 5 AM and 5 PM.",
+  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks for every budget", "🔄 Updated twice a day"],
 };
 
 /* one banner per category page, above the product grid */

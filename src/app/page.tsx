@@ -3,11 +3,14 @@ import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog
 import { SHOW_CATALOG, STORES } from "@/lib/config";
 import { CatIcon } from "@/components/Icon";
 import CategoryCard from "@/components/CategoryCard";
+import { PickGrid } from "@/components/LiveDeals";
+import { getPicks, picksIn } from "@/lib/picks";
 
 export const metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
-  const db = await getCatalog();
+  const [db, { picks }] = await Promise.all([getCatalog(), getPicks()]);
+  const topDeals = picksIn(picks, "top-100").slice(0, 8);
   const brands = new Set(db.prods.map((p) => p.brand).filter(Boolean)).size;
   return (
     <>
@@ -31,7 +34,8 @@ export default async function Home() {
                 <p>Value Verdict brings you live Amazon.in deals on appliances, TVs and laptops, filtered to well-rated products with real discounts and sorted by price band, so you can decide in minutes.</p>
                 <div className="trust">
                   <div><b>Live</b>Amazon.in prices</div>
-                  <div><b>Hourly</b>deal refresh</div>
+                  {/* "picked by AI" wording is switched off for now; to show it again: <div><b>2× daily</b>AI-picked deals</div> */}
+                  <div><b>2× daily</b>fresh top picks</div>
                   <div><b>{db.cats.length}</b>categories</div>
                 </div>
               </>
@@ -49,6 +53,15 @@ export default async function Home() {
             <div className="step"><i>2</i><div><strong>{SHOW_CATALOG ? "Compare and sort" : "Compare live deals"}</strong>{SHOW_CATALOG ? "By type, energy rating or brand." : "Price, discount and product side by side."}</div></div>
             <div className="step"><i>3</i><div><strong>Check today&apos;s price</strong>On {STORES}, with bank offers.</div></div>
           </div>
+          {topDeals.length > 0 && (
+            <>
+              <div className="picks-head" style={{ marginTop: 36 }}>
+                <div><h2 style={{ margin: 0 }}>🔥 Today&apos;s top deals</h2></div>
+                <Link href="/top-deals">See all 100 →</Link>
+              </div>
+              <PickGrid items={topDeals} />
+            </>
+          )}
           <div className="sec-head" style={{ marginTop: 36 }}><div><h2>All categories</h2><p>Choose a category, then a budget.</p></div></div>
           <div className="cats">
             {db.cats.map((c) => {
