@@ -24,7 +24,12 @@ export const metadata: Metadata = {
     images: ["/hero-logo.jpg"],
     siteName: "Value Verdict",
     type: "website",
+    locale: "en_IN",
+    url: "/",
   },
+  twitter: { card: "summary_large_image" },
+  /* Google Search Console: the code from its "HTML tag" verification method, set as GOOGLE_SITE_VERIFICATION on Netlify */
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 async function Year() {
@@ -36,7 +41,7 @@ async function Year() {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const { cats } = await getCatalog();
   return (
-    <html lang="en" className={jakarta.variable}>
+    <html lang="en-IN" className={jakarta.variable}>
       <body>
         <header className="top">
           <div className="wrap nav">

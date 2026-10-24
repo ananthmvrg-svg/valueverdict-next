@@ -5,12 +5,14 @@ import { OFFERS_BANNER } from "@/lib/config";
 import { getPicks, pickedAt, picksIn } from "@/lib/picks";
 import PromiseBox from "@/components/PromiseBox";
 import TopDeals from "@/components/TopDeals";
+import { breadcrumbs, dealList, JsonLd, monthYear, pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Today's Top 100 Deals on Amazon.in – Value Verdict",
-  description: "The 100 best Amazon.in deals today across fridges, washing machines, TVs, laptops, ACs and more, picked twice a day.",
-  alternates: { canonical: "/top-deals" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMeta(
+    `Top 100 Amazon Deals Today in India (${await monthYear()}) | Value Verdict`,
+    "The 100 best Amazon.in deals right now across fridges, washing machines, TVs, laptops, ACs, gadgets and more, ranked by value and updated every day at 5 AM and 5 PM.",
+    "/top-deals");
+}
 
 /* /top-deals: the AI's 100 best deals across the site, refreshed at 5 AM and 5 PM India time */
 export default async function TopDealsPage() {
@@ -20,7 +22,9 @@ export default async function TopDealsPage() {
     <section>
       <div className="wrap">
         <div className="crumbs"><Link href="/">Home</Link> / Top 100</div>
-        <div className="sec-head"><div><h2>🔥 Today&apos;s Top 100 Deals</h2><p>The best deals across every category, ranked. Updated at 5 AM and 5 PM.</p></div></div>
+        <JsonLd data={breadcrumbs([["Home", "/"], ["Top 100 Deals", "/top-deals"]])} />
+        {top.length > 0 && <JsonLd data={dealList("Today's Top 100 Deals", top)} />}
+        <div className="sec-head"><div><h1>🔥 Today&apos;s Top 100 Deals</h1><p>The best deals across every category, ranked. Updated at 5 AM and 5 PM.</p></div></div>
         <PromiseBox n={top.length} catName="deals" deals
           custom="The {n} best deals on Amazon.in right now, picked from every category on Value Verdict and ranked by value: brand, specs, price and real discount."
           customPoints="🏆 Ranked by value | 🔥 Real discounts only | 🔄 Updated twice a day" />

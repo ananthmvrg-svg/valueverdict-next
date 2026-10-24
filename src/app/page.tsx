@@ -5,8 +5,12 @@ import { CatIcon } from "@/components/Icon";
 import CategoryCard from "@/components/CategoryCard";
 import { PickGrid } from "@/components/LiveDeals";
 import { getPicks, picksIn } from "@/lib/picks";
+import { JsonLd, pageMeta, siteData } from "@/lib/seo";
 
-export const metadata = { alternates: { canonical: "/" } };
+export const metadata = pageMeta(
+  "Value Verdict – Best Amazon Deals in India Today, Sorted by Budget",
+  "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs, laptops and more: top picks for every budget with real discounts, updated every day at 5 AM and 5 PM.",
+  "/");
 
 export default async function Home() {
   const [db, { picks }] = await Promise.all([getCatalog(), getPicks()]);
@@ -14,6 +18,7 @@ export default async function Home() {
   const brands = new Set(db.prods.map((p) => p.brand).filter(Boolean)).size;
   return (
     <>
+      {siteData().map((d, i) => <JsonLd key={i} data={d} />)}
       <div className="hero">
         <div className="wrap">
           <div>

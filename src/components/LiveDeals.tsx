@@ -57,7 +57,7 @@ export function DealCard({ x, now, rank, reason }: { x: Deal; now: number; rank?
     <article className="card deal">
       <div className="thumb">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {img && <img src={img} alt={x.title} loading="lazy" />}
+        {img && <img src={img} alt={x.title} loading={rank && rank <= 4 ? "eager" : "lazy"} decoding="async" />}
         {x.off ? <span className="badge">-{Math.round(x.off)}%</span> : null}
         {rank ? <span className="rank">#{rank}</span> : null}
       </div>
