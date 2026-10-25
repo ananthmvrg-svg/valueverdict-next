@@ -9,6 +9,8 @@ import { keepSupported, supported } from "./evidence";
    Anthropic's Message Batches API (half price; results arrive within minutes, so each 2-minute scheduled run
    just submits or checks, well inside Netlify's 30-second limit). Every pick also gets a value score (1–100);
    the Top 100 page is the highest-scoring picks across the site (topHundred), with no extra AI call.
+   A page whose answer is junk or too short (e.g. one pick with reason "placeholder") is asked again once in a
+   small "retry" batch; until then, and if the retry fails too, that page keeps its previous picks.
    Needs ANTHROPIC_API_KEY. The AI sees only listing text (no ratings or reviews), so the prompt asks it
    to judge from brand, specs, price and discount and never invent facts. */
 
@@ -21,7 +23,7 @@ export const aiConfigured = () => Boolean(process.env.ANTHROPIC_API_KEY);
 
 type Candidate = Deal & { section: string; category: string };
 type Group = { key: string; title: string; category: string; want: string; max: number; items: Candidate[] };
-type Run = { id: number; stage: "groups"; batch_id: string | null; status: string };
+type Run = { id: number; stage: "groups" | "retry"; batch_id: string | null; status: string };
 type Pick = { asin: string; reason: string; score: number; best_for: string; strengths: string[]; limitations: string[]; confidence: "high" | "medium" | "low" };
 
 const SYSTEM = `You choose the best deals for Value Verdict, an Indian website that helps shoppers pick products by budget.
@@ -143,7 +145,8 @@ function picksFrom(message: Anthropic.Messages.Message, byAsin: Map<string, Cand
   let parsed: { picks?: Pick[] };
   try { parsed = JSON.parse(text); } catch { return []; }
   const seen = new Set<string>();
-  return (parsed.picks || []).filter((p) => p && byAsin.has(p.asin) && !seen.has(p.asin) && seen.add(p.asin)).slice(0, max)
+  /* a pick with no real reason (e.g. "placeholder") is a broken answer, not a pick */
+  return (parsed.picks || []).filter((p) => p && byAsin.has(p.asin) && String(p.reason || "").trim().length >= 30 && !seen.has(p.asin) && seen.add(p.asin)).slice(0, max)
     .map((p) => {
       const x = byAsin.get(p.asin)!, bestFor = String(p.best_for || "").trim().slice(0, 60);
       /* each sentence of the reason is checked on its own; only unsupported sentences are dropped */
@@ -170,6 +173,9 @@ const pickRows = (groupKey: string, cycle: string, picks: Pick[], byAsin: Map<st
     strengths: p.strengths, limitations: p.limitations, confidence: p.confidence, section, category, data, cycle };
 });
 
+/* enough good picks for the page: 3, or every candidate when it has fewer */
+const enough = (picks: Pick[], g: Group) => picks.length >= Math.min(3, g.items.length);
+
 async function savePicks(groupKey: string, cycle: string, picks: Pick[], byAsin: Map<string, Candidate>) {
   await admin("DELETE", `deal_picks?group_key=eq.${encodeURIComponent(groupKey)}`);
   if (picks.length) await admin("POST", "deal_picks", pickRows(groupKey, cycle, picks, byAsin), "return=minimal");
@@ -189,7 +195,7 @@ export async function curate(cycle: string): Promise<string> {
   if (!aiConfigured()) return "AI off: ANTHROPIC_API_KEY is not set";
   const client = new Anthropic();
   const runs = await admin<Run[]>("GET", `ai_runs?cycle=eq.${encodeURIComponent(cycle)}&select=id,stage,batch_id,status`);
-  const groupsRun = runs.find((r) => r.stage === "groups");
+  const groupsRun = runs.find((r) => r.stage === "groups"), retryRun = runs.find((r) => r.stage === "retry");
   const record = (stage: Run["stage"], batchId: string, detail: string) =>
     admin("POST", "ai_runs", { cycle, stage, batch_id: batchId, status: "submitted", detail }, "return=minimal");
   const finish = (run: Run, status: string, detail: string) =>
@@ -214,13 +220,13 @@ export async function curate(cycle: string): Promise<string> {
     const answers = await results(client, groupsRun.batch_id!);
     /* every group's picks replaced in two requests (one delete, one insert), so saving stays fast */
     /* Amazon Finds sections ("amazon-finds|Earbuds deals") are saved as one list, ranked section by section */
-    const rows: Record<string, unknown>[] = [], keys = new Set<string>(), ranks = new Map<string, number>();
-    let empty = 0;
+    const rows: Record<string, unknown>[] = [], keys = new Set<string>(), ranks = new Map<string, number>(), again: Group[] = [];
     for (const [id, key] of keyOf) {
       const g = groups.find((x) => x.key === key), message = answers.get(id);
-      const byAsin = new Map((g?.items ?? []).map((x) => [x.asin, x]));
-      const picks = g && message ? picksFrom(message, byAsin, g.max) : [];
-      if (!g || !picks.length) { empty++; continue; }
+      if (!g) continue;
+      const byAsin = new Map(g.items.map((x) => [x.asin, x]));
+      const picks = message ? picksFrom(message, byAsin, g.max) : [];
+      if (!enough(picks, g)) { again.push(g); continue; }
       const saveKey = g.key.split("|")[0], before = ranks.get(saveKey) ?? 0;
       keys.add(saveKey);
       rows.push(...pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + before })));
@@ -230,8 +236,39 @@ export async function curate(cycle: string): Promise<string> {
     if (rows.length) await admin("POST", "deal_picks", rows, "return=minimal");
     const saved = rows.length;
     const top = await topHundred(cycle);
-    await finish(groupsRun, "done", `saved ${saved} picks, ${empty} groups without picks, Top 100: ${top}`);
-    return `saved ${saved} AI picks (${empty} groups empty), Top 100: ${top}`;
+    if (again.length) {
+      const batch = await client.messages.batches.create({ requests: again.map((g, i) => request(idOf(i), g.want, g.items.map((x) => line(x, `section: ${x.section}`)), 8000)) });
+      await record("retry", batch.id, JSON.stringify(again.map((g, i) => [idOf(i), g.key])));
+    }
+    await finish(groupsRun, "done", `saved ${saved} picks, ${again.length} groups asked again, Top 100: ${top}`);
+    return `saved ${saved} AI picks (${again.length} groups asked again), Top 100: ${top}`;
+  }
+
+  /* retry results: a page with good picks now replaces its old ones; an Amazon Finds section is added to the end */
+  if (retryRun?.status === "submitted") {
+    const batch = await client.messages.batches.retrieve(retryRun.batch_id!);
+    if (batch.processing_status !== "ended") return `waiting for AI retry (${batch.request_counts.processing} left)`;
+    const groups = await buildGroups();
+    const keyOf = new Map<string, string>(JSON.parse((await admin<{ detail: string }[]>("GET", `ai_runs?id=eq.${retryRun.id}&select=detail`))[0].detail));
+    const answers = await results(client, retryRun.batch_id!);
+    let saved = 0, failed = 0;
+    for (const [id, key] of keyOf) {
+      const g = groups.find((x) => x.key === key), message = answers.get(id);
+      if (!g) continue;
+      const byAsin = new Map(g.items.map((x) => [x.asin, x]));
+      const picks = message ? picksFrom(message, byAsin, g.max) : [];
+      if (!picks.length) { failed++; continue; }
+      const saveKey = g.key.split("|")[0];
+      if (saveKey === g.key) saved += await savePicks(g.key, cycle, picks, byAsin);
+      else {
+        const last = (await admin<{ rank: number }[]>("GET", `deal_picks?group_key=eq.${encodeURIComponent(saveKey)}&select=rank&order=rank.desc&limit=1`))[0]?.rank ?? 0;
+        await admin("POST", "deal_picks", pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + last })), "return=minimal");
+        saved += picks.length;
+      }
+    }
+    const top = await topHundred(cycle);
+    await finish(retryRun, "done", `retry saved ${saved} picks, ${failed} groups kept their old picks, Top 100: ${top}`);
+    return `retry saved ${saved} AI picks (${failed} kept old picks), Top 100: ${top}`;
   }
   return "AI picks done for this cycle";
 }
