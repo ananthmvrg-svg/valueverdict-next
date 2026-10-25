@@ -131,16 +131,65 @@ function soundbar(t: string): Specs {
   };
 }
 
-const RULES: Record<string, (t: string) => Specs> = {
+/* Home Appliances holds several product types; the type is read from the title only
+   (an air fryer's features often say "dishwasher safe"), then that type's specs from title and features */
+const litres = /\b(\d{1,2}(?:\.\d)?)\s*(?:L|Ltr|Litres?|Liters?)\b/i;
+const watts = /\b(\d{3,4})\s*W(?:atts?)?\b/i;
+const perHour = /\b(\d{2,4})\s*m(?:3|³)\s*\/\s*h(?:r|our)?\b/i;
+
+function appliance(t: string, title: string): Specs {
+  const kind =
+    has(title, /chimney/i) ? "Chimney" : has(title, /air\s*fryer/i) ? "Air fryer" :
+    has(title, /air\s*purifier/i) ? "Air purifier" : has(title, /water\s*(?:purifier|filter)|\bRO\b.*purif/i) ? "Water purifier" :
+    has(title, /\bdish\s*washer\b/i) && !has(title, /(?:with|for|compatible|in)\s+(?:a\s+|the\s+)?dish\s*washer|dish\s*washer[\s-]*(?:safe|compatible|proof)/i) ? "Dishwasher" :
+    has(title, /mixer\s*grinder|juicer\s*mixer|blender/i) ? "Mixer grinder" : null;
+  switch (kind) {
+    case "Chimney": return {
+      kind, width_cm: num(first(t, /\b(60|75|90|120)\s*cm\b/i)), suction_m3h: num(first(t, perHour)),
+      auto_clean: has(t, /auto[\s-]*clean/i) || null,
+      filter: has(t, /filter[\s-]*less/i) ? "Filterless" : has(t, /baffle/i) ? "Baffle filter" : null,
+      bldc: has(t, /\bBLDC\b/i) || null, motion_sensor: has(t, /motion\s*sensor|gesture/i) || null,
+    };
+    case "Air fryer": return {
+      kind, capacity_l: num(first(t, litres)), watts: num(first(t, watts)),
+      dual_zone: has(t, /dual[\s-]*(?:zone|basket)|two[\s-]*(?:zone|basket)|2[\s-]*basket/i) || null,
+    };
+    case "Water purifier": {
+      const tech = ["RO", "UV", "UF"].filter((x) => new RegExp(`\\b${x}\\b|${x}\\s*\\+|\\+\\s*${x}`).test(t));
+      const ultra = has(t, /ultra[\s-]*filtration/i) && !tech.includes("UF") ? ["UF"] : [];
+      return {
+        kind, tech: [...tech, ...ultra].join(" + ") || null,
+        storage_l: num(first(t, /\b(\d{1,2}(?:\.\d)?)\s*(?:L|Ltr|Litres?|Liters?)\s*(?:storage|tank)/i)),
+        max_tds: num(first(t, /up\s*to\s*(\d{3,4})\s*(?:ppm|TDS)/i)),
+        mineral: has(t, /TDS\s*(?:adjust|control)|mineral/i) || null,
+        commercial: has(t, /commercial|\b\d{2,4}\s*LPH\b/i) || null,
+      };
+    }
+    case "Air purifier": return {
+      /* "260m3/h CADR" or "CADR: 260 m3/h" */
+      kind, cadr_m3h: num(first(t, /\b(\d{2,4})\s*m(?:3|³)\s*\/\s*h\w*\s*CADR/i) ?? first(t, /CADR\s*(?:of|:|-)?\s*(\d{2,4})\s*m(?:3|³)/i)),
+      hepa: first(t, /\b(H1[2-4])\b/i)?.toUpperCase() ?? (has(t, /HEPA/i) ? "HEPA" : null),
+      coverage_sqft: num(first(t, /\b(\d{3,4})\s*sq\.?\s*ft/i)),
+    };
+    case "Dishwasher": return {
+      kind, place_settings: num(first(t, /\b(\d{1,2})\s*place\s*settings?/i)),
+      programs: num(first(t, /\b(\d{1,2})\s*(?:wash\s*)?programs?\b/i)),
+    };
+    case "Mixer grinder": return { kind, watts: num(first(t, watts)), jars: num(first(t, /\b(\d)\s*jars?\b/i)) };
+    default: return {};
+  }
+}
+
+const RULES: Record<string, (t: string, title: string) => Specs> = {
   "tvs": tv, "laptops": laptop, "washing-machines": washer, "refrigerators": fridge,
-  "air-conditioners": ac, "soundbars-speakers": soundbar,
+  "air-conditioners": ac, "soundbars-speakers": soundbar, "home-appliances": appliance,
 };
 
 /* specs for a product found on a category page; empty for categories without rules */
 export function specsFor(category: string, title: string, features: string[] = []): Specs {
   const rule = RULES[category];
   if (!rule) return {};
-  const out = rule(text(title, features));
+  const out = rule(text(title, features), title);
   return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== null && v !== undefined));
 }
 
@@ -160,6 +209,17 @@ export function specChips(category: string, s: Specs): string[] {
         s.energy_stars ? `${s.energy_stars}★` : null, s.inverter ? "Inverter" : null, s.copper ? "Copper" : null];
       case "soundbars-speakers": return [s.channels ? `${s.channels} ch` : null, s.watts ? `${s.watts} W` : null,
         s.dolby_atmos ? "Dolby Atmos" : null, s.subwoofer ? "Subwoofer" : null];
+      case "home-appliances": switch (s.kind) {
+        case "Chimney": return [s.width_cm ? `${s.width_cm} cm` : null, s.suction_m3h ? `${s.suction_m3h} m³/hr` : null,
+          s.filter as string, s.auto_clean ? "Auto-clean" : null, s.bldc ? "BLDC motor" : null];
+        case "Air fryer": return [s.capacity_l ? `${s.capacity_l} L` : null, s.watts ? `${s.watts} W` : null, s.dual_zone ? "Dual zone" : null];
+        case "Water purifier": return [s.tech as string, s.storage_l ? `${s.storage_l} L tank` : null,
+          s.max_tds ? `TDS up to ${s.max_tds}` : null, s.mineral ? "TDS/mineral control" : null, s.commercial ? "Commercial" : null];
+        case "Air purifier": return [s.cadr_m3h ? `CADR ${s.cadr_m3h} m³/h` : null, s.hepa as string, s.coverage_sqft ? `${s.coverage_sqft} sq ft` : null];
+        case "Dishwasher": return [s.place_settings ? `${s.place_settings} place settings` : null, s.programs ? `${s.programs} programs` : null];
+        case "Mixer grinder": return [s.watts ? `${s.watts} W` : null, s.jars ? `${s.jars} jars` : null];
+        default: return [];
+      }
       default: return [];
     }
   })();

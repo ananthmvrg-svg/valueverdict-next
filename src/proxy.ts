@@ -8,7 +8,7 @@ import { SITE_URL, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
    the request goes through unchanged. */
 
 const OWN = new Set([
-  "top-deals", "about", "how-we-pick", "affiliate-disclosure", "contact",
+  "top-deals", "about", "how-we-pick", "affiliate-disclosure", "contact", "guides",
   "robots.txt", "sitemap.xml", "favicon.png", "hero-logo.jpg", "logo-mark.jpg",
 ]);
 const TTL = 10 * 60e3;
@@ -47,6 +47,7 @@ const notFound = () => new NextResponse(notFoundPage, { status: 404, headers: { 
 export async function proxy(request: NextRequest) {
   const parts = request.nextUrl.pathname.split("/").filter(Boolean);
   if (!parts.length || parts[0].startsWith(".") || (parts.length === 1 && OWN.has(parts[0]))) return NextResponse.next();
+  if (parts[0] === "guides" && parts.length === 2) return NextResponse.next(); /* the guide page shows its own 404 */
   if (parts.length > 2) return notFound();
   let known: Known;
   try { known = await knownPages(); } catch { return NextResponse.next(); }

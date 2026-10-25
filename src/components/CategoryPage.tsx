@@ -8,6 +8,8 @@ import CategoryListing from "./CategoryListing";
 import LiveDeals, { PickGrid, SeeAllDeals } from "./LiveDeals";
 import { getPicks, pickedAt, picksIn, type DealPick } from "@/lib/picks";
 import { breadcrumbs, dealList, JsonLd, monthYear, pageMeta } from "@/lib/seo";
+import { getGuides, guideFor } from "@/lib/guides";
+import { Faqs, GuideTeaser, PreviewBanner } from "./Guide";
 
 async function find(catSlug: string, subSlug?: string) {
   const db = await getCatalog();
@@ -83,8 +85,23 @@ export default async function CategoryPage({ catSlug, subSlug }: { catSlug: stri
               : <DealsWithPicks catSlug={cat.slug} subs={subs.map((s) => ({ slug: s.slug, name: s.name }))} sub={sub && { slug: sub.slug, name: sub.name }} />}
           </>
         )}
+        <CategoryGuide catSlug={cat.slug} catName={cat.name} main={!sub} />
       </div>
     </section>
+  );
+}
+
+/* below the deals: the category's buying guide in brief (key points + link), and on the main category page its FAQs */
+async function CategoryGuide({ catSlug, catName, main }: { catSlug: string; catName: string; main: boolean }) {
+  const { guides, preview } = await getGuides();
+  const guide = guideFor(guides, catSlug);
+  if (!guide) return null;
+  return (
+    <div className="category-guide">
+      {preview && <PreviewBanner guide={guide} />}
+      <GuideTeaser guide={guide} catName={catName} />
+      {main && <Faqs faqs={guide.faqs} heading={`${catName}: common questions`} />}
+    </div>
   );
 }
 

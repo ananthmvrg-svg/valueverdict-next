@@ -71,6 +71,26 @@ export function dealList(name: string, items: DealPick[]) {
   };
 }
 
+export const faqPage = (faqs: { q: string; a: string }[]) => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+});
+
+/* a buying guide; "Value Verdict" as author and publisher, with its published and created dates */
+export const article = (g: { title: string; description: string; slug: string; published_at: string | null; created_at: string }) => ({
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: g.title,
+  description: g.description,
+  url: `${SITE_URL}/guides/${g.slug}`,
+  ...(g.published_at ? { datePublished: g.published_at } : {}),
+  dateModified: g.published_at ?? g.created_at,
+  author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+  publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${SITE_URL}/logo-mark.jpg` } },
+  inLanguage: "en-IN",
+});
+
 export const siteData = () => [
   { "@context": "https://schema.org", "@type": "Organization", name: SITE_NAME, url: SITE_URL, logo: `${SITE_URL}/logo-mark.jpg` },
   { "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: SITE_URL, inLanguage: "en-IN" },

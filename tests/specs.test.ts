@@ -61,6 +61,19 @@ describe("appliance specs", () => {
       { tons: 1, type: "Split", inverter: true, energy_stars: 3, copper: true });
     expect(specsFor("air-conditioners", "Sharp 1.37 Ton 3 star Split AC").tons).toBe(1.37);
   });
+  it("home appliances: the product type comes from the title only", () => {
+    expect(specsFor("home-appliances", "Faber Hood Trendy 60cm 1500 m3/hr BLDC Autoclean Slant Shape Chimney | Filterless"))
+      .toEqual({ kind: "Chimney", width_cm: 60, suction_m3h: 1500, auto_clean: true, filter: "Filterless", bldc: true });
+    expect(specsFor("home-appliances", "Instant Vortex Plus 6L Air Fryer, 1700W", ["Dishwasher safe basket"]))
+      .toEqual({ kind: "Air fryer", capacity_l: 6, watts: 1700 });
+    expect(specsFor("home-appliances", "STIEBEL ELTRON Cloud Water Filter | 5-Stage UltraFiltration | Ideal For Municipal Water Up to 300 PPM").tech).toBe("UF");
+    expect(specsFor("home-appliances", "WHOLER 100 LPH Commercial RO Water Purifier Plant with TDS Adjuster").commercial).toBe(true);
+    expect(specsFor("home-appliances", "Jafanda JF260S Air Purifier for Large Room, 260m3/h CADR, H13 True HEPA"))
+      .toEqual({ kind: "Air purifier", cadr_m3h: 260, hepa: "H13" });
+    expect(specsFor("home-appliances", "KAFF Vetra 60cm Freestanding Dishwasher, 12 Place Settings, 6 Wash Programs"))
+      .toEqual({ kind: "Dishwasher", place_settings: 12, programs: 6 });
+    expect(specsFor("home-appliances", "Cuisinart 11-Piece Pots and Pans Set, Cookware Set Compatible with dishwasher")).toEqual({});
+  });
   it("categories without rules give no specs", () => {
     expect(specsFor("amazon-finds", "boAt Airdopes 141")).toEqual({});
   });

@@ -68,7 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <div className="wrap">
             <p className="footer-note">Prices and offers change often. Always check the latest price and offers on Amazon. As an Amazon Associate, we earn from qualifying purchases.</p>
             <div className="footer-links">
-              <Link href="/how-we-pick">How we pick</Link><Link href="/about">About</Link>
+              <Link href="/guides">Buying guides</Link><Link href="/how-we-pick">How we pick</Link><Link href="/about">About</Link>
               <Link href="/affiliate-disclosure">Affiliate disclosure</Link><Link href="/contact">Corrections &amp; contact</Link>
             </div>
             <div>© <Year /> Value Verdict · <Link href="/">Home</Link></div>

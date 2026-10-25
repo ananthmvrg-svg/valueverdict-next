@@ -99,8 +99,56 @@ function soundbar(s: Specs): string[] {
   return t;
 }
 
+/* Home Appliances: one set of tips per product type (specs.kind) */
+function appliance(s: Specs): string[] {
+  const t: string[] = [];
+  switch (s.kind) {
+    case "Chimney": {
+      const m3 = n(s.suction_m3h), w = n(s.width_cm);
+      if (m3) t.push(m3 >= 1200 ? `${m3} m³/hr is strong suction, good for daily Indian cooking with frying and tadka.` : `${m3} m³/hr suits lighter cooking; kitchens with a lot of frying and tadka benefit from about 1,200 m³/hr or more.`);
+      if (w) t.push(`Match the width to your stove: a ${w} cm chimney suits ${w <= 60 ? "2–3 burner" : "3–5 burner"} stoves.`);
+      if (s.filter === "Filterless") t.push("Filterless chimneys have no filter to wash; oil collects in a cup you empty now and then.");
+      else if (s.filter === "Baffle filter") t.push("Baffle filters trap oil well but need washing every few weeks.");
+      if (s.auto_clean) t.push("Auto-clean heats the inside to melt grease into a collector, so the chimney needs less manual cleaning.");
+      break;
+    }
+    case "Air fryer": {
+      const l = n(s.capacity_l);
+      if (l) t.push(l < 4 ? `${l} L suits 1–2 people.` : l <= 6 ? `${l} L suits a family of 3–4.` : `${l} L suits larger families and whole meals.`);
+      if (s.dual_zone) t.push("Two baskets let you cook two foods at once, each with its own temperature and time.");
+      t.push("Air fryers cook with hot air and little or no oil; food comes out crisp, but not identical to deep frying.");
+      break;
+    }
+    case "Water purifier":
+      if (s.commercial) t.push("This is a commercial purifier (rated in litres per hour) for offices or shops, not a home kitchen purifier.");
+      if (String(s.tech ?? "").includes("RO")) t.push("RO removes dissolved salts, so it suits hard water from borewells or tankers (high TDS).");
+      else if (s.tech) t.push(`${s.tech} purifiers don't remove dissolved salts; they suit low-TDS municipal water. Check your water's TDS first.`);
+      if (s.mineral) t.push("A TDS or mineral controller adds back some minerals after RO, so the water tastes less flat.");
+      if (n(s.storage_l)) t.push(`A ${s.storage_l} L tank keeps purified water ready during power cuts.`);
+      break;
+    case "Air purifier":
+      if (n(s.cadr_m3h)) t.push(`CADR (${s.cadr_m3h} m³/h) is how much clean air it delivers; a higher CADR cleans a room faster, so match it to your room size.`);
+      if (s.hepa) t.push(`${s.hepa === "HEPA" ? "A HEPA" : `An ${s.hepa} HEPA`} filter captures fine dust and PM2.5 particles; filters need replacing, so check their price.`);
+      break;
+    case "Dishwasher": {
+      const p = n(s.place_settings);
+      if (p) t.push(p >= 12 ? `${p} place settings suits a family of 4–6, including Indian vessels like kadais and pressure cookers.` : `${p} place settings suits 2–3 people.`);
+      t.push("Dishwashers use hot water and strong spray, so they clean oily Indian vessels well; scrape off food before loading.");
+      break;
+    }
+    case "Mixer grinder": {
+      const w = n(s.watts);
+      if (w) t.push(w >= 750 ? `${w} W handles tough jobs like idli and dosa batter and dry masalas.` : `${w} W suits chutneys and light grinding; choose 750 W or more for regular batter grinding.`);
+      if (n(s.jars)) t.push(`${s.jars} jars cover ${n(s.jars)! >= 3 ? "wet grinding, dry grinding and chutneys" : "the basics; a third jar helps if you grind batter often"}.`);
+      break;
+    }
+  }
+  return t;
+}
+
 const RULES: Record<string, (s: Specs) => string[]> = {
   "tvs": tv, "laptops": laptop, "refrigerators": fridge, "washing-machines": washer, "air-conditioners": ac, "soundbars-speakers": soundbar,
+  "home-appliances": appliance,
 };
 
 /* the most useful explanations for this product, at most `max` */
