@@ -19,22 +19,22 @@ async function find(catSlug: string, subSlug?: string) {
   return { db, cat, subs, sub };
 }
 
-/* search titles and descriptions: what the page is, the month, and why to click (top picks, updated twice a day) */
+/* search titles and descriptions: what the page is, the month, and why to click (top picks, with new picks every day) */
 export async function categoryMetadata(catSlug: string, subSlug?: string): Promise<Metadata> {
   const [{ cat, sub }, month] = await Promise.all([find(catSlug, subSlug), monthYear()]);
   const finds = !sub && !subsOf((await getCatalog()), cat.category_id).length;
   const lower = cat.name.toLowerCase();
   if (sub) return pageMeta(
     `Best ${cat.name} ${sub.name} in India (${month}) – Top 5 Deals | Value Verdict`,
-    `${sub.description ? sub.description.replace(/\.?$/, ". ") : ""}Today's top 5 ${lower} ${sub.name.toLowerCase()} from Amazon.in with real discounts, updated every day at 5 AM and 5 PM.`,
+    `${sub.description ? sub.description.replace(/\.?$/, ". ") : ""}Today's top 5 ${lower} ${sub.name.toLowerCase()} from Amazon.in with real discounts, with new picks every day at 6 AM and prices re-checked through the day.`,
     `/${cat.slug}/${sub.slug}`);
   if (finds) return pageMeta(
     `${cat.name}: Best Amazon.in Deals Today (${month}) | Value Verdict`,
-    `${cat.description ? cat.description.replace(/\.?$/, ". ") : ""}50+ of today's best Amazon.in deals with real discounts, updated twice a day.`,
+    `${cat.description ? cat.description.replace(/\.?$/, ". ") : ""}50+ of today's best Amazon.in deals with real discounts, with new picks every day.`,
     `/${cat.slug}`);
   return pageMeta(
     `Best ${cat.name} in India (${month}) – Top Deals by Budget | Value Verdict`,
-    `${cat.description ? cat.description.replace(/\.?$/, ". ") : ""}Top 5 ${lower} for every budget from today's Amazon.in deals, updated every day at 5 AM and 5 PM.`,
+    `${cat.description ? cat.description.replace(/\.?$/, ". ") : ""}Top 5 ${lower} for every budget from today's Amazon.in deals, with new picks every day at 6 AM and prices re-checked through the day.`,
     `/${cat.slug}`);
 }
 

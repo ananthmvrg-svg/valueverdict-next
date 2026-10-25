@@ -9,7 +9,7 @@ import { JsonLd, pageMeta, siteData } from "@/lib/seo";
 
 export const metadata = pageMeta(
   "Value Verdict – Best Amazon Deals in India Today, Sorted by Budget",
-  "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs, laptops and more: top picks for every budget with real discounts, updated every day at 5 AM and 5 PM.",
+  "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs, laptops and more: top picks for every budget with real discounts, with new picks every day at 6 AM and prices re-checked through the day.",
   "/");
 
 export default async function Home() {
@@ -40,7 +40,7 @@ export default async function Home() {
                 <div className="trust">
                   <div><b>Live</b>Amazon.in prices</div>
                   {/* "picked by AI" wording is switched off for now; to show it again: <div><b>2× daily</b>AI-picked deals</div> */}
-                  <div><b>2× daily</b>fresh top picks</div>
+                  <div><b>Daily</b>fresh top picks</div>
                   <div><b>{db.cats.length}</b>categories</div>
                 </div>
               </>

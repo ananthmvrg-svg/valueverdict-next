@@ -37,7 +37,12 @@ export const breadcrumbs = (trail: [name: string, path: string][]) => ({
   itemListElement: trail.map(([name, path], i) => ({ "@type": "ListItem", position: i + 1, name, item: SITE_URL + path })),
 });
 
-/* the deals shown on a page, as a ranked list of products with their Amazon.in offer */
+/* Google allows product names up to 150 characters; Amazon titles are often longer, so cut at a word */
+const shortName = (t: string) => (t.length <= 150 ? t : t.slice(0, 149).replace(/[\s,|(\-–]+\S*$/, "") + "…");
+
+/* the deals shown on a page, as a ranked list of products with their Amazon.in offer.
+   No review, rating, shipping or return-policy fields: we don't have that data and won't make it up
+   (Google lists those as optional, "non-critical" suggestions). */
 export function dealList(name: string, items: DealPick[]) {
   return {
     "@context": "https://schema.org",
@@ -49,7 +54,7 @@ export function dealList(name: string, items: DealPick[]) {
       position: i + 1,
       item: {
         "@type": "Product",
-        name: x.title,
+        name: shortName(x.title),
         ...(x.image ? { image: x.image } : {}),
         ...(x.brand ? { brand: { "@type": "Brand", name: x.brand } } : {}),
         ...(x.reason || x.features[0] ? { description: x.reason || x.features[0] } : {}),

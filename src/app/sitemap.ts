@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     page("", 1),
     page("/top-deals", 0.9),
+    ...["/how-we-pick", "/about", "/affiliate-disclosure", "/contact"].map((p) => ({ url: SITE_URL + p, changeFrequency: "monthly" as const, priority: 0.3 })),
     ...db.cats.flatMap((c) => [page(`/${c.slug}`, 0.8), ...subsOf(db, c.category_id).map((s) => page(`/${c.slug}/${s.slug}`, 0.7))]),
   ];
 }

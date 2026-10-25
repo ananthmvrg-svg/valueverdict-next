@@ -28,7 +28,7 @@ export default function Nav({ cats }: { cats: { name: string; slug: string }[] }
       <Link href="/" className={active ? "" : "on"}>Home</Link>
       <Link href="/top-deals" className={active === "top-deals" ? "on" : ""}>🔥 Top 100</Link>
       {cats.map((c) => <Link key={c.slug} href={`/${c.slug}`} className={active === c.slug ? "on" : ""}>{c.name}</Link>)}
-      <a href="#about">About</a>
+      <Link href="/about" className={active === "about" ? "on" : ""}>About</Link>
     </nav>
   );
 }

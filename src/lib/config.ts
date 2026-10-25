@@ -2,6 +2,9 @@
 
 export const SITE_URL = "https://valueverdict.in";
 
+/* shown on the Contact page; empty = the page asks people to reach us on our social channels instead */
+export const CONTACT_EMAIL = "valueverdictstore@gmail.com";
+
 /* Supabase database the catalog is read from (edit products in the Supabase table editor).
    This key is the public "publishable" key: the tables only allow reading with it, never changes. */
 export const SUPABASE_URL = process.env.SUPABASE_URL || "https://ntgvnmkehpoexthqzasl.supabase.co";
@@ -35,10 +38,10 @@ export const PICK_PROMISE = {
 export const DEALS_PROMISE = {
   title: "Today's deals, filtered for you",
   /* "picked by AI" wording is switched off for now; to show it again, use these two lines instead:
-  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with the top picks chosen by AI from specs, brand, price and discount. Updated at 5 AM and 5 PM.",
-  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks by AI", "🔄 Updated twice a day"], */
-  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with our top picks for every budget. Updated at 5 AM and 5 PM.",
-  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks for every budget", "🔄 Updated twice a day"],
+  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with the top picks chosen by AI from specs, brand, price and discount. New picks every day at 6 AM; prices re-checked every 3 hours.",
+  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks by AI", "🔄 Prices checked every 3 hours"], */
+  text: "Today's best deals on {cat} from Amazon.in: well-rated products with a real discount, with our top picks for every budget. New picks every day at 6 AM; prices re-checked every 3 hours.",
+  points: ["🔥 Real discounts only", "⭐ Well-rated products", "🏆 Top picks for every budget", "🔄 Prices checked every 3 hours"],
 };
 
 /* one banner per category page, above the product grid */

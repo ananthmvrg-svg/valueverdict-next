@@ -1,15 +1,21 @@
 "use client";
 /* Live Amazon deals (from /api/amazon-deals/<category>[/<budget>]) with search, sort and filters.
    Amazon requires the "prices as of" time shown under them. */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { safeUrl } from "@/lib/products";
+import { specChips, type Specs } from "@/lib/specs";
+import { tipsFor } from "@/lib/tips";
+import { compare, useCompare } from "@/lib/compare";
+import { track } from "@/lib/track";
 import { GridSkeleton } from "./Skeleton";
 
 type Deal = {
   asin: string; title: string; brand: string; features: string[]; image: string; url: string;
   price: number | null; was: number | null; off: number | null; deal: string;
-  dealEnds: string | null; claimed: number | null; primeOnly: boolean; lowStock: string;
+  dealEnds: string | null; claimed: number | null; primeOnly: boolean; lowStock: string; specs?: Specs;
 };
+/* AI pick extras (lib/picks.ts) */
+type PickInfo = { rank?: number; reason?: string; bestFor?: string; strengths?: string[]; limitations?: string[] };
 type Section = { id: string; title: string; category: string; items: Deal[]; more: boolean; page?: number };
 type Deals = { updated?: string; sections?: Section[]; error?: string };
 type Paging = { page: number; more: boolean; busy: boolean };
@@ -48,11 +54,18 @@ const SORTS: Record<string, [string, Sorter | null]> = {
 };
 const DISCOUNTS = [0, 20, 30, 40, 50];
 
-/* rank and reason: AI picks ("#1", "Why we picked it") */
-export function DealCard({ x, now, rank, reason }: { x: Deal; now: number; rank?: number; reason?: string }) {
+/* one deal; picks add a rank, "best for", the reason and strengths/limitations checked against the listing */
+export function DealCard({ x, now, category = "", rank, reason, bestFor, strengths = [], limitations = [] }: { x: Deal; now: number; category?: string } & PickInfo) {
+  const chosen = useCompare().some((c) => c.asin === x.asin);
   const url = safeUrl(x.url), img = safeUrl(x.image);
   if (!url) return null;
   const timer = endsIn(x.dealEnds, now);
+  const chips = specChips(category, x.specs ?? {}), tips = tipsFor(category, x.specs ?? {});
+  const explained = strengths.length > 0 || limitations.length > 0;
+  const toggle = () => compare.toggle({
+    asin: x.asin, title: x.title, brand: x.brand, image: x.image, url: x.url, category, price: x.price, was: x.was, off: x.off,
+    specs: x.specs ?? {}, bestFor, strengths, limitations,
+  });
   return (
     <article className="card deal">
       <div className="thumb">
@@ -64,8 +77,18 @@ export function DealCard({ x, now, rank, reason }: { x: Deal; now: number; rank?
       <div className="body">
         {x.brand && <div className="brand">{x.brand}</div>}
         <h4 title={x.title}>{x.title}</h4>
+        {chips.length > 0 && <div className="spec-chips">{chips.map((c) => <span key={c}>{c}</span>)}</div>}
+        {bestFor && <p className="best-for">👍 Best for: {bestFor}</p>}
         {reason && <p className="pick-reason"><b>Why we picked it:</b> {reason}</p>}
-        {x.features.length > 0 && <ul className="deal-features">{x.features.map((f) => <li key={f}>{tidy(f)}</li>)}</ul>}
+        {explained ? (
+          <div className="pros-cons">
+            {strengths.length > 0 && <div><span className="pc-head pro">Pros</span><ul>{strengths.map((t) => <li key={t} className="pro">{t}</li>)}</ul></div>}
+            {limitations.length > 0 && <div><span className="pc-head con">Cons</span><ul>{limitations.map((t) => <li key={t} className="con">{t}</li>)}</ul></div>}
+          </div>
+        ) : x.features.length > 0 && <ul className="deal-features">{x.features.map((f) => <li key={f}>{tidy(f)}</li>)}</ul>}
+        {tips.length > 0 && (
+          <div className="tips"><span className="tips-head">💡 Good to know</span><ul>{tips.map((t) => <li key={t}>{t}</li>)}</ul></div>
+        )}
         {(x.deal || timer || x.primeOnly || x.lowStock) && (
           <div className="deal-tags">
             {x.deal && <span className="deal-tag offer">🏷️ {x.deal}</span>}
@@ -84,7 +107,10 @@ export function DealCard({ x, now, rank, reason }: { x: Deal; now: number; rank?
             {x.off ? <span className="deal-off">{Math.round(x.off)}% off</span> : null}
           </div>
         )}
-        <div className="btns"><a className="btn amz" href={url} target="_blank" rel="nofollow sponsored noopener">View deal on Amazon</a></div>
+        <div className="btns">
+          <a className="btn amz" href={url} target="_blank" rel="nofollow sponsored noopener">View deal on Amazon</a>
+          <button type="button" className={`btn cmp-toggle${chosen ? " on" : ""}`} onClick={toggle} aria-pressed={chosen}>{chosen ? "✓ Added to compare" : "+ Compare"}</button>
+        </div>
       </div>
     </article>
   );
@@ -158,17 +184,17 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
     <div className="live-deals">
       {heading && <h2 className="deals-heading">{heading}</h2>}
       <div className="toolbar">
-        <label className="search">🔍<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search model, brand, feature…" /></label>
-        <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <label className="search">🔍<input value={q} onChange={(e) => setQ(e.target.value)} onBlur={() => q.trim() && track("deal_search", { search_term: q.trim().slice(0, 60), category })} placeholder="Search model, brand, feature…" /></label>
+        <select aria-label="Sort" value={sort} onChange={(e) => { setSort(e.target.value); track("deal_filter", { filter: "sort", value: e.target.value, category }); }}>
           {Object.entries(SORTS).map(([k, [label]]) => <option key={k} value={k}>{label}</option>)}
         </select>
         {brands.length > 1 && (
-          <select aria-label="Brand" value={brand} onChange={(e) => setBrand(e.target.value)}>
+          <select aria-label="Brand" value={brand} onChange={(e) => { setBrand(e.target.value); track("deal_filter", { filter: "brand", value: e.target.value, category }); }}>
             <option value="">All brands</option>
             {brands.map((b) => <option key={b}>{b}</option>)}
           </select>
         )}
-        <select aria-label="Discount" value={minOff} onChange={(e) => setMinOff(Number(e.target.value))}>
+        <select aria-label="Discount" value={minOff} onChange={(e) => { setMinOff(Number(e.target.value)); track("deal_filter", { filter: "discount", value: Number(e.target.value), category }); }}>
           {DISCOUNTS.map((v) => <option key={v} value={v}>{v ? `${v}% off or more` : "Any discount"}</option>)}
         </select>
         <span className="result-count">
@@ -188,7 +214,7 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
         return (
           <div key={g.id}>
             {g.title && <div className="group-title"><h3>{g.title}</h3><span>{g.list.length} deal{g.list.length === 1 ? "" : "s"}</span></div>}
-            <div className="grid">{g.list.slice(0, cap).map((x) => <DealCard key={x.asin} x={x} now={now} />)}</div>
+            <div className="grid">{g.list.slice(0, cap).map((x) => <DealCard key={x.asin} x={x} now={now} category={category} />)}</div>
             {pg?.busy && <div style={{ marginTop: 16 }}><GridSkeleton n={4} /></div>}
             {(hidden || (pg?.more && !filtered)) && !pg?.busy && <div className="more-row"><button type="button" className="more-btn" onClick={showMore}>Show more deals</button></div>}
           </div>
@@ -202,18 +228,37 @@ export default function LiveDeals({ category, sub, only, heading, banner }: { ca
 }
 
 /* AI picks grid (server-rendered pages pass the picks in). Timers start after the page loads. */
-export function PickGrid({ items }: { items: (Deal & { rank: number; reason: string })[] }) {
+export function PickGrid({ items, list = "picks" }: { items: (Deal & PickInfo & { rank: number; category?: string })[]; list?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      track("deal_list_view", { list, items: items.length, category: items[0]?.category });
+      io.disconnect();
+    }, { threshold: 0.3 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [list, items]);
   const [now, setNow] = useState(0);
   useEffect(() => {
     const tick = () => setNow(Date.now()), first = setTimeout(tick, 0), t = setInterval(tick, 60000);
     return () => { clearTimeout(first); clearInterval(t); };
   }, []);
-  return <div className="grid">{items.map((x) => <DealCard key={x.asin} x={x} now={now} rank={x.rank} reason={x.reason} />)}</div>;
+  return (
+    <div className="grid" ref={ref}>
+      {items.map((x) => (
+        <DealCard key={x.asin} x={x} now={now} category={x.category} rank={x.rank} reason={x.reason}
+          bestFor={x.bestFor} strengths={x.strengths} limitations={x.limitations} />
+      ))}
+    </div>
+  );
 }
 
 /* "See all deals" under the AI picks: loads every saved candidate (with search and filters) only when asked */
 export function SeeAllDeals({ category, sub, label }: { category: string; sub?: string; label: string }) {
   const [open, setOpen] = useState(false);
-  if (!open) return <div className="more-row"><button type="button" className="more-btn" onClick={() => setOpen(true)}>{label}</button></div>;
+  if (!open) return <div className="more-row"><button type="button" className="more-btn" onClick={() => { setOpen(true); track("see_all_deals", { category, sub }); }}>{label}</button></div>;
   return <LiveDeals category={category} sub={sub} only={false} heading="All deals" />;
 }

@@ -1,5 +1,6 @@
 import { select, selectJson } from "./db";
 import { isOn, num, type Row } from "./products";
+import type { Specs } from "./specs";
 
 /* Live Amazon deals from the Amazon Creators API (server only, keys stay secret).
 
@@ -17,6 +18,7 @@ import { isOn, num, type Row } from "./products";
    added to the search words. */
 
 const SEARCH_URL = "https://creatorsapi.amazon/catalog/v1/searchItems";
+const GET_ITEMS_URL = "https://creatorsapi.amazon/catalog/v1/getItems";
 const TOKEN_URL = process.env.AMAZON_TOKEN_URL || "https://api.amazon.co.uk/auth/o2/token";
 const MARKETPLACE = "www.amazon.in";
 const PARTNER_TAG = process.env.AMAZON_PARTNER_TAG || "valueverdic03-21";
@@ -88,7 +90,7 @@ async function searchesFor(slug: string, subSlug?: string): Promise<(Row & { slu
 /* "must_include" column: words separated by |, the title needs one of them; "!word" = the title must not have it.
    Whole words only, case-insensitive: "refrigerator|!for refrigerator|!stabilizer" */
 const words = (t: string) => ` ${t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()} `;
-function titleOk(title: string, rule?: string) {
+export function titleOk(title: string, rule?: string) {
   const parts = String(rule || "").split("|").map((w) => w.trim()).filter(Boolean);
   if (!parts.length) return true;
   const t = words(title), has = (w: string) => t.includes(words(w));
@@ -122,7 +124,7 @@ export async function search(s: Row, page = 1) {
   const min = rupees(s.min_price); if (min) body.minPrice = Math.round(min * 100);
   const max = rupees(s.max_price); if (max) body.maxPrice = Math.round(max * 100);
   /* e.g. dishwashers (from ₹15,000) on an "Under ₹10,000" page: nothing can match, so don't ask Amazon */
-  if (min && max && min >= max) return { items: [] as Deal[], more: false };
+  if (min && max && min >= max) return { items: [] as Deal[], rejected: {} as Record<string, number>, more: false };
   const r = await fetch(SEARCH_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json", "x-marketplace": MARKETPLACE },
@@ -136,8 +138,18 @@ export async function search(s: Row, page = 1) {
   /* a deal needs a price (some listings have none) inside the page's price range */
   const inside = (x: Deal) => x.price != null && (!min || x.price >= min) && (!max || x.price <= max);
   const sized = (x: Deal) => !s.title_has || new RegExp(`(^|[^0-9])${s.title_has}([^0-9]|$)`).test(x.title);
+  /* every dropped candidate is counted by its first failed check, for the daily report */
+  const rejected: Record<string, number> = {};
+  const why = (x: Deal) =>
+    !x.asin || !x.title ? "incomplete" : x.price == null ? "no_price" : !inside(x) ? "outside_budget" :
+    !sized(x) ? "wrong_size" : !titleOk(x.title, s.must_include) ? "wrong_type_or_accessory" : null;
+  const items = raw.map(item).filter((x) => {
+    const r = why(x);
+    if (r) rejected[r] = (rejected[r] ?? 0) + 1;
+    return !r;
+  });
   /* a full page of 10 means Amazon may have more */
-  return { items: raw.map(item).filter((x) => x.asin && x.title && inside(x) && sized(x) && titleOk(x.title, s.must_include)), more: raw.length === 10 && page < MAX_PAGE };
+  return { items, rejected, more: raw.length === 10 && page < MAX_PAGE };
 }
 
 /* Amazon text sometimes uses "𝐁𝐨𝐥𝐝" math letters or full-width characters, which render in a different font: make it plain */
@@ -167,6 +179,8 @@ function item(it: any) {
     claimed: deal?.percentClaimed != null && !isNaN(Number(deal.percentClaimed)) ? Number(deal.percentClaimed) : null,
     primeOnly: Boolean(deal?.accessType && deal.accessType !== "ALL"),
     lowStock: (stock.type === "IN_STOCK_SCARCE" && stock.message ? stock.message : "") as string,
+    /* key specifications, filled in by the refresh from the title and features (lib/specs.ts) */
+    specs: {} as Specs,
   };
 }
 
@@ -230,4 +244,26 @@ export async function getStoredDeals(slug: string, subSlug?: string): Promise<{ 
     sections.push({ id: s.id, title: s.section, category: slug, items, more: false, page: Math.max(...mine.map((r) => r.page)) });
   }
   return { sections, updated: oldest };
+}
+
+/* Current offer for up to 10 products by ASIN (the price re-check of displayed picks).
+   Returns the fresh deal card per ASIN; an ASIN Amazon no longer returns, or without a price,
+   comes back with price null so the site hides it. */
+export async function getItems(asins: string[]): Promise<Map<string, Deal>> {
+  if (!asins.length) return new Map();
+  const r = await fetch(GET_ITEMS_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json", "x-marketplace": MARKETPLACE },
+    body: JSON.stringify({ partnerTag: PARTNER_TAG, marketplace: MARKETPLACE, itemIds: asins.slice(0, 10), resources: RESOURCES, condition: "New" }),
+    signal: AbortSignal.timeout(9000),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`getItems ${r.status} ${(j.errors?.[0]?.code || j.code || j.message || "").toString()}`.trim());
+  const out = new Map<string, Deal>();
+  /* the live API answers "itemsResult" (its docs say "itemResults"), so accept both */
+  for (const it of (j.itemsResult?.items || j.itemResults?.items || []) as unknown[]) {
+    const d = item(it);
+    if (d.asin) out.set(d.asin, d);
+  }
+  return out;
 }

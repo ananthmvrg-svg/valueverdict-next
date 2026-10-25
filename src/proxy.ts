@@ -7,7 +7,10 @@ import { SITE_URL, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
    so search engines never see server errors for mistyped or old links. If Supabase can't be reached,
    the request goes through unchanged. */
 
-const OWN = new Set(["top-deals", "robots.txt", "sitemap.xml", "favicon.png", "hero-logo.jpg", "logo-mark.jpg"]);
+const OWN = new Set([
+  "top-deals", "about", "how-we-pick", "affiliate-disclosure", "contact",
+  "robots.txt", "sitemap.xml", "favicon.png", "hero-logo.jpg", "logo-mark.jpg",
+]);
 const TTL = 10 * 60e3;
 
 type Known = { cats: Set<string>; subs: Set<string> };
