@@ -8,6 +8,7 @@ import Nav from "@/components/Nav";
 import Tracking from "@/components/Tracking";
 import LegacyHashRedirect from "@/components/LegacyHashRedirect";
 import CompareBar from "@/components/CompareBar";
+import { SiteIcon } from "@/components/SiteIcons";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta" });
@@ -33,6 +34,15 @@ export const metadata: Metadata = {
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
+const PROMISES = [
+  SHOW_CATALOG
+    ? { icon: "filter", color: "#1e90ff", title: "Hand-picked, not dumped", text: "We shortlist appliances by energy rating, capacity and brand so you don't scroll through hundreds of listings." }
+    : { icon: "filter", color: "#1e90ff", title: "Filtered, not dumped", text: "Only well-rated products with a real discount make it in, so you don't scroll through hundreds of listings." },
+  { icon: "rupee", color: "#16a34a", title: "Sorted by budget", text: `Every ${SHOW_CATALOG ? "pick" : "deal"} sits in a clear price band, so you only see what fits your wallet.` },
+  { icon: "clock", color: "#7c3aed", title: "Fresh every day", text: "New picks every day at 6 AM, with prices re-checked about every 3 hours." },
+  { icon: "shield", color: "#ea580c", title: "Buy where you trust", text: "Check today's price and offers on Amazon. You pay the same price; we may earn a small commission." },
+];
+
 async function Year() {
   "use cache";
   cacheLife("days");
@@ -55,23 +65,48 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main>{children}</main>
-        <section className="about" id="about">
+        <section className="pledges" id="about">
           <div className="wrap">
-            {SHOW_CATALOG
-              ? <div><h4>🔎 Hand-picked, not dumped</h4><p>We shortlist appliances by energy rating, capacity and brand reliability so you don&apos;t scroll through hundreds of listings.</p></div>
-              : <div><h4>🔎 Filtered, not dumped</h4><p>Only well-rated products with a real discount make it in, so you don&apos;t scroll through hundreds of listings.</p></div>}
-            <div><h4>💰 Sorted by budget</h4><p>Every {SHOW_CATALOG ? "pick" : "deal"} sits in a clear price band, so you only see what fits your wallet.</p></div>
-            <div><h4>🛒 Buy where you trust</h4><p>Check today&apos;s price and offers on Amazon. You pay the same price; we may earn a small commission.</p></div>
+            {PROMISES.map((p) => (
+              <div key={p.title} className="pledge" style={{ "--c": p.color } as React.CSSProperties}>
+                <span className="pledge-icon"><SiteIcon name={p.icon} /></span>
+                <div><h4>{p.title}</h4><p>{p.text}</p></div>
+              </div>
+            ))}
           </div>
         </section>
-        <footer>
+        <footer className="site-footer">
           <div className="wrap">
-            <p className="footer-note">Prices and offers change often. Always check the latest price and offers on Amazon. As an Amazon Associate, we earn from qualifying purchases.</p>
-            <div className="footer-links">
-              <Link href="/guides">Buying guides</Link><Link href="/how-we-pick">How we pick</Link><Link href="/about">About</Link>
-              <Link href="/affiliate-disclosure">Affiliate disclosure</Link><Link href="/contact">Corrections &amp; contact</Link>
+            <div className="footer-grid">
+              <div className="footer-brand">
+                <Link className="logo" href="/">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="logo-mark" src="/logo-mark.jpg" alt="" width={40} height={40} />
+                  <span>Value <b>Verdict</b></span>
+                </Link>
+                <p>Today&apos;s best Amazon.in deals, filtered and sorted by budget, with plain-English buying guides so you can decide with confidence.</p>
+              </div>
+              <nav className="footer-col" aria-label="Categories">
+                <h5>Categories</h5>
+                {cats.map((c) => <Link key={c.slug} href={`/${c.slug}`}>{c.name}</Link>)}
+              </nav>
+              <nav className="footer-col" aria-label="Buying guides">
+                <h5>Buying guides</h5>
+                <Link href="/guides">All guides</Link>
+                <Link href="/top-deals">🔥 Today&apos;s Top 100</Link>
+                <Link href="/how-we-pick">How we pick deals</Link>
+              </nav>
+              <nav className="footer-col" aria-label="Company">
+                <h5>Company</h5>
+                <Link href="/about">About us</Link>
+                <Link href="/affiliate-disclosure">Affiliate disclosure</Link>
+                <Link href="/contact">Corrections &amp; contact</Link>
+              </nav>
             </div>
-            <div>© <Year /> Value Verdict · <Link href="/">Home</Link></div>
+            <div className="footer-bottom">
+              <p className="footer-note">Prices and offers change often. Always check the latest price and offers on Amazon. As an Amazon Associate, we earn from qualifying purchases.</p>
+              <div>© <Year /> Value Verdict</div>
+            </div>
           </div>
         </footer>
         <CompareBar />

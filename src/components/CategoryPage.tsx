@@ -8,8 +8,11 @@ import CategoryListing from "./CategoryListing";
 import LiveDeals, { PickGrid, SeeAllDeals } from "./LiveDeals";
 import { getPicks, pickedAt, picksIn, type DealPick } from "@/lib/picks";
 import { breadcrumbs, dealList, JsonLd, monthYear, pageMeta } from "@/lib/seo";
-import { getGuides, guideFor } from "@/lib/guides";
+import { getGuides, guideFor, readMinutes } from "@/lib/guides";
 import { Faqs, GuideTeaser, PreviewBanner } from "./Guide";
+import ScrollToHash from "./ScrollToHash";
+import JourneyBar from "./JourneyBar";
+import { themeFor } from "./GuideArt";
 
 async function find(catSlug: string, subSlug?: string) {
   const db = await getCatalog();
@@ -21,14 +24,17 @@ async function find(catSlug: string, subSlug?: string) {
   return { db, cat, subs, sub };
 }
 
+/* a budget page's name: "Refrigerators Under ₹25,000", but "55″ TVs" (not "TVs 55″ TVs") when the budget already names the category */
+const pageName = (cat: string, sub: string) => (sub.toLowerCase().includes(cat.toLowerCase()) ? sub : `${cat} ${sub}`);
+
 /* search titles and descriptions: what the page is, the month, and why to click (top picks, with new picks every day) */
 export async function categoryMetadata(catSlug: string, subSlug?: string): Promise<Metadata> {
   const [{ cat, sub }, month] = await Promise.all([find(catSlug, subSlug), monthYear()]);
   const finds = !sub && !subsOf((await getCatalog()), cat.category_id).length;
   const lower = cat.name.toLowerCase();
   if (sub) return pageMeta(
-    `Best ${cat.name} ${sub.name} in India (${month}) – Top 5 Deals | Value Verdict`,
-    `${sub.description ? sub.description.replace(/\.?$/, ". ") : ""}Today's top 5 ${lower} ${sub.name.toLowerCase()} from Amazon.in with real discounts, with new picks every day at 6 AM and prices re-checked through the day.`,
+    `Best ${pageName(cat.name, sub.name)} in India (${month}) – Top 5 Deals | Value Verdict`,
+    `${sub.description ? sub.description.replace(/\.?$/, ". ") : ""}Today's top 5 ${pageName(cat.name, sub.name)} from Amazon.in with real discounts, with new picks every day at 6 AM and prices re-checked through the day.`,
     `/${cat.slug}/${sub.slug}`);
   if (finds) return pageMeta(
     `${cat.name}: Best Amazon.in Deals Today (${month}) | Value Verdict`,
@@ -47,29 +53,37 @@ export default async function CategoryPage({ catSlug, subSlug }: { catSlug: stri
   /* Categories column "amazon_deals" = TRUE: live Amazon deals; with hand-picked products they follow them.
      SHOW_CATALOG = false hides the products, so the page shows only live deals. */
   const live = isYes(cat.amazon_deals), showSheet = SHOW_CATALOG && (base.length > 0 || !live);
-  const title = sub ? `${cat.name} ${sub.name}` : cat.name;
+  const title = sub ? pageName(cat.name, sub.name) : cat.name;
   const groups = (sub ? [sub] : subs).map((s) => ({ sub: s, items: prodsOfSub(db, s.subcategory_id) }));
 
-  /* budget chips; product counts only when the hand-picked catalog is shown */
-  const count = (n: number) => (SHOW_CATALOG ? <small>{n}</small> : null);
+  /* budget chips: hand-picked product counts when the catalog is shown, otherwise today's top picks per budget */
+  const { picks, at } = await getPicks();
+  const count = (n: number, s?: { slug: string; subcategory_id: string }) =>
+    SHOW_CATALOG ? <small>{n}</small> : s ? <small>{picksIn(picks, `${cat.slug}/${s.slug}`).length || ""}</small> : null;
   const chips = subs.length > 0 && (
-    <div className="chips">
-      <Link className={`chip ${!sub ? "on" : ""}`} href={`/${cat.slug}`}>All{count(prodsOfCat(db, cat.category_id).length)}</Link>
-      {subs.map((s) => (
-        <Link key={s.slug} className={`chip ${sub?.slug === s.slug ? "on" : ""}`} href={`/${cat.slug}/${s.slug}`}>{s.name}{count(prodsOfSub(db, s.subcategory_id).length)}</Link>
-      ))}
+    <div className="budget-bar budget-group" id="budgets">
+      <span className="budget-bar-label">Your budget</span>
+      <div className="chips">
+        <Link className={`chip ${!sub ? "on" : ""}`} href={`/${cat.slug}`}>All budgets{SHOW_CATALOG && count(prodsOfCat(db, cat.category_id).length)}</Link>
+        {subs.map((s) => (
+          <Link key={s.slug} className={`chip ${sub?.slug === s.slug ? "on" : ""}`} href={`/${cat.slug}/${s.slug}`}
+            title={SHOW_CATALOG ? undefined : `Today's top picks ${s.name.toLowerCase()}`}>{s.name}{count(prodsOfSub(db, s.subcategory_id).length, s)}</Link>
+        ))}
+      </div>
     </div>
   );
+  const t = themeFor(cat.slug);
 
   return (
-    <section>
+    <section style={{ "--g-from": t.from, "--g-to": t.to } as React.CSSProperties}>
       <div className="wrap">
         <div className="crumbs"><Link href="/">Home</Link> / <Link href={`/${cat.slug}`}>{cat.name}</Link>{sub && ` / ${sub.name}`}</div>
         <JsonLd data={breadcrumbs([["Home", "/"], [cat.name, `/${cat.slug}`], ...(sub ? [[sub.name, `/${cat.slug}/${sub.slug}`] as [string, string]] : [])])} />
         <div className="sec-head"><div><h1>{title}</h1><p>{sub ? sub.description : cat.description}</p></div></div>
+        {subs.length > 0 && <CategoryJourney catSlug={cat.slug} catName={cat.name} onBudget={Boolean(sub)} />}
         {showSheet
           ? <PromiseBox n={base.length} catName={title} custom={cat.promise} customPoints={cat.promise_points} />
-          : <PromiseBox n="today's" catName={title} custom={cat.promise} customPoints={cat.promise_points} deals />}
+          : <PromiseBox n="today's" catName={title} custom={cat.promise} customPoints={cat.promise_points} deals category={cat.slug} updated={live && at ? pickedAt(at) : undefined} />}
         {showSheet ? (
           <>
             {chips}
@@ -82,13 +96,24 @@ export default async function CategoryPage({ catSlug, subSlug }: { catSlug: stri
             {chips}
             {!live
               ? <div className="empty">Deals for this category are coming soon.</div>
-              : <DealsWithPicks catSlug={cat.slug} subs={subs.map((s) => ({ slug: s.slug, name: s.name }))} sub={sub && { slug: sub.slug, name: sub.name }} />}
+              : (
+                <div id="picks" className="budget-group">
+                  <DealsWithPicks catSlug={cat.slug} subs={subs.map((s) => ({ slug: s.slug, name: s.name }))} sub={sub && { slug: sub.slug, name: sub.name }} />
+                </div>
+              )}
           </>
         )}
         <CategoryGuide catSlug={cat.slug} catName={cat.name} main={!sub} />
       </div>
     </section>
   );
+}
+
+/* under the page title: the four steps (learn → budget → compare → buy), "pick a budget" highlighted on the
+   category page and "compare picks" on a budget page; "learn" opens the category's buying guide when there is one */
+async function CategoryJourney({ catSlug, catName, onBudget }: { catSlug: string; catName: string; onBudget: boolean }) {
+  const guide = guideFor((await getGuides()).guides, catSlug);
+  return <JourneyBar catSlug={catSlug} catName={catName} current={onBudget ? 3 : 2} guideSlug={guide?.slug} guideMinutes={guide && readMinutes(guide)} />;
 }
 
 /* below the deals: the category's buying guide in brief (key points + link), and on the main category page its FAQs */
@@ -137,12 +162,14 @@ async function DealsWithPicks({ catSlug, subs, sub }: { catSlug: string; subs: {
       <>
         <div className="offers-banner">{OFFERS_BANNER}</div>
         <JsonLd data={dealList("Top picks by budget", groups.flatMap((g) => g.top))} />
+        {/* id = budget slug, so /tvs#55-inch-tvs (home page budget chips) scrolls to that budget's picks */}
         {groups.map((g) => (
-          <div key={g.slug}>
+          <div key={g.slug} id={g.slug} className="budget-group">
             <div className="picks-head"><h2>{g.name} · top {g.top.length}</h2><Link href={`/${catSlug}/${g.slug}`}>See all {g.name} →</Link></div>
             <PickGrid items={g.top} />
           </div>
         ))}
+        <ScrollToHash />
         {note}
       </>
     );

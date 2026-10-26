@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog, subsOf } from "@/lib/catalog";
-import { getGuides, GUIDE_CATEGORIES, guideSlug, longDate } from "@/lib/guides";
+import { getGuides, GUIDE_CATEGORIES, guideSlug, longDate, readMinutes } from "@/lib/guides";
+import { GuideArt, themeFor } from "@/components/GuideArt";
+import JourneyBar from "@/components/JourneyBar";
 import { article, breadcrumbs, JsonLd, pageMeta } from "@/lib/seo";
 import { Faqs, GuideSections, KeyPoints, PreviewBanner, sectionId } from "@/components/Guide";
 
@@ -28,6 +30,7 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
   const [{ guide, preview }, db] = await Promise.all([find(slug), getCatalog()]);
   const cat = db.cats.find((c) => c.slug === guide.category);
   const budgets = cat ? subsOf(db, cat.category_id) : [];
+  const theme = themeFor(guide.category);
   return (
     <section>
       <div className="wrap">
@@ -35,15 +38,18 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
         <JsonLd data={breadcrumbs([["Home", "/"], ["Buying guides", "/guides"], [guide.title, `/guides/${guide.slug}`]])} />
         <JsonLd data={article(guide)} />
         <div className="crumbs"><Link href="/">Home</Link> / <Link href="/guides">Buying guides</Link> / {cat?.name ?? guide.title}</div>
-        <div className="sec-head">
-          <div>
+        <header className="guide-hero" style={{ "--g-from": theme.from, "--g-to": theme.to, "--g-ink": theme.ink } as React.CSSProperties}>
+          <div className="guide-hero-text">
+            <span className="guide-card-label">{theme.label} · {readMinutes(guide)} min read</span>
             <h1>{guide.title}</h1>
             <p>{guide.description}</p>
             <p className="guide-byline">
               By the Value Verdict team{guide.published_at ? ` · Updated ${longDate(guide.published_at)}` : " · Not published yet"} · Drafted with AI help and checked by a person
             </p>
           </div>
-        </div>
+          <GuideArt category={guide.category} className="guide-hero-svg" />
+        </header>
+        {cat && <JourneyBar catSlug={cat.slug} catName={cat.name} current={1} guideSlug={guide.slug} />}
         <div className="info-layout">
           <article className="prose guide">
             <KeyPoints points={guide.summary} />

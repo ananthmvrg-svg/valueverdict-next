@@ -40,6 +40,18 @@ export async function getGuides(): Promise<{ guides: Guide[]; preview: boolean }
 
 export const guideFor = (guides: Guide[], category: string) => guides.find((g) => g.slug === guideSlug(category));
 
+/* reading time at about 200 words a minute, at least 2 minutes */
+export function readMinutes(g: Pick<Guide, "summary" | "sections" | "faqs">) {
+  const text = [...g.summary, ...g.sections.flatMap((s) => [s.heading, ...s.paragraphs, ...s.bullets]), ...g.faqs.flatMap((f) => [f.q, f.a])].join(" ");
+  return Math.max(2, Math.round(text.split(/\s+/).length / 200));
+}
+
+/* "TV buying guide: how to choose the right TV" → ["TV buying guide", "how to choose the right TV"] */
+export const splitTitle = (title: string) => {
+  const i = title.indexOf(":");
+  return i > 0 ? [title.slice(0, i).trim(), title.slice(i + 1).trim()] : [title, ""];
+};
+
 /* "25 October 2026" */
 export const longDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" }) : "";
