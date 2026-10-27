@@ -30,7 +30,18 @@ const PAGES_PER_LOAD = 3, CALLS_PER_LOAD = 6;
 const RESOURCES = [
   "images.primary.large", "itemInfo.title", "itemInfo.features", "itemInfo.byLineInfo",
   "offersV2.listings.price", "offersV2.listings.dealDetails", "offersV2.listings.availability",
+  "browseNodeInfo.browseNodes.salesRank",
 ];
+
+/* Amazon.in best-seller rank in the product's own category, e.g. { node: "Smart Televisions", rank: 1 } (null when
+   not given). Amazon also lists promotion groups ("Jupiter_Phase1"); those are skipped. Like all API data it is only
+   kept for 24 hours (deals are replaced every day), so it is a snapshot for today, never a history. */
+function salesRank(it: any): { node: string; rank: number } | null {
+  const nodes = ((it.browseNodeInfo?.browseNodes || []) as { contextFreeName?: string; displayName?: string; salesRank?: number }[])
+    .map((n) => ({ node: plain(n.contextFreeName || n.displayName || ""), rank: Number(n.salesRank) }))
+    .filter((n) => n.node && Number.isFinite(n.rank) && n.rank > 0 && !/_|phase|jupiter|deal|offer|sale|store|event/i.test(n.node));
+  return nodes.sort((a, b) => a.rank - b.rank)[0] ?? null;
+}
 
 export type Deal = ReturnType<typeof item>;
 export type DealSection = { id: string; title: string; category: string; items: Deal[]; more: boolean; page: number };
@@ -179,6 +190,7 @@ function item(it: any) {
     claimed: deal?.percentClaimed != null && !isNaN(Number(deal.percentClaimed)) ? Number(deal.percentClaimed) : null,
     primeOnly: Boolean(deal?.accessType && deal.accessType !== "ALL"),
     lowStock: (stock.type === "IN_STOCK_SCARCE" && stock.message ? stock.message : "") as string,
+    salesRank: salesRank(it),
     /* key specifications, filled in by the refresh from the title and features (lib/specs.ts) */
     specs: {} as Specs,
   };

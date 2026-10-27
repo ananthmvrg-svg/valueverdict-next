@@ -1,0 +1,43 @@
+# Weekly market research (Pipeline B): every Sunday 4:00 AM IST (Saturday 22:30 UTC), before the 6 AM deals run.
+# Needs these repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_SECRET_KEY, ANTHROPIC_API_KEY, AMAZON_CREDENTIAL_ID, AMAZON_CREDENTIAL_SECRET,
+#   GSC_SERVICE_ACCOUNT_JSON (the Search Console service account's JSON key; optional, the research runs without it)
+# A failed run changes nothing on the site: last week's plan stays active.
+name: Weekly market research
+
+on:
+  schedule:
+    - cron: "30 22 * * 6"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Research and check only, don't change the site"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Research, check and activate this week's plan
+        run: npm run research -- ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AMAZON_CREDENTIAL_ID: ${{ secrets.AMAZON_CREDENTIAL_ID }}
+          AMAZON_CREDENTIAL_SECRET: ${{ secrets.AMAZON_CREDENTIAL_SECRET }}
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}

@@ -34,6 +34,7 @@ Pick products a careful buyer would be glad they bought:
 Prefer variety: never pick two colour, size or storage variants of the same model, and avoid several picks from one brand when good alternatives exist.
 You only see the listing text and the specs read from it, with no ratings, reviews or price history. Use only that data:
 - never claim reliability, durability, build quality, popularity, customer satisfaction or "lowest ever" prices;
+- "amazon rank" is Amazon.in's best-seller rank in that Amazon category today (lower = more buyers right now); you may use it as one signal of buyer demand when ranking, but never mention it or claim that a product is popular or best-selling;
 - never describe a brand's reputation ("established", "well-known", "known brand", "trusted", "track record"): compare products on their specs, price and discount only;
 - Amazon's "was" price is a reference price, not verified price history;
 - write numbers only if they appear in the candidate's data;
@@ -74,7 +75,9 @@ const cut = (t: string, n: number) => (t.length > n ? t.slice(0, n - 1) + "…" 
 const specText = (x: Candidate) => Object.entries(x.specs || {}).map(([k, v]) => `${k.replace(/_/g, " ")}=${v}`).join("; ");
 const line = (x: Candidate, extra = "") =>
   [x.asin, x.brand || "-", cut(x.title, 130), `${inr(x.price)}${x.was ? ` (was ${inr(x.was)}, ${x.off ?? "?"}% off)` : ""}`,
-    x.deal || "-", cut(x.features.join(" / "), 220), `specs: ${specText(x) || "none read"}`, extra].filter(Boolean).join(" | ");
+    x.deal || "-", cut(x.features.join(" / "), 220), `specs: ${specText(x) || "none read"}`,
+    /* Amazon.in best-seller rank today: a demand signal for ranking only; claims about popularity stay blocked (lib/evidence.ts) */
+    `amazon rank: ${x.salesRank ? `#${x.salesRank.rank} in ${x.salesRank.node}` : "none"}`, extra].filter(Boolean).join(" | ");
 
 const request = (custom_id: string, task: string, lines: string[], maxTokens: number): Anthropic.Messages.BatchCreateParams.Request => ({
   custom_id,
@@ -83,7 +86,7 @@ const request = (custom_id: string, task: string, lines: string[], maxTokens: nu
     max_tokens: maxTokens,
     system: SYSTEM,
     output_config: { format: { type: "json_schema", schema: SCHEMA } },
-    messages: [{ role: "user", content: `${task}\n\nCandidates (ASIN | brand | title | price | deal | features | specs | section):\n${lines.join("\n")}` }],
+    messages: [{ role: "user", content: `${task}\n\nCandidates (ASIN | brand | title | price | deal | features | specs | amazon rank | section):\n${lines.join("\n")}` }],
   },
 });
 
