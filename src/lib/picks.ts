@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { selectJson } from "./db";
 import type { Deal } from "./amazon";
+import { freshClaims } from "./claims";
 
 /* AI picks saved by lib/curate.ts (daily at 6 AM; prices re-checked every 3 hours). group: "<category>/<budget>", "amazon-finds" or "top-100". */
 export type DealPick = Deal & {
@@ -23,13 +24,16 @@ export async function getPicks(): Promise<{ picks: DealPick[]; at: string | null
     `select=group_key,rank,reason,section,category,data,price_checked_at,best_for,strengths,limitations,confidence&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`)
     .catch((e) => { console.error("picks", e); return [] as Row[]; });
   const at = rows.reduce<string | null>((m, r) => (!m || r.price_checked_at < m ? r.price_checked_at : m), null);
-  return {
-    at,
-    picks: rows.filter((r) => r.data?.price != null).map((r) => ({
-      ...r.data, specs: r.data.specs ?? {}, rank: r.rank, reason: r.reason || "", section: r.section || "", category: r.category || "", group: r.group_key,
-      bestFor: r.best_for || "", strengths: r.strengths ?? [], limitations: r.limitations ?? [], confidence: r.confidence || "",
-    })),
-  };
+  const picks: DealPick[] = rows.filter((r) => r.data?.price != null).map((r) => ({
+    ...r.data, specs: r.data.specs ?? {}, rank: r.rank, reason: r.reason || "", section: r.section || "", category: r.category || "", group: r.group_key,
+    bestFor: r.best_for || "", strengths: r.strengths ?? [], limitations: r.limitations ?? [], confidence: r.confidence || "",
+  }));
+  /* texts re-checked against today's price and the list they're shown in (lib/claims.ts): a budget page's picks,
+     an Amazon Finds section; the Top 100 mixes lists, so "lowest price here" can't stand there */
+  const listOf = (p: DealPick) => `${p.group}|${p.group === "amazon-finds" ? p.section : ""}`;
+  const lists = new Map<string, DealPick[]>();
+  for (const p of picks) lists.set(listOf(p), [...(lists.get(listOf(p)) ?? []), p]);
+  return { at, picks: picks.map((p) => freshClaims(p, p.group === "top-100" ? null : lists.get(listOf(p))!)) };
 }
 
 export const picksIn = (all: DealPick[], group: string) => all.filter((p) => p.group === group).sort((a, b) => a.rank - b.rank);

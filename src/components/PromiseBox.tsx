@@ -27,7 +27,7 @@ export default function PromiseBox({ n, catName, custom, customPoints, deals, ca
       {points.length > 0 && (
         <ul className="promise-points">
           {points.map((t) => {
-            /* "🔥 Real discounts only" → icon + text */
+            /* "⭐ Rated 3★+ on Amazon" → icon + text */
             const m = t.match(/^(\p{Extended_Pictographic}️?)\s*(.*)$/u);
             return <li key={t}>{m && <span className="promise-emoji" aria-hidden="true">{m[1]}</span>}<span>{m ? m[2] : t}</span></li>;
           })}

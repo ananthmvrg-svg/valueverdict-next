@@ -16,7 +16,7 @@ async function find(slug: string) {
   const { guides, preview } = await getGuides();
   const guide = guides.find((g) => g.slug === slug);
   if (!guide) notFound();
-  return { guide, preview };
+  return { guide, preview, guides };
 }
 
 export async function generateMetadata({ params }: PageProps<"/guides/[slug]">) {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/guides/[slug]">) 
 
 export default async function GuidePage({ params }: PageProps<"/guides/[slug]">) {
   const { slug } = await params;
-  const [{ guide, preview }, db] = await Promise.all([find(slug), getCatalog()]);
+  const [{ guide, preview, guides }, db] = await Promise.all([find(slug), getCatalog()]);
   const cat = db.cats.find((c) => c.slug === guide.category);
   const budgets = cat ? subsOf(db, cat.category_id) : [];
   const theme = themeFor(guide.category);
@@ -55,6 +55,21 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
             <KeyPoints points={guide.summary} />
             <GuideSections sections={guide.sections} />
             <Faqs faqs={guide.faqs} />
+            {cat && budgets.length > 0 && (
+              <nav className="guide-next" aria-labelledby="guide-next-deals">
+                <h2 id="guide-next-deals">Ready to choose? Today&apos;s {cat.name} picks</h2>
+                <ul>
+                  <li><Link href={`/${cat.slug}`}>All {cat.name}</Link></li>
+                  {budgets.map((s) => <li key={s.slug}><Link href={`/${cat.slug}/${s.slug}`}>{s.name}</Link></li>)}
+                </ul>
+              </nav>
+            )}
+            {guides.length > 1 && (
+              <nav className="guide-next" aria-labelledby="guide-next-guides">
+                <h2 id="guide-next-guides">Other buying guides</h2>
+                <ul>{guides.filter((g) => g.slug !== guide.slug).map((g) => <li key={g.slug}><Link href={`/guides/${g.slug}`}>{g.title.split(":")[0]}</Link></li>)}</ul>
+              </nav>
+            )}
             {preview && guide.status !== "published" && (
               <p className="guide-note">Reviewer: publish this version in Supabase (table <b>guides</b>, row {guide.slug} v{guide.version}, set status to <b>published</b>).</p>
             )}

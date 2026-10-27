@@ -52,7 +52,7 @@ export default async function Home() {
             ) : (
               <>
                 <h1>Today&apos;s best deals, <span>sorted by your budget.</span></h1>
-                <p>Value Verdict brings you live Amazon.in deals on appliances, TVs and laptops, filtered to well-rated products with real discounts and sorted by price band, so you can decide in minutes.</p>
+                <p>Value Verdict brings you live Amazon.in deals on appliances, TVs and laptops, filtered to products rated above 3 stars and priced below Amazon&apos;s listed price, and sorted by price band, so you can decide in minutes.</p>
                 <div className="trust">
                   <div><b>Live</b>Amazon.in prices</div>
                   {/* "picked by AI" wording is switched off for now; to show it again: <div><b>2× daily</b>AI-picked deals</div> */}

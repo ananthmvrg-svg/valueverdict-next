@@ -81,7 +81,8 @@ function washer(s: Specs): string[] {
 function ac(s: Specs): string[] {
   const t: string[] = [];
   const tons = n(s.tons);
-  if (tons) t.push(tons <= 1.1 ? `${tons} ton suits rooms up to about 110 sq ft.` : tons <= 1.6 ? `${tons} ton suits rooms of about 120–180 sq ft.` : `${tons} ton suits rooms of about 180–250 sq ft.`);
+  /* same room sizes as the AC buying guide's tonnage table */
+  if (tons) t.push(tons <= 1.1 ? `${tons} ton suits rooms up to about 110 sq ft.` : tons <= 1.6 ? `${tons} ton suits average rooms of about 110–160 sq ft.` : `${tons} ton suits rooms of about 160–250 sq ft.`);
   if (tons) t[t.length - 1] += " Choose a bigger capacity for top-floor or very sunny rooms.";
   if (s.inverter) t.push("An inverter AC adjusts its power instead of switching on and off, so it cuts electricity bills and keeps the temperature steady.");
   const st = n(s.energy_stars);

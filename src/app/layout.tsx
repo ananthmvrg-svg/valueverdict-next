@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "Value Verdict – Best Appliance Deals in India, Sorted by Budget",
   description: SHOW_CATALOG
     ? "Hand-picked washing machines and home appliances sorted by budget. Compare type, energy rating and brand, then check today's price on Amazon."
-    : "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs and laptops, filtered to well-rated products and sorted by budget.",
+    : "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs and laptops, filtered to products rated above 3 stars and sorted by budget.",
   icons: { icon: "/favicon.png" },
   openGraph: {
     title: "Value Verdict – Best Deals Sorted by Budget",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 const PROMISES = [
   SHOW_CATALOG
     ? { icon: "filter", color: "#1e90ff", title: "Hand-picked, not dumped", text: "We shortlist appliances by energy rating, capacity and brand so you don't scroll through hundreds of listings." }
-    : { icon: "filter", color: "#1e90ff", title: "Filtered, not dumped", text: "Only well-rated products with a real discount make it in, so you don't scroll through hundreds of listings." },
+    : { icon: "filter", color: "#1e90ff", title: "Filtered, not dumped", text: "Only products rated above 3 stars on Amazon and discounted against Amazon's listed price make it in, so you don't scroll through hundreds of listings." },
   { icon: "rupee", color: "#16a34a", title: "Sorted by budget", text: `Every ${SHOW_CATALOG ? "pick" : "deal"} sits in a clear price band, so you only see what fits your wallet.` },
   { icon: "clock", color: "#7c3aed", title: "Fresh every day", text: "New picks every day at 6 AM, with prices re-checked about every 3 hours." },
   { icon: "shield", color: "#ea580c", title: "Buy where you trust", text: "Check today's price and offers on Amazon. You pay the same price; we may earn a small commission." },

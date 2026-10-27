@@ -24,7 +24,7 @@ describe("Good to know tips", () => {
       .toEqual(["236 L suits a family of 2–4.", "An inverter compressor changes speed instead of switching on and off, so it's quieter and uses less electricity."]);
   });
   it("AC: tonnage by room size with a sunny-room note", () => {
-    expect(tipsFor("air-conditioners", { tons: 1.5, inverter: true }, 1)[0]).toBe("1.5 ton suits rooms of about 120–180 sq ft. Choose a bigger capacity for top-floor or very sunny rooms.");
+    expect(tipsFor("air-conditioners", { tons: 1.5, inverter: true }, 1)[0]).toBe("1.5 ton suits average rooms of about 110–160 sq ft. Choose a bigger capacity for top-floor or very sunny rooms.");
   });
   it("star ratings are explained honestly for low ratings", () => {
     const t = tipsFor("refrigerators", { energy_stars: 2 }, 3);

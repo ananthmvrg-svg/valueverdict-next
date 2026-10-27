@@ -455,3 +455,25 @@ body:has(.cmp-bar){padding-bottom:96px}
 .cat-chips-result b{color:var(--ink)}
 .cat-chips-result button{font:inherit;font-weight:700;color:var(--brand-2);background:none;border:0;padding:0;cursor:pointer}
 .cat-chips-result button:hover{text-decoration:underline}
+/* "Today at a glance" on category and budget pages (components/Glance.tsx) */
+.glance{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--g-from,var(--brand-2));border-radius:14px;padding:12px 16px;margin:0 0 14px}
+.glance h2{margin:0 0 6px;font-size:15px;display:flex;align-items:baseline;gap:8px}
+.glance h2 small{font-size:12px;font-weight:700;color:var(--muted)}
+.glance ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.glance li{font-size:13px;font-weight:600;color:#334155;background:#f8fafc;border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.glance-link{display:inline-block;margin-top:8px;font-size:13.5px;font-weight:700;color:var(--g-from,var(--brand-2))}
+.glance-link:hover{text-decoration:underline}
+/* Top 100: links to every category and guide */
+.link-hub{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.link-hub nav{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.link-hub h2{margin:0 0 10px;font-size:17px}
+.link-hub ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.link-hub a{display:inline-block;font-size:13.5px;font-weight:600;color:#334155;background:#f8fafc;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.link-hub a:hover{border-color:var(--brand-2);color:var(--brand-2)}
+@media (max-width:700px){.link-hub{grid-template-columns:1fr}}
+/* end of a guide: today's picks for that category, and the other guides */
+.guide-next{margin-top:22px;padding-top:16px;border-top:1px dashed var(--line)}
+.guide-next h2{margin:0 0 10px;font-size:18px}
+.guide-next ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.guide-next a{display:inline-block;font-size:13.5px;font-weight:600;color:#334155;background:#f8fafc;border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none}
+.guide-next a:hover{border-color:var(--brand-2);color:var(--brand-2)}
