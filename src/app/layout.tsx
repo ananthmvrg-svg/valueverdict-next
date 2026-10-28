@@ -19,7 +19,16 @@ export const metadata: Metadata = {
   description: SHOW_CATALOG
     ? "Hand-picked washing machines and home appliances sorted by budget. Compare type, energy rating and brand, then check today's price on Amazon."
     : "Today's best Amazon.in deals on fridges, washing machines, TVs, ACs and laptops, filtered to products rated above 3 stars and sorted by budget.",
-  icons: { icon: "/favicon.png" },
+  /* Google Search shows a site icon only if it's square and a multiple of 48 px (48, 96, 192…) */
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
   openGraph: {
     title: "Value Verdict – Best Deals Sorted by Budget",
     description: SHOW_CATALOG ? "Hand-picked appliances sorted by budget. Compare and check today's price on Amazon." : "Live Amazon.in deals on appliances and laptops, sorted by budget.",
