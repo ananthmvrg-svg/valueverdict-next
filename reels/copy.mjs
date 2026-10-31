@@ -18,7 +18,7 @@ export function seasonFor(dateISO) {
   } catch { return ""; }
 }
 
-const LIMITS = { hook_title: 30, hook_sub: 70, urgency: 60, follow_line: 60, caption_hook: 110, post_title: 30, season_tag: 22 };
+const LIMITS = { hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
 const SCHEMA = {
   type: "object",
   properties: {
@@ -29,7 +29,7 @@ const SCHEMA = {
         properties: {
           id: { type: "string" },
           season_tag: { type: "string", description: "2-3 word label for the top of the hook slide, e.g. 'Diwali picks' (max 22 chars)" },
-          hook_title: { type: "string", description: "big hook headline naming the product type, max 30 chars" },
+          hook_title: { type: "string", description: "big hook headline naming the product type, max 30 chars, a complete phrase" },
           hook_sub: { type: "string", description: "one emotional line under the headline, max 70 chars" },
           urgency: { type: "string", description: "one honest urgency line built only from the given facts, max 60 chars" },
           follow_line: { type: "string", description: "why to follow Value Verdict, warm and personal, max 60 chars" },
@@ -61,9 +61,10 @@ Goals for every budget page:
 - No rupee amounts, no percentages, no hashtags, at most one emoji per line, no ALL CAPS sentences.
 - Vary wording between pages; don't repeat the same hook.`;
 
+/* a line that runs too long is dropped (plain line used), never cut mid-phrase */
 const clip = (s, n) => {
   s = String(s || "").replace(/\s+/g, " ").trim();
-  return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, "") : s;
+  return s.length > n ? "" : s;
 };
 /* AI text never prints prices or discounts on a reel */
 const safe = (s) => !/₹|rs\.?\s?\d|\d+\s?%|percent/i.test(s);
