@@ -1,0 +1,14 @@
+{
+  "name": "valueverdict-reels",
+  "private": true,
+  "type": "module",
+  "description": "Daily Instagram reel kit: reads the site's Google Sheet, renders slides + MP4 + caption per budget group, zips and sends to Telegram.",
+  "scripts": {
+    "generate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON generate.mjs",
+    "sample": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON generate.mjs --sample --no-send"
+  },
+  "dependencies": {
+    "@fontsource/poppins": "5.3.0",
+    "playwright": "1.63.0"
+  }
+}

@@ -1,0 +1,263 @@
+/* Value Verdict daily reel kit.
+   Reads the same AI picks the website shows (Supabase "deal_picks": rank, why, best for, pros, cons, product
+   photo from the Amazon API), and for every budget page (e.g. refrigerators/under-35k) with 1–5 picks makes:
+     slides/*.jpg   hook, one slide per product (#1…#5), call-to-action
+     cover.jpg      reel cover
+     reel.mp4       1080×1920 silent video (add a trending sound in the Instagram app)
+     caption.txt    caption + 5 hashtags, ready to paste
+   Then zips everything (one ZIP per category) and sends it to Telegram.
+
+   node generate.mjs              live picks, send to Telegram (needs TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
+   node generate.mjs --no-send    live picks, keep files in reels/out
+   node generate.mjs --sample     saved sample picks (no network)
+   ONLY=refrigerators,tvs         only these category slugs (env or --only=…)
+   MAX_ITEMS=5                    picks per reel (top N by rank)
+   Prices and discounts are never printed: a reel lives for weeks, Amazon prices don't. */
+import { execFileSync } from "node:child_process";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { hookSlide, productSlide, ctaSlide, iconKey } from "./template.mjs";
+import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
+import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
+
+const here = dirname(fileURLToPath(import.meta.url));
+const { chromium } = createRequire(import.meta.url)("playwright");
+
+const args = process.argv.slice(2);
+const flag = (f) => args.includes(f);
+const opt = (k) => args.find((a) => a.startsWith(`--${k}=`))?.split("=")[1];
+const SAMPLE = flag("--sample");
+const SEND = !flag("--no-send");
+const ONLY = (opt("only") || process.env.ONLY || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+const MAX_ITEMS = Math.min(5, Math.max(1, parseInt(process.env.MAX_ITEMS || "5", 10) || 5));
+
+/* site URL and the public read-only Supabase key come from the website config: one source of truth */
+const config = readFileSync(join(here, "..", "src", "lib", "config.ts"), "utf8");
+const pick = (re) => config.match(re)?.[1];
+const SITE_URL = (pick(/SITE_URL\s*=\s*"([^"]+)"/) || "https://valueverdict.in").replace(/\/$/, "");
+const SUPABASE_URL = process.env.SUPABASE_URL || pick(/SUPABASE_URL\s*=.*?"(https:[^"]+)"/);
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || pick(/SUPABASE_KEY\s*=.*?"(sb_[^"]+)"/);
+
+const today = new Date(Date.now() + 5.5 * 3600e3); /* India date */
+const DATE = today.toISOString().slice(0, 10);
+const YEAR = today.getUTCFullYear();
+const MONTH = today.toLocaleString("en-IN", { month: "long", timeZone: "UTC" });
+
+/* ---------- data ---------- */
+async function select(table, query) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { headers: { apikey: SUPABASE_KEY } });
+  if (!r.ok) throw new Error(`Supabase ${table}: HTTP ${r.status} ${await r.text()}`);
+  return r.json();
+}
+async function loadData() {
+  if (SAMPLE) return JSON.parse(readFileSync(join(here, "sample.json"), "utf8"));
+  /* same rule as the website (src/lib/picks.ts): only picks whose price was confirmed in the last 24 hours */
+  const since = new Date(Date.now() - 24 * 36e5).toISOString();
+  const [cats, subs, picks] = await Promise.all([
+    select("categories", "select=category_id,name,slug,icon,sort_order,active"),
+    select("subcategories", "select=subcategory_id,category_id,name,slug,sort_order,active"),
+    select("deal_picks", `select=group_key,rank,reason,category,data,best_for,strengths,limitations&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`),
+  ]);
+  return { cats, subs, picks };
+}
+
+/* "Haier 258 L 3 Star Inverter … (HEF-25TDS, Dazzle Steel)" → "258 L 3 Star Inverter …" */
+function shortName(title, brand) {
+  const parts = String(title || "").replace(/\s*[(\[][^)\]]*[)\]]/g, "").split(/\s\|\s?|\s[-–]\s/)[0].split(/,\s/);
+  let t = parts.shift().trim();
+  while (t.length < 28 && parts.length) t += ", " + parts.shift().trim(); /* "LG 276 L, 2 Star, Smart Inverter" */
+  if (brand && t.toLowerCase().startsWith(brand.toLowerCase() + " ")) t = t.slice(brand.length + 1);
+  if (t.length > 70) t = t.slice(0, 70).replace(/\s+\S*$/, "") + "…";
+  return t;
+}
+/* no prices or discounts on a reel: they go stale (and Amazon requires shown prices to be current) */
+const PRICEY = /₹|%|\boff\b|price|cheap|discount|deal\b/i;
+const clean = (xs) => (xs || []).map((s) => String(s).trim()).filter((s) => s && !PRICEY.test(s));
+const brandCase = (b) => (b && b === b.toLowerCase() || b === b.toUpperCase() && b.length > 3 ? b.charAt(0).toUpperCase() + b.slice(1).toLowerCase() : b);
+
+const SKIP = new Set(["amazon-finds", "top-100"]); /* mixed lists, not a budget page */
+function reelsOf({ cats, subs, picks }) {
+  const ord = (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999);
+  const out = [];
+  for (const cat of cats.filter((c) => c.active !== false && !SKIP.has(c.slug)).sort(ord)) {
+    if (ONLY.length && !ONLY.includes(String(cat.slug).toLowerCase())) continue;
+    for (const sub of subs.filter((s) => s.category_id === cat.category_id && s.active !== false).sort(ord)) {
+      const group = `${cat.slug}/${sub.slug}`;
+      const items = picks.filter((p) => p.group_key === group && p.data).sort((a, b) => a.rank - b.rank).slice(0, MAX_ITEMS).map((p) => {
+        const d = p.data, brand = brandCase(d.brand || "");
+        return {
+          brand, name: shortName(d.title, d.brand), imageUrl: d.image,
+          specs: specChips(cat.slug, d.specs || {}).slice(0, 5),
+          bestFor: p.best_for || "",
+          pros: clean(p.strengths).slice(0, 3),
+          cons: clean(p.limitations).slice(0, 2),
+          tip: (tipsFor(cat.slug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
+          badge: p.rank === 1 ? "🏆 Top pick" : "",
+        };
+      });
+      if (!items.length) continue;
+      out.push({
+        catName: cat.name, catSlug: cat.slug, subName: sub.name, items, year: YEAR, month: MONTH,
+        slug: `${cat.slug}-${sub.slug}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        icon: iconKey(cat.slug, cat.name),
+        url: `${SITE_URL}/${cat.slug}/${sub.slug}`,
+      });
+    }
+  }
+  return out;
+}
+
+/* product photo (the Amazon API image the website shows), inlined so screenshots never wait on the network.
+   A failure just falls back to the category icon. */
+async function loadImage(u) {
+  u = String(u || "").trim();
+  if (!u) return "";
+  try {
+    if (!/^https?:\/\//i.test(u)) { /* local file, used by sample.json */
+      const f = join(here, u); if (!existsSync(f)) return "";
+      return `data:image/${f.endsWith(".png") ? "png" : "jpeg"};base64,${readFileSync(f).toString("base64")}`;
+    }
+    u = u.replace(/\._SL\d+_\./, "._SL1000_."); /* bigger Amazon rendition for a full-width photo */
+    const r = await fetch(u, { signal: AbortSignal.timeout(15000), headers: { "User-Agent": "Mozilla/5.0 (ValueVerdict reels)" } });
+    const type = r.headers.get("content-type") || "";
+    if (!r.ok || !type.startsWith("image/")) return "";
+    return `data:${type.split(";")[0]};base64,${Buffer.from(await r.arrayBuffer()).toString("base64")}`;
+  } catch (e) { console.warn(`  image skipped (${e.message}): ${u}`); return ""; }
+}
+
+/* 1–3 picks play #1→#N; 4–5 count down #N→#1 so viewers stay for the winner.
+   Product slides carry pros/cons, so each one stays up long enough to read. */
+function plan(r) {
+  const n = r.items.length;
+  const order = r.items.map((p, i) => ({ p, rank: i + 1 }));
+  if (n >= 4) order.reverse();
+  const per = n === 1 ? 6 : n === 2 ? 4.5 : n === 3 ? 3.8 : 3.2;
+  return order.map((o) => ({ ...o, dur: n >= 4 && o.rank === 1 ? 3.8 : per }));
+}
+
+const HASHTAGS = {
+  refrigerators: ["#refrigerator", "#fridge", "#homeappliances"], "washing-machines": ["#washingmachine", "#laundry", "#homeappliances"],
+  tvs: ["#smarttv", "#tv", "#techdeals"], "air-conditioners": ["#airconditioner", "#ac", "#summeressentials"],
+  laptops: ["#laptop", "#laptops", "#techdeals"], "soundbars-speakers": ["#soundbar", "#hometheatre", "#techdeals"],
+  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
+};
+function caption(r) {
+  const tags = [...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances", "#bestbuy"]), "#amazondeals", "#valueverdict"];
+  const n = r.items.length;
+  const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
+  return [
+    `${n === 1 ? "The one" : `Top ${n}`} ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} — ${MONTH} ${YEAR} 🔥`,
+    "",
+    list,
+    "",
+    `👉 Pros, cons & today's price for each: link in bio`,
+    `(${r.url.replace(/^https?:\/\//, "")})`,
+    `💾 Save this for later · Follow for daily best-value picks`,
+    "",
+    "As an Amazon Associate we earn from qualifying purchases.",
+    "",
+    tags.slice(0, 5).join(" "),
+  ].join("\n");
+}
+
+async function render(browser, r, dir) {
+  const slides = join(dir, "slides");
+  mkdirSync(slides, { recursive: true });
+  const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
+  const shot = async (html, file, type = "jpeg") => {
+    await page.setContent(html, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: file, type, ...(type === "jpeg" ? { quality: 92 } : {}) });
+  };
+  const steps = plan(r), frames = [];
+  await shot(hookSlide(r), join(slides, "01-hook.jpg"));
+  frames.push({ file: join(slides, "01-hook.jpg"), dur: 2.0 });
+  for (const [i, s] of steps.entries()) {
+    const f = join(slides, `${String(i + 2).padStart(2, "0")}-rank${s.rank}.jpg`);
+    await shot(productSlide(r, s.p, s.rank, i, steps.length), f);
+    frames.push({ file: f, dur: s.dur });
+  }
+  const cta = join(slides, `${String(steps.length + 2).padStart(2, "0")}-cta.jpg`);
+  await shot(ctaSlide(r), cta);
+  frames.push({ file: cta, dur: 2.6 });
+  await shot(hookSlide(r), join(dir, "cover.jpg"), "jpeg");
+  await page.close();
+  video(frames, join(dir, "reel.mp4"));
+  writeFileSync(join(dir, "caption.txt"), caption(r) + "\n");
+}
+
+/* slides → MP4 with short slide/fade transitions; silent track so every app accepts it */
+function video(frames, out) {
+  const T = 0.35, inputs = [], parts = [];
+  frames.forEach((f, i) => {
+    inputs.push("-loop", "1", "-t", String(f.dur + T), "-i", f.file);
+    parts.push(`[${i}:v]scale=1080:1920,fps=30,format=yuv420p,setsar=1,settb=AVTB[v${i}]`);
+  });
+  let last = "v0", t = frames[0].dur;
+  for (let i = 1; i < frames.length; i++) {
+    const tr = i === 1 ? "fade" : i === frames.length - 1 ? "fadeblack" : "slideleft";
+    parts.push(`[${last}][v${i}]xfade=transition=${tr}:duration=${T}:offset=${t.toFixed(2)}[x${i}]`);
+    last = `x${i}`; t += frames[i].dur;
+  }
+  const total = t + T;
+  execFileSync("ffmpeg", [
+    "-y", "-v", "error", ...inputs,
+    "-f", "lavfi", "-t", total.toFixed(2), "-i", "anullsrc=r=44100:cl=stereo",
+    "-filter_complex", parts.join(";"), "-map", `[${last}]`, "-map", `${frames.length}:a`,
+    "-t", total.toFixed(2), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out,
+  ]);
+}
+
+/* ---------- Telegram ---------- */
+async function tg(method, fields, file) {
+  const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+  const fd = new FormData();
+  fd.append("chat_id", chat);
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+  if (file) fd.append(file.field, new Blob([readFileSync(file.path)]), file.name);
+  const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: "POST", body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!j.ok) throw new Error(`Telegram ${method}: ${j.description || r.status}`);
+  await new Promise((res) => setTimeout(res, 1100)); /* stay under Telegram's per-chat rate limit */
+}
+
+/* ---------- main ---------- */
+const reels = reelsOf(await loadData());
+if (!reels.length) throw new Error("No budget group with products found" + (ONLY.length ? ` for ONLY=${ONLY}` : ""));
+const name = `ValueVerdict_${DATE}`, outDir = join(here, "out"), root = join(outDir, name);
+rmSync(root, { recursive: true, force: true });
+for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
+const browser = await chromium.launch();
+for (const r of reels) {
+  console.log(`• ${r.slug} (${r.items.length} products)`);
+  await render(browser, r, join(root, r.slug));
+}
+await browser.close();
+/* one ZIP per category keeps each file under Telegram's 50 MB bot limit */
+const zips = [];
+for (const cat of [...new Set(reels.map((r) => r.catSlug))]) {
+  const dirs = reels.filter((r) => r.catSlug === cat).map((r) => join(name, r.slug));
+  const zip = join(outDir, `${name}_${cat}.zip`);
+  rmSync(zip, { force: true });
+  execFileSync("zip", ["-qr", zip, ...dirs], { cwd: outDir });
+  zips.push({ cat, zip, mb: statSync(zip).size / 1048576 });
+}
+console.log(`✔ ${reels.length} reels → ${zips.length} ZIPs in ${outDir}`);
+
+if (SEND) {
+  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
+  await tg("sendMessage", { text: `🎬 Value Verdict reels — ${DATE}\n${reels.length} reels ready. Each video comes with its caption: save it, post it on Instagram, add a trending sound.` });
+  for (const r of reels) {
+    const cap = caption(r);
+    await tg("sendVideo", { caption: cap.length > 1024 ? cap.slice(0, 1020) + "…" : cap, width: "1080", height: "1920", supports_streaming: "true" },
+      { field: "video", path: join(root, r.slug, "reel.mp4"), name: `${r.slug}.mp4` });
+  }
+  for (const z of zips) {
+    if (z.mb < 49) await tg("sendDocument", { caption: `📦 ${z.cat}: slides, covers, captions — ${DATE}` }, { field: "document", path: z.zip, name: z.zip.split("/").pop() });
+    else await tg("sendMessage", { text: `📦 ${z.cat} ZIP is ${z.mb.toFixed(0)} MB (over Telegram's 50 MB limit): download it from the GitHub Actions run.` });
+  }
+  console.log("✔ sent to Telegram");
+}

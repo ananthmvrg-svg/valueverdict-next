@@ -1,0 +1,3 @@
+# Skip a site rebuild when a commit only touches the reels generator or GitHub workflows.
+[build]
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)reels' ':(exclude).github'"
