@@ -71,6 +71,11 @@ function shortName(title, brand) {
   let t = parts.shift().trim();
   while (t.length < 28 && parts.length) t += ", " + parts.shift().trim(); /* "LG 276 L, 2 Star, Smart Inverter" */
   if (brand && t.toLowerCase().startsWith(brand.toLowerCase() + " ")) t = t.slice(brand.length + 1);
+  /* too little left (e.g. "PUMA" from "PUMA, Men's Running Shoe"): use more of the title */
+  if (t.length < 12 || (brand && t.toLowerCase() === brand.toLowerCase())) {
+    t = String(title || "").replace(/\s*[(\[][^)\]]*[)\]]/g, "").replace(/\s*[|,]\s*/g, " ").trim();
+    if (brand && t.toLowerCase().startsWith(brand.toLowerCase())) t = t.slice(brand.length).trim();
+  }
   if (t.length > 70) t = t.slice(0, 70).replace(/\s+\S*$/, "") + "…";
   return t;
 }
