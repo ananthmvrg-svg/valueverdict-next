@@ -131,6 +131,47 @@ function soundbar(t: string): Specs {
   };
 }
 
+/* Warranty as stated in the listing: the whole product ("2 Year Comprehensive Warranty") and the key part
+   ("10 Years on Compressor", "Warranty: 5 years on panel"). Only plain 1–25 year figures; anything else stays unknown. */
+const PART = "compressor|motor|panel|inner\\s*tank|tank|heating\\s*element|element|magnetron|pcb";
+function warranty(t: string): Specs {
+  const yrs = (v: string | null) => { const n = num(v); return n && n >= 1 && n <= 25 ? n : null; };
+  /* no other digits between the years and the part, so "1 Year on Product, 10 Years on Compressor" reads 10 */
+  const partRe = new RegExp(`\\b(\\d{1,2})\\s*(?:-\\s*)?(?:years?|yrs?)\\b[^|.\\d]{0,30}?\\b(?:warranty\\s*)?(?:on|for)\\s*(?:the\\s*)?(${PART})`, "gi");
+  const partRe2 = new RegExp(`\\b(${PART})\\s*warranty\\s*(?:of|:|-)?\\s*(\\d{1,2})\\s*(?:years?|yrs?)`, "i");
+  let part: string | null = null, partYears: number | null = null;
+  /* the sentence must be about warranty: the word within ~40 characters before or 20 after */
+  const m = [...t.matchAll(partRe)].find((x) => /warrant/i.test(t.slice(Math.max(0, (x.index ?? 0) - 40), (x.index ?? 0) + x[0].length + 20)));
+  const m2 = t.match(partRe2);
+  if (m) { partYears = yrs(m[1]); part = m[2]; }
+  else if (m2) { partYears = yrs(m2[2]); part = m2[1]; }
+  if (part) part = part.toLowerCase().replace(/\s+/g, " ").replace(/^inner tank$/, "tank").replace(/^heating element$/, "element");
+  /* product warranty: "1 year comprehensive warranty", "warranty: 2 years" (not the part figure above) */
+  let product: number | null = null;
+  for (const w of t.matchAll(/\b(\d{1,2})\s*(?:-\s*)?(?:years?|yrs?)\s*(?:of\s*)?(?:comprehensive|standard|product|manufacturer(?:'s)?|brand)?\s*warranty\b(?!\s*(?:on|for)\s*(?:the\s*)?(?:compressor|motor|panel|tank|inner|heating|element))/gi)) {
+    product = yrs(w[1]); if (product) break;
+  }
+  /* "Warranty: 1 Year on Product" */
+  if (!product) { const w = t.match(/warrant[^|.]{0,20}?\b(\d{1,2})\s*(?:years?|yrs?)\s*(?:on|for)\s*(?:the\s*)?product/i); if (w) product = yrs(w[1]); }
+  return { warranty_years: product, part_warranty_years: part ? partYears : null, warranty_part: partYears ? part : null };
+}
+
+/* Geysers / water heaters: storage or instant, size, energy rating, tank and pressure details */
+function geyser(t: string): Specs {
+  const cap = num(first(t, /\b(\d{1,3}(?:\.\d)?)\s*-?\s*(?:L|Ltr|Litres?|Liters?)\b/i));
+  const type = has(t, /\binstant\b/i) ? "Instant" : has(t, /\bstorage\b/i) ? "Storage" : cap != null ? (cap <= 6 ? "Instant" : "Storage") : null;
+  return {
+    capacity_l: cap && cap > 0 && cap <= 200 ? cap : null,
+    type,
+    energy_stars: stars(t),
+    glass_lined: has(t, /glass[\s-]*(?:lined|line|coated|coating)|vitreous\s*enamel|blue\s*diamond/i) || null,
+    pressure_bar: num(first(t, /\b(\d{1,2}(?:\.\d)?)\s*bar\b/i)),
+    watts: num(first(t, /\b(\d{3,4})\s*W(?:atts?)?\b/i)),
+    gas: has(t, /\bgas\b|\bLPG\b|\bPNG\b/i) || null,
+    smart: has(t, /wi[\s-]*fi|smart\s*(?:app|control)|alexa/i) || null,
+  };
+}
+
 /* Home Appliances holds several product types; the type is read from the title only
    (an air fryer's features often say "dishwasher safe"), then that type's specs from title and features */
 const litres = /\b(\d{1,2}(?:\.\d)?)\s*(?:L|Ltr|Litres?|Liters?)\b/i;
@@ -182,14 +223,17 @@ function appliance(t: string, title: string): Specs {
 
 const RULES: Record<string, (t: string, title: string) => Specs> = {
   "tvs": tv, "laptops": laptop, "washing-machines": washer, "refrigerators": fridge,
-  "air-conditioners": ac, "soundbars-speakers": soundbar, "home-appliances": appliance,
+  "air-conditioners": ac, "soundbars-speakers": soundbar, "home-appliances": appliance, "geysers": geyser,
 };
+/* categories whose buyers weigh the warranty (big appliances); read for these only */
+const WARRANTY = new Set(["tvs", "washing-machines", "refrigerators", "air-conditioners", "home-appliances", "geysers", "laptops"]);
 
 /* specs for a product found on a category page; empty for categories without rules */
 export function specsFor(category: string, title: string, features: string[] = []): Specs {
   const rule = RULES[category];
   if (!rule) return {};
-  const out = rule(text(title, features), title);
+  const t = text(title, features);
+  const out = { ...rule(t, title), ...(WARRANTY.has(category) ? warranty(t) : {}) };
   return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== null && v !== undefined));
 }
 
@@ -209,6 +253,8 @@ export function specChips(category: string, s: Specs): string[] {
         s.energy_stars ? `${s.energy_stars}★` : null, s.inverter ? "Inverter" : null, s.copper ? "Copper" : null];
       case "soundbars-speakers": return [s.channels ? `${s.channels} ch` : null, s.watts ? `${s.watts} W` : null,
         s.dolby_atmos ? "Dolby Atmos" : null, s.subwoofer ? "Subwoofer" : null];
+      case "geysers": return [s.capacity_l ? `${s.capacity_l} L` : null, s.type as string,
+        s.energy_stars ? `${s.energy_stars}★` : null, s.glass_lined ? "Glass-lined tank" : null, s.pressure_bar ? `${s.pressure_bar} bar` : null];
       case "home-appliances": switch (s.kind) {
         case "Chimney": return [s.width_cm ? `${s.width_cm} cm` : null, s.suction_m3h ? `${s.suction_m3h} m³/hr` : null,
           s.filter as string, s.auto_clean ? "Auto-clean" : null, s.bldc ? "BLDC motor" : null];
@@ -223,5 +269,9 @@ export function specChips(category: string, s: Specs): string[] {
       default: return [];
     }
   })();
-  return c.filter((x): x is string => Boolean(x)).slice(0, 5);
+  /* the stated key-part warranty is one of the first things buyers of big appliances check */
+  const w = s.part_warranty_years && Number(s.part_warranty_years) >= 2 && s.warranty_part ? `${s.part_warranty_years} yr ${s.warranty_part} warranty`
+    : s.warranty_years && Number(s.warranty_years) >= 2 ? `${s.warranty_years} yr warranty` : null;
+  const chips = c.filter((x): x is string => Boolean(x));
+  return (w ? [...chips.slice(0, 4), w] : chips).slice(0, 5);
 }

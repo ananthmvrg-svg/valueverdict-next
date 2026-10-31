@@ -1,0 +1,7 @@
+{
+ "_help": "Times are India time, 24-hour HH:MM. The repository variable REELS_TIME (Settings → Secrets and variables → Actions → Variables) overrides \"time\" without a code change. \"overrides\" sets a different time for one date only.",
+ "time": "08:00",
+ "overrides": { "2026-11-01": "06:30" },
+ "deals_until": "22:00",
+ "deal_every_minutes": 30
+}

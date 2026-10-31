@@ -116,12 +116,14 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pb .fact{font-weight:700;font-size:26px;line-height:1.25;border-radius:10px;padding:6px 12px;align-self:flex-start}
 .pb .deal{background:#fff1e0;color:#b45309}.pb .low{background:#fee2e2;color:#b91c1c}.pb .prime{background:#e0f2fe;color:#0369a1}
 .pb .at{font-weight:500;font-size:20px;color:#94a3b8}
+.pb .tag2{align-self:flex-start;font-weight:800;font-size:26px;padding:6px 16px;border-radius:12px;background:#16a34a;color:#fff;margin-bottom:2px}
 .photo .ico{color:#9db7dc}
 .rk{position:absolute;left:-12px;top:-24px;font-weight:800;font-size:104px;line-height:1;padding:10px 32px 16px;border-radius:30px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00;box-shadow:0 14px 40px rgba(255,138,0,.5)}
 .photo .tag{position:absolute;right:22px;top:22px;font-weight:800;font-size:32px;padding:10px 24px;border-radius:14px;background:#16a34a;color:#fff}
 .card{margin-top:28px;flex:1;min-height:0;background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.14);border-radius:40px;padding:34px 42px 36px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;overflow:hidden}
 .brand{font-weight:800;font-size:34px;letter-spacing:.16em;text-transform:uppercase;color:#7cc4ff;margin-bottom:-12px}
 .card>*{flex:none}
+.chips{max-height:none}
 .name b{color:#7cc4ff}
 .name{font-weight:800;font-size:54px;line-height:1.13;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .chips{display:flex;flex-wrap:wrap;gap:12px}
@@ -136,7 +138,13 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .tip{font-weight:500;font-size:32px;line-height:1.35;color:#dbe7ff;background:rgba(30,144,255,.12);border:2px solid rgba(30,144,255,.35);border-radius:22px;padding:16px 22px}
 .tip b{color:#7cc4ff}
 .tip span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.dots{position:absolute;left:0;right:0;bottom:250px;display:flex;justify-content:center;gap:14px}
+.dots{position:absolute;left:0;right:0;bottom:244px;display:flex;justify-content:center;gap:14px}
+/* "where to buy" on every slide: above Instagram's caption area */
+.safe.prod{bottom:400px}
+.ctabar{position:absolute;left:0;right:0;bottom:286px;display:flex;justify-content:center}
+.ctabar span{font-weight:800;font-size:36px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffc04d);border-radius:999px;padding:12px 34px;box-shadow:0 10px 30px rgba(255,138,0,.45)}
+.ctabar b{font-weight:800}
+.hookline+.ctabar,.safe>.ctabar{position:static;margin-top:30px;justify-content:flex-start}
 .dots i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25)}
 .dots i.on{background:#ff8a00;width:60px;border-radius:12px}
 
@@ -217,10 +225,29 @@ body.diwali .safe{top:278px}
 .cta .urg{margin-top:18px;font-weight:600;font-size:34px;color:#ffb547}
 `;
 
+/* product card must never be cut off: drop extras (3rd/4th chip, 3rd pro, 2nd con, tip) until it fits */
+const FIT = `<script>
+window.__fit = () => {
+  const card = document.querySelector(".card"); if (!card) return;
+  const over = () => card.scrollHeight > card.clientHeight + 2;
+  const steps = [
+    /* drop a middle chip, keeping the first ones and the last (the warranty chip, when there is one) */
+    () => { const c = [...card.querySelectorAll(".chips .chip")]; if (c.length > 3) { c[c.length - 2].remove(); return true; } },
+    () => { const c = [...card.querySelectorAll(".chips .chip")]; if (c.length > 3) { c[c.length - 2].remove(); return true; } },
+    () => { const l = card.querySelectorAll(".pro li"); if (l.length > 2) { l[l.length - 1].remove(); return true; } },
+    () => { const l = card.querySelectorAll(".con li"); if (l.length > 1) { l[l.length - 1].remove(); return true; } },
+    () => { const x = card.querySelector(".tip"); if (x) { x.remove(); return true; } },
+    () => { const l = card.querySelectorAll(".pro li"); if (l.length > 1) { l[l.length - 1].remove(); return true; } },
+  ];
+  for (const s of steps) { if (!over()) break; s(); }
+};
+</script>`;
+
 /* Amazon photos come with wide white margins; crop them to the product so it fills its frame */
 const TRIM = `<script>
 window.__ready = (async () => {
   await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+  await document.fonts.ready; if (window.__fit) window.__fit();
   for (const img of document.querySelectorAll("img.trim")) {
     try {
       const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) continue;
@@ -303,8 +330,9 @@ function diwaliDeco() {
   return `<svg class="deco" width="1080" height="1920" viewBox="0 0 1080 1920"><defs><radialGradient id="glow"><stop offset="0" stop-color="#ffb000" stop-opacity=".7"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient></defs>${sparks}${rangoli}</svg><svg class="toran" width="1080" height="96" viewBox="0 0 1080 96">${beads}</svg>${diyas}`;
 }
 
-const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body class="${THEME}"><div class="bg"></div>${THEME === "diwali" ? diwaliDeco() : `<div class="grid"></div>`}${body}${TRIM}</body></html>`;
+const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body class="${THEME}"><div class="bg"></div>${THEME === "diwali" ? diwaliDeco() : `<div class="grid"></div>`}${body}${FIT}${TRIM}</body></html>`;
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
+const CTA_BAR = `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
@@ -334,6 +362,7 @@ export function hookSlide(r) {
     <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
     <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
+    ${CTA_BAR}
   </div>`);
 }
 
@@ -347,6 +376,7 @@ function priceBox(p) {
     p.primeOnly ? `<span class="fact prime">Prime deal</span>` : "",
   ].filter(Boolean).slice(0, 2).join("");
   return `<div class="pb">
+    ${p.badge ? `<span class="tag2">${esc(p.badge)}</span>` : ""}
     <div class="now">${inr(p.price)}</div>
     ${p.was && p.was > p.price ? `<div class="mrp">M.R.P. <s>${inr(p.was)}</s></div>` : ""}
     ${p.off ? `<span class="off">${Math.round(p.off)}% off</span>` : ""}
@@ -356,13 +386,12 @@ function priceBox(p) {
 }
 
 export function productSlide(r, p, rank, idx, total) {
-  const chips = p.specs.slice(0, 4).map((s) => `<span class="chip">${esc(s)}</span>`).join("");
-  return page(`${top(`${idx + 1}/${total}`)}<div class="safe">
+  const chips = p.specs.slice(0, 5).map((s) => `<span class="chip">${esc(s)}</span>`).join("");
+  return page(`${top(`${idx + 1}/${total}`)}<div class="safe prod">
     <div class="photo">
       <div class="pic">${p.image ? `<img class="trim" src="${p.image}">` : `<div class="ico">${svg(r.icon, 260)}</div>`}</div>
       ${priceBox(p)}
       <span class="rk">#${rank}</span>
-      ${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ""}
     </div>
     <div class="card">
       <div class="name">${p.brand ? `<b>${esc(p.brand)}</b> ` : ""}${esc(p.name)}</div>
@@ -374,7 +403,7 @@ export function productSlide(r, p, rank, idx, total) {
       </div>` : ""}
       ${p.tip ? `<div class="tip"><span><b>💡 Good to know:</b> ${esc(p.tip)}</span></div>` : ""}
     </div>
-  </div>${dots(total, idx)}`);
+  </div>${CTA_BAR}${dots(total, idx)}`);
 }
 
 export function ctaSlide(r) {
@@ -439,7 +468,7 @@ export function posterSlide(r) {
    standing on the stage with a glow. Used whenever that background file exists; otherwise the drawn cover below. */
 const bgFile = (theme) => [join(here, "backgrounds", `${theme}.jpg`), join(here, "backgrounds", `${theme}.png`)].find(existsSync);
 const ONE = { Refrigerators: "Fridge", TVs: "TV", "Washing Machines": "Washer", "Air Conditioners": "AC", Laptops: "Laptop",
-  "Soundbars & Speakers": "Soundbar", "Home Appliances": "Appliance", "Fridge Accessories": "Stabilizer" };
+  "Soundbars & Speakers": "Soundbar", "Home Appliances": "Appliance", "Fridge Accessories": "Stabilizer", Geysers: "Geyser" };
 const COVER_CSS = `
 .stage{position:absolute;left:0;top:0}
 .pc-bg{position:absolute;inset:0;background-size:cover;background-position:center}

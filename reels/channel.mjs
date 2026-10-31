@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE_URL, select, shortName, clean, brandCase } from "./shared.mjs";
+import { startTime, dealsUntil, dealEvery, minutes, nowMinutes } from "./when.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -172,7 +173,22 @@ async function deals(data) {
   saveState(state);
 }
 
-const data = await loadData();
-if (flag("--menu")) await menu(data);
-else if (flag("--deal")) await deals(data);
-else console.log("Use --menu or --deal (add --dry-run to preview)");
+/* --auto (the 15-minute schedule): today's menu once at the start time (schedule.json / REELS_TIME), then a deal
+   every DEAL_EVERY_MINUTES from 30 minutes later until DEALS_UNTIL. Every other run does nothing. */
+async function auto() {
+  const state = loadState(), now = nowMinutes(), start = minutes(startTime());
+  if (now < start) { console.log(`before today's start (${startTime()} IST), nothing to do`); return; }
+  if (state.menuDay !== DATE) {
+    await menu(await loadData());
+    state.menuDay = DATE; saveState(state); return;
+  }
+  if (now < start + 30 || now > minutes(dealsUntil())) { console.log("outside deal hours"); return; }
+  if (state.lastDealAt && Date.now() - Date.parse(state.lastDealAt) < (dealEvery() - 5) * 60e3) { console.log("last deal was recent"); return; }
+  await deals(await loadData());
+  const after = loadState(); after.lastDealAt = new Date().toISOString(); saveState(after);
+}
+
+if (flag("--auto")) await auto();
+else if (flag("--menu")) await menu(await loadData());
+else if (flag("--deal")) await deals(await loadData());
+else console.log("Use --auto, --menu or --deal (add --dry-run to preview)");

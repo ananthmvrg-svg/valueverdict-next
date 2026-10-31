@@ -36,7 +36,12 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
 - Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
 - Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
 
-## YouTube Shorts (`youtube.mjs`, runs after the reels in "Daily Reels")
+## YouTube Shorts (`youtube.mjs`)
+
+**Now:** uploads are paused. Every reel folder gets `<name>_youtube.txt` (title, description, tags, hashtags, researched
+the same way) so you post the Short yourself from the YouTube app with a trending sound. Tick "youtube" in Run workflow to
+upload private Shorts again.
+
 
 - Uploads the day's best 6 reels as **private** Shorts: Today's Top 10 Deals, Top 10 Amazon Finds, and 4 budget pages that take turns.
   You add a sound in YouTube Studio (Editor → Audio) and make them public. Telegram gets a list with Studio links.
@@ -45,3 +50,13 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
   (saved next to the video as `youtube.json`). The cover is the first frame, since Shorts can't take a custom thumbnail by API.
 - Secrets: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`. Without them the step is skipped.
 - Preview the metadata without uploading: `node youtube.mjs --dry-run` after `npm run sample`.
+
+## Daily time (no code change needed)
+
+- Reels + ZIP + YouTube Shorts and the Telegram menu start at the daily time; Telegram deals follow every 30 minutes until 22:00.
+- Default `08:00` IST in `reels/schedule.json`. To change it: GitHub → Settings → Secrets and variables → Actions →
+  **Variables** → New variable `REELS_TIME` = `06:30` (24-hour, India time). Delete the variable to go back to 08:00.
+  Optional variables: `DEALS_UNTIL` (default `22:00`), `DEAL_EVERY_MINUTES` (default `30`).
+- One-off date: add it to `overrides` in `reels/schedule.json` (e.g. `"2026-11-01": "06:30"`); it wins over the variable for that day.
+- GitHub checks every 15 minutes, so a run starts within about 15 minutes of the time (sometimes a little later when GitHub is busy).
+- `node reels/when.mjs show` prints today's times.

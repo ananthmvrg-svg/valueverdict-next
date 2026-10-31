@@ -147,12 +147,39 @@ function appliance(s: Specs): string[] {
   return t;
 }
 
+function geyser(s: Specs): string[] {
+  const t: string[] = [];
+  const l = n(s.capacity_l);
+  if (s.type === "Instant" || (l && l <= 6)) t.push(`${l ? l + " L instant" : "An instant"} geyser heats a small amount quickly: good for a kitchen or a quick wash, not for a full bucket bath.`);
+  else if (l) t.push(l <= 15 ? `${l} L suits one bathroom for 2–3 people taking bucket baths.` : l <= 25 ? `${l} L suits a family of 3–5 or a shower.` : `${l} L suits large families, bathtubs or several bathrooms.`);
+  if (n(s.energy_stars) === 5) t.push("A 5-star storage geyser keeps water hot longer after switching off, so it reheats less and saves electricity.");
+  if (s.glass_lined) t.push("A glass-lined tank resists rust and scale from hard water, so it usually lasts longer.");
+  const bar = n(s.pressure_bar);
+  if (bar) t.push(bar >= 8 ? `${bar} bar pressure rating suits high-rise flats with pressure pumps.` : `${bar} bar suits normal tank-fed homes; high-rise flats with pressure pumps need about 8 bar.`);
+  return t;
+}
+
+/* the stated key-part warranty, explained (added for every big-appliance category) */
+function warrantyTip(s: Specs): string[] {
+  const y = n(s.part_warranty_years), part = String(s.warranty_part ?? "");
+  if (!y || y < 2 || !part) return [];
+  const why: Record<string, string> = {
+    compressor: "the compressor is the costliest part to replace",
+    motor: "the motor is the part that wears most",
+    panel: "the panel is most of a TV's cost",
+    tank: "the tank is what rusts or leaks first",
+    element: "the heating element is the part that fails most often",
+  };
+  return [`The ${y}-year ${part} warranty matters: ${why[part] || `it covers the ${part}`}. Keep the invoice and register the product with the brand.`];
+}
+
 const RULES: Record<string, (s: Specs) => string[]> = {
   "tvs": tv, "laptops": laptop, "refrigerators": fridge, "washing-machines": washer, "air-conditioners": ac, "soundbars-speakers": soundbar,
-  "home-appliances": appliance,
+  "home-appliances": appliance, "geysers": geyser,
 };
 
 /* the most useful explanations for this product, at most `max` */
 export function tipsFor(category: string, specs: Specs, max = 2): string[] {
-  return (RULES[category]?.(specs ?? {}) ?? []).slice(0, max);
+  const s = specs ?? {};
+  return [...(RULES[category]?.(s) ?? []), ...warrantyTip(s)].slice(0, max);
 }

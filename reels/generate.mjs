@@ -2,10 +2,12 @@
    Reads the same AI picks the website shows (Supabase "deal_picks": rank, why, best for, pros, cons, product
    photo from the Amazon API), and for every budget page (e.g. refrigerators/under-35k) with 1–5 picks makes:
      slides/*.jpg   hook, one slide per product (#1…#5), call-to-action
-     cover.jpg      reel cover / thumbnail (upload it as the reel's cover in Instagram)
-     reel.mp4       1080×1920 silent video (add a trending sound in the Instagram app)
-     post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
-     caption.txt    caption + 5 hashtags, ready to paste
+   (every file is named <folder>_<date>, e.g. refrigerators-under-35k_2026-11-01.mp4)
+     <name>.mp4            1080×1920 silent video, cover as the first frame (add a trending sound in the app)
+     <name>_cover.jpg      reel cover / Shorts thumbnail
+     <name>_post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
+     <name>_instagram.txt  Instagram caption + 5 hashtags
+     <name>_youtube.txt    YouTube Shorts title, description, tags and hashtags (researched SEO, see youtube.mjs)
    Then zips everything (one ZIP per category) and sends it to Telegram.
 
    node generate.mjs              live picks, send to Telegram (needs TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
@@ -148,7 +150,7 @@ const HASHTAGS = {
   refrigerators: ["#refrigerator", "#fridge", "#homeappliances"], "washing-machines": ["#washingmachine", "#laundry", "#homeappliances"],
   tvs: ["#smarttv", "#tv", "#techdeals"], "air-conditioners": ["#airconditioner", "#ac", "#summeressentials"],
   laptops: ["#laptop", "#laptops", "#techdeals"], "soundbars-speakers": ["#soundbar", "#hometheatre", "#techdeals"],
-  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
+  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], geysers: ["#geyser", "#waterheater", "#winteressentials"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
 };
 function caption(r) {
   const tags = [...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances", "#bestbuy"]), "#amazondeals", "#valueverdict"];
@@ -193,13 +195,17 @@ async function render(browser, r, dir) {
   const cta = join(slides, `${String(steps.length + 2).padStart(2, "0")}-cta.jpg`);
   await shot(ctaSlide(r), cta);
   frames.push({ file: cta, dur: 2.6 });
-  await shot(coverSlide(r), join(dir, "cover.jpg"), "jpeg");
+  const base = `${r.slug}_${DATE}`;
+  await shot(coverSlide(r), join(dir, `${base}_cover.jpg`), "jpeg");
+  /* the cover is the video's first frame, so it can be picked as the Shorts thumbnail in the YouTube app */
+  frames.unshift({ file: join(dir, `${base}_cover.jpg`), dur: 0.8 });
   /* single-image post (4:5): all picks with photo, name and today's price */
   await page.setViewportSize({ width: 1080, height: 1350 });
-  await shot(posterSlide(r), join(dir, "post.jpg"));
+  await shot(posterSlide(r), join(dir, `${base}_post.jpg`));
   await page.close();
-  video(frames, join(dir, "reel.mp4"));
-  writeFileSync(join(dir, "caption.txt"), caption(r) + "\n");
+  video(frames, join(dir, `${base}.mp4`));
+  writeFileSync(join(dir, `${base}_instagram.txt`), caption(r) + "\n");
+  r.base = base;
 }
 
 /* slides → MP4 with short slide/fade transitions; silent track so every app accepts it */
@@ -255,11 +261,23 @@ for (const r of reels) {
 await browser.close();
 /* manifest for later steps (YouTube upload): what each folder holds, without the inlined photos */
 writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: DATE, dir: root, reels: reels.map((r) => ({
-  slug: r.slug, catSlug: r.catSlug, catName: r.catName, subName: r.subName, url: r.url, headline: r.headline || "", coverLine: r.coverLine || "",
+  slug: r.slug, base: r.base, catSlug: r.catSlug, catName: r.catName, subName: r.subName, url: r.url, headline: r.headline || "", coverLine: r.coverLine || "",
   more: r.more || "", copy: r.copy, items: r.items.map((p) => ({ brand: p.brand, name: p.name, bestFor: p.bestFor, specs: p.specs, price: p.price, off: p.off })),
 })) }, null, 1));
 
-/* everything in one ZIP: one folder per reel (reel.mp4, cover.jpg, post.jpg, caption.txt, slides/) */
+/* YouTube title / description / tags for every reel, researched fresh (youtube.mjs), as <name>_youtube.txt */
+{
+  const { useRun, seoFor, seoText } = await import("./youtube.mjs");
+  const run = JSON.parse(readFileSync(join(outDir, "latest.json"), "utf8"));
+  useRun(run);
+  for (const r of run.reels) {
+    try { writeFileSync(join(root, r.slug, `${r.base}_youtube.txt`), seoText(await seoFor(r))); }
+    catch (e) { console.warn(`  YouTube text for ${r.slug} failed: ${e.message}`); }
+  }
+  console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
+}
+
+/* everything in one ZIP: one folder per reel (<name>.mp4, _cover.jpg, _post.jpg, _instagram.txt, _youtube.txt, slides/) */
 const zip = join(outDir, `${name}.zip`);
 rmSync(zip, { force: true });
 execFileSync("zip", ["-qr", zip, name], { cwd: outDir });
@@ -271,7 +289,7 @@ console.log(`✔ ${reels.length} reels → ${zip} (${mb.toFixed(0)} MB)`);
 function publishRelease() {
   const repo = process.env.GITHUB_REPOSITORY, tag = `reels-${STAMP}`;
   execFileSync("gh", ["release", "create", tag, zip, "--repo", repo, "--title", `Reels ${STAMP.replace("_", " ")} IST`,
-    "--notes", `${reels.length} reels: reel.mp4, cover.jpg, post.jpg, caption.txt and slides for each.`], { stdio: "inherit" });
+    "--notes", `${reels.length} reels: video, cover, post, Instagram and YouTube texts and slides for each.`], { stdio: "inherit" });
   try {
     const old = execFileSync("gh", ["release", "list", "--repo", repo, "--limit", "100", "--json", "tagName", "--jq", ".[].tagName"], { encoding: "utf8" })
       .split("\n").filter((t) => t.startsWith("reels-")).sort().reverse().slice(7);
@@ -282,7 +300,7 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with reel.mp4, cover.jpg, post.jpg and caption.txt.`;
+  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with the video, cover, post, Instagram caption and YouTube title/description/tags.`;
   if (mb < 49) await tg("sendDocument", { caption: text }, { field: "document", path: zip, name: `${name}.zip` });
   else if (process.env.GITHUB_ACTIONS) {
     const url = publishRelease();
