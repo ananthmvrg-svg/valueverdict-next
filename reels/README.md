@@ -15,7 +15,7 @@ caption opener and post title for every page, using the season from `season.json
 real facts from the picks (Amazon deal labels, deal end dates, low stock). Needs the `ANTHROPIC_API_KEY` secret the site
 already uses; without it, plain lines are used.
 
-Reels never print prices or discounts: a reel stays up for weeks, Amazon prices change daily.
+Prices on slides and posts carry the time Amazon confirmed them; post reels the same day.
 
 Run now from the phone: GitHub app → this repo → Actions → **Daily Reels** → **Run workflow**
 (optional: only some category slugs, picks per reel). Repo secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
