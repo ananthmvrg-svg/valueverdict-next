@@ -124,6 +124,7 @@ async function writeBatch(reels, { date, season }) {
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: MODEL, max_tokens: 8000, system: SYSTEM,
+        cache_control: { type: "ephemeral" }, /* the instructions repeat across the batches of one run */
         output_config: { format: { type: "json_schema", schema: SCHEMA } },
         messages: [{ role: "user", content: `Today is ${date} (India). Season: ${season || "no festival, use everyday framing"}.\nWrite copy for each budget page below, one entry per id.\n\n${facts.join("\n")}` }],
       }),
