@@ -93,8 +93,8 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .chip{font-weight:700;font-size:34px;padding:8px 24px;border-radius:14px;background:rgba(30,144,255,.18);border:2px solid rgba(30,144,255,.5);color:#d8ecff;white-space:nowrap}
 
 /* hook */
-.collage{position:relative;height:700px;margin:10px 0 36px}
-.collage .t{position:absolute;top:40px;width:420px;height:590px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.collage{position:relative;height:560px;margin:10px 0 36px}
+.collage .t{position:absolute;top:30px;width:400px;height:480px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
@@ -194,7 +194,7 @@ export function hookSlide(r) {
   return page(`${top()}<div class="safe">
     <div class="collage">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
     <div class="kicker">${esc(c.season_tag).toUpperCase()}</div>
-    <h1 style="font-size:${c.hook_title.length <= 14 ? 136 : c.hook_title.length <= 22 ? 112 : 96}px"><em>${esc(c.hook_title)}</em></h1>
+    <h1 style="font-size:${c.hook_title.length <= 14 ? 132 : c.hook_title.length <= 24 ? 108 : 92}px"><em>${esc(c.hook_title)}</em></h1>
     <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
   </div>`);
