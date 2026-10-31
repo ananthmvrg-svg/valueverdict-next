@@ -148,7 +148,7 @@ const HASHTAGS = {
   refrigerators: ["#refrigerator", "#fridge", "#homeappliances"], "washing-machines": ["#washingmachine", "#laundry", "#homeappliances"],
   tvs: ["#smarttv", "#tv", "#techdeals"], "air-conditioners": ["#airconditioner", "#ac", "#summeressentials"],
   laptops: ["#laptop", "#laptops", "#techdeals"], "soundbars-speakers": ["#soundbar", "#hometheatre", "#techdeals"],
-  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
+  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], geysers: ["#geyser", "#waterheater", "#winteressentials"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
 };
 function caption(r) {
   const tags = [...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances", "#bestbuy"]), "#amazondeals", "#valueverdict"];

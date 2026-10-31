@@ -58,7 +58,7 @@ async function yt(path, params) {
 
 /* ---------- research ---------- */
 const ONE = { refrigerators: "fridge", tvs: "tv", "washing-machines": "washing machine", "air-conditioners": "ac", laptops: "laptop",
-  "soundbars-speakers": "soundbar", "home-appliances": "home appliances", "fridge-accessories": "stabilizer for fridge" };
+  "soundbars-speakers": "soundbar", "home-appliances": "home appliances", "fridge-accessories": "stabilizer for fridge", geysers: "geyser" };
 function mainQuery(r) {
   if (r.catSlug === "top-100") return "amazon deals today";
   if (r.catSlug === "amazon-finds") return "amazon finds india";
@@ -102,7 +102,8 @@ const SCHEMA = {
 const SYSTEM = `You write YouTube Shorts metadata for Value Verdict, an Indian buying-guide channel that compares Amazon.in products by budget.
 Goal: be found in YouTube search and make Indian shoppers tap and watch. Use the real search phrases and the titles/tags of
 top Shorts you are given to choose keywords; prefer phrases people actually type ("best fridge under 30000").
-Title: main search phrase first, then a hook (season, "Top 5", who it suits); max 90 characters; end with " #Shorts".
+Title: main search phrase first, then a hook (season, "Top 5", who it suits), and always the word "Amazon" (e.g. "on Amazon",
+"Amazon deals"); max 90 characters; end with " #Shorts".
 Description: first two lines repeat the main search phrases naturally; then the picks as a numbered list (brand + model,
 one short "best for"); then "Full comparison, pros, cons and today's price: <url>" (plain text, links aren't clickable on
 Shorts); then "Follow Value Verdict for daily best-value picks."; then "As an Amazon Associate we earn from qualifying
@@ -112,7 +113,8 @@ Tags: 10-15 phrases, total under 450 characters, mixing the main phrase, its aut
 Hashtags: 3-5, always including #Shorts.`;
 
 function fallback(r, q) {
-  const title = `${q.replace(/\b\w/g, (c) => c.toUpperCase())} ${manifest.date.slice(0, 4)} 🔥 Top ${r.items.length} #Shorts`.slice(0, 100);
+  const head = q.replace(/\b\w/g, (c) => c.toUpperCase());
+  const title = `${head}${/amazon/i.test(q) ? "" : " on Amazon"} ${manifest.date.slice(0, 4)} 🔥 Top ${r.items.length} #Shorts`.slice(0, 100);
   const list = r.items.map((p, i) => `${i + 1}. ${p.brand} ${p.name}${p.bestFor ? ` (${p.bestFor})` : ""}`).join("\n");
   const tags = [q, `${q} ${manifest.date.slice(0, 4)}`, ...new Set(r.items.map((p) => p.brand).filter(Boolean)), "amazon deals", "value verdict"];
   const hashtags = ["#Shorts", "#AmazonDeals", "#ValueVerdict"];
@@ -146,7 +148,8 @@ async function write(r, q, suggest, top) {
     const title = String(o.title || "").replace(/[<>]/g, "").slice(0, 100) || base.title;
     const tags = []; let len = 0;
     for (const t of (o.tags || []).map((x) => String(x).replace(/[<>,#]/g, "").trim()).filter(Boolean)) { if (len + t.length + 1 > 480) break; tags.push(t); len += t.length + 1; }
-    return { title: /#shorts/i.test(title) ? title : `${title.slice(0, 91)} #Shorts`, description: String(o.description || base.description).replace(/[<>]/g, "").slice(0, 4900),
+    const t2 = /amazon/i.test(title) ? title : `${title.replace(/\s*#shorts\s*$/i, "").slice(0, 78)} on Amazon`;
+    return { title: /#shorts/i.test(t2) ? t2 : `${t2.slice(0, 91)} #Shorts`, description: String(o.description || base.description).replace(/[<>]/g, "").slice(0, 4900),
       tags: tags.length ? tags : base.tags, hashtags: o.hashtags?.length ? o.hashtags : base.hashtags };
   } catch (e) { console.warn(`  AI metadata failed (${e.message}), using plain`); return base; }
 }
@@ -197,6 +200,17 @@ async function upload(file, meta) {
   return j.id;
 }
 
+/* our cover as the Short's thumbnail. YouTube may refuse it (custom thumbnails need a phone-verified channel, and
+   Shorts thumbnails can't always be set by API); the upload stays, and the cover is the first frame anyway. */
+async function setThumbnail(id, dir) {
+  const jpg = join(dir, "thumb.jpg");
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(dir, "cover.jpg"), "-vf", "scale=720:1280", "-q:v", "3", jpg]); /* well under the 2 MB limit */
+  const r = await fetch(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${id}&uploadType=media`, {
+    method: "POST", headers: { Authorization: `Bearer ${await accessToken()}`, "Content-Type": "image/jpeg" }, body: readFileSync(jpg),
+  });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(`${r.status} ${j.error?.message || ""}`); }
+}
+
 async function telegram(text) {
   const t = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
   if (!t || !chat || DRY) return;
@@ -223,13 +237,15 @@ for (const r of choose(manifest.reels)) {
   if (DRY) { console.log(`  ${meta.title}\n  tags: ${meta.tags.join(", ")}\n  ${meta.hashtags.join(" ")}`); continue; }
   try {
     const id = await upload(withCover(dir), meta);
-    done.push({ id, title: meta.title });
-    console.log(`  ✔ uploaded private: https://studio.youtube.com/video/${id}/edit`);
+    let thumb = true;
+    try { await setThumbnail(id, dir); } catch (e) { thumb = false; console.warn(`  thumbnail not set (${e.message})`); }
+    done.push({ id, title: meta.title, thumb });
+    console.log(`  ✔ uploaded private: https://studio.youtube.com/video/${id}/edit${thumb ? " (thumbnail set)" : ""}`);
   } catch (e) { console.error(`  ✖ ${e.message}`); if (/quota|uploadLimitExceeded/i.test(e.message)) break; }
 }
 if (done.length) {
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
   await telegram([`📺 <b>${done.length} Shorts uploaded to YouTube as Private</b>`, "Add a sound in Studio (Editor → Audio) and set them Public:", "",
-    ...done.map((d, i) => `${i + 1}. <a href="https://studio.youtube.com/video/${d.id}/edit">${esc(d.title)}</a>`)].join("\n"));
+    ...done.map((d, i) => `${i + 1}. <a href="https://studio.youtube.com/video/${d.id}/edit">${esc(d.title)}</a>${d.thumb ? "" : " (pick the cover frame as thumbnail in the YouTube app)"}`)].join("\n"));
 }
 console.log(`✔ YouTube: ${done.length} Shorts uploaded as private`);

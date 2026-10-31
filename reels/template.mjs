@@ -439,7 +439,7 @@ export function posterSlide(r) {
    standing on the stage with a glow. Used whenever that background file exists; otherwise the drawn cover below. */
 const bgFile = (theme) => [join(here, "backgrounds", `${theme}.jpg`), join(here, "backgrounds", `${theme}.png`)].find(existsSync);
 const ONE = { Refrigerators: "Fridge", TVs: "TV", "Washing Machines": "Washer", "Air Conditioners": "AC", Laptops: "Laptop",
-  "Soundbars & Speakers": "Soundbar", "Home Appliances": "Appliance", "Fridge Accessories": "Stabilizer" };
+  "Soundbars & Speakers": "Soundbar", "Home Appliances": "Appliance", "Fridge Accessories": "Stabilizer", Geysers: "Geyser" };
 const COVER_CSS = `
 .stage{position:absolute;left:0;top:0}
 .pc-bg{position:absolute;inset:0;background-size:cover;background-position:center}

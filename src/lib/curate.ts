@@ -3,6 +3,7 @@ import { admin, select, selectJson } from "./db";
 import type { Deal } from "./amazon";
 import { isOn } from "./products";
 import { keepSupported, supported } from "./evidence";
+import { serviceOf } from "./brands";
 
 /* AI deal picks, once a day at the 6 AM cycle (called by lib/refresh.ts once a cycle's candidates are all in).
    One request per budget page (top 5) and one for Amazon Finds (50–60 across its sections), sent through
@@ -27,22 +28,28 @@ type Run = { id: number; stage: "groups" | "retry"; batch_id: string | null; sta
 type Pick = { asin: string; reason: string; score: number; best_for: string; strengths: string[]; limitations: string[]; confidence: "high" | "medium" | "low" };
 
 const SYSTEM = `You choose the best deals for Value Verdict, an Indian website that helps shoppers pick products by budget.
-Pick products a careful buyer would be glad they bought:
-- a genuine product of the page's type, never an accessory, spare part, cover or unrelated item;
-- sensible specifications for the price (capacity, energy rating, panel, processor, RAM, storage, warranty, whatever matters for the type);
-- a meaningful discount; an established brand with service in India is a plus.
+Pick products a careful buyer would be glad they bought. A genuine product of the page's type only, never an accessory,
+spare part, cover or unrelated item. Indian buyers of big appliances weigh these, in this order; rank the same way:
+1. after-sales service: prefer "service: nationwide" (a brand with its own service network across India) when the
+   rest is close; "unknown" is not a fault, it only means we have no data;
+2. warranty: longer stated warranty on the key part (compressor for fridges and ACs, motor for washing machines,
+   panel for TVs, tank for geysers) and on the product;
+3. running cost: higher energy star rating and inverter technology for fridges, ACs, washing machines and geysers;
+4. value for money: the right size and the specs that matter for the type (capacity, panel, resolution, frost-free,
+   glass-lined tank, processor, RAM…) for the price, and a meaningful discount.
+Every candidate already has an Amazon customer rating above the page's minimum.
 Prefer variety: never pick two colour, size or storage variants of the same model, and avoid several picks from one brand when good alternatives exist.
 You only see the listing text and the specs read from it, with no ratings, reviews or price history. Use only that data:
 - never claim reliability, durability, build quality, popularity, customer satisfaction or "lowest ever" prices;
 - "amazon rank" is Amazon.in's best-seller rank in that Amazon category today (lower = more buyers right now); you may use it as one signal of buyer demand when ranking, but never mention it or claim that a product is popular or best-selling;
-- never describe a brand's reputation ("established", "well-known", "known brand", "trusted", "track record"): compare products on their specs, price and discount only;
+- never describe a brand's reputation ("established", "well-known", "known brand", "trusted", "track record") and never mention "service" or the service network: use it only to rank; compare products in text on their specs, warranty, price and discount;
 - Amazon's "was" price is a reference price, not verified price history;
 - write numbers only if they appear in the candidate's data;
 - a spec missing from the data is unknown, not absent.
 For each pick return:
 - reason: two plain sentences, at most 45 words in total. First: what makes it stand out against the other candidates on this page (specs, price, discount), e.g. "The only 5-star inverter model here, with an 8 kg drum and steam wash at the lowest price on this page." Second: who it suits best, or who should pick something else, e.g. "A good fit for a family of four; skip it if you need a dryer.";
 - best_for: up to 6 words on who or what it suits, based on its specs (e.g. "Small families, low running cost"); empty if unclear;
-- strengths: up to 3 short facts (under 8 words each) from the data;
+- strengths: up to 3 short facts (under 8 words each) from the data; a stated key-part warranty of 5+ years is worth one (e.g. "10-year compressor warranty");
 - limitations: up to 2 short, honest trade-offs of the product visible in the data (e.g. "Only 2-star energy rating", "64 GB storage"); never a note about missing information; empty if none;
 - confidence: "high" when the key specs and price are clearly stated, "medium" when some are missing, "low" when the listing says little;
 - score: the deal's overall value from 1 to 100 on one scale for the whole site (90+ only for exceptional value, 70–89 a strong deal, 50–69 decent), so scores from different pages can be compared.
@@ -77,7 +84,9 @@ const line = (x: Candidate, extra = "") =>
   [x.asin, x.brand || "-", cut(x.title, 130), `${inr(x.price)}${x.was ? ` (was ${inr(x.was)}, ${x.off ?? "?"}% off)` : ""}`,
     x.deal || "-", cut(x.features.join(" / "), 220), `specs: ${specText(x) || "none read"}`,
     /* Amazon.in best-seller rank today: a demand signal for ranking only; claims about popularity stay blocked (lib/evidence.ts) */
-    `amazon rank: ${x.salesRank ? `#${x.salesRank.rank} in ${x.salesRank.node}` : "none"}`, extra].filter(Boolean).join(" | ");
+    `amazon rank: ${x.salesRank ? `#${x.salesRank.rank} in ${x.salesRank.node}` : "none"}`,
+    /* our own list of brands with a service network across India (lib/brands.ts): ranking only, never written about */
+    `service: ${serviceOf(x.brand)}`, extra].filter(Boolean).join(" | ");
 
 const request = (custom_id: string, task: string, lines: string[], maxTokens: number): Anthropic.Messages.BatchCreateParams.Request => ({
   custom_id,
