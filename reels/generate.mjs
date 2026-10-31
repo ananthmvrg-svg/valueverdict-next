@@ -44,6 +44,7 @@ const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || pick(/SUPABASE_KEY\
 
 const today = new Date(Date.now() + 5.5 * 3600e3); /* India date */
 const DATE = today.toISOString().slice(0, 10);
+const STAMP = `${DATE}_${today.toISOString().slice(11, 16).replace(":", "")}`; /* India date + time, e.g. 2026-10-31_0805 */
 const YEAR = today.getUTCFullYear();
 const MONTH = today.toLocaleString("en-IN", { month: "long", timeZone: "UTC" });
 
@@ -270,7 +271,7 @@ async function tg(method, fields, file) {
 /* ---------- main ---------- */
 const reels = reelsOf(await loadData());
 if (!reels.length) throw new Error("No budget group with products found" + (ONLY.length ? ` for ONLY=${ONLY}` : ""));
-const name = `ValueVerdict_${DATE}`, outDir = join(here, "out"), root = join(outDir, name);
+const name = `ValueVerdict_${STAMP}`, outDir = join(here, "out"), root = join(outDir, name);
 rmSync(root, { recursive: true, force: true });
 for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
 setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so */
