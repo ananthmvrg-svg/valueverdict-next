@@ -26,3 +26,12 @@ Run now from the phone: GitHub app → this repo → Actions → **Daily Reels**
 Local: `cd reels && npm install && npx playwright install chromium && npm run sample` (needs Node 22.18+, ffmpeg, zip).
 Optional: put Amazon's official "Available at Amazon" badge (Associates Central) at `reels/amazon-badge.png` and it replaces the "on Amazon.in" text chip.
 Design lives in `template.mjs`; data, timings, captions and hashtags in `generate.mjs`.
+
+## Telegram channel (`channel.mjs`, workflow "Telegram Channel")
+
+- **8:00 AM IST:** a "Today's best picks" menu with a button per category (website pages, Top 100, Amazon Finds), pinned for the day.
+- **8:30 AM – 10:00 PM IST, every 30 minutes:** one deal: Amazon photo, deal price / M.R.P. / % off, deal end, low stock,
+  best for, two pros, and buttons **🛒 Buy on Amazon** (direct affiliate link) and **📊 Compare top 5** (website).
+  Categories take turns; a product posted in the last 3 days is skipped (state kept in the Actions cache).
+- Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
+- Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
