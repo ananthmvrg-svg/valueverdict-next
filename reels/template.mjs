@@ -105,8 +105,17 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .hookline small{display:block;font-weight:500;font-size:36px;color:#c9d6f2;margin-top:10px}
 
 /* product */
-.photo{position:relative;height:470px;flex:none;border-radius:44px;background:#fff;display:flex;align-items:center;justify-content:center;padding:60px 80px 36px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.photo{position:relative;height:470px;flex:none;border-radius:44px;background:#fff;display:flex;align-items:stretch;gap:20px;padding:56px 30px 26px 40px;box-shadow:0 30px 80px rgba(0,0,0,.45);color:#0f172a}
+.photo .pic{flex:1;min-width:0;display:flex;align-items:center;justify-content:center}
 .photo img{max-width:100%;max-height:100%;object-fit:contain}
+/* price panel beside the photo: today's price, M.R.P., saving, deal facts from Amazon */
+.pb{flex:none;width:400px;display:flex;flex-direction:column;justify-content:center;gap:10px;border-left:3px dashed #e2e8f0;padding-left:26px}
+.pb .now{font-weight:800;font-size:76px;line-height:1;letter-spacing:-.02em}
+.pb .mrp{font-weight:600;font-size:28px;color:#64748b}.pb .mrp s{color:#94a3b8}
+.pb .off{align-self:flex-start;font-weight:800;font-size:34px;color:#fff;background:#16a34a;border-radius:12px;padding:4px 16px}
+.pb .fact{font-weight:700;font-size:26px;line-height:1.25;border-radius:10px;padding:6px 12px;align-self:flex-start}
+.pb .deal{background:#fff1e0;color:#b45309}.pb .low{background:#fee2e2;color:#b91c1c}.pb .prime{background:#e0f2fe;color:#0369a1}
+.pb .at{font-weight:500;font-size:20px;color:#94a3b8}
 .photo .ico{color:#9db7dc}
 .rk{position:absolute;left:-12px;top:-24px;font-weight:800;font-size:104px;line-height:1;padding:10px 32px 16px;border-radius:30px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00;box-shadow:0 14px 40px rgba(255,138,0,.5)}
 .photo .tag{position:absolute;right:22px;top:22px;font-weight:800;font-size:32px;padding:10px 24px;border-radius:14px;background:#16a34a;color:#fff}
@@ -137,9 +146,10 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
 .pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
 .pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
-.pst h1{font-size:56px;margin:14px 0 6px;line-height:1.02}
+.pst h1{font-size:56px;margin:12px 0 4px;line-height:1.02}
 .pst h1 .amzbig{font-size:56px}
-.pst .urg{font-weight:700;font-size:24px;color:#fff;margin-bottom:12px;display:flex;align-items:baseline;gap:16px}
+.pst .urg{font-weight:700;font-size:24px;color:#fff;margin-bottom:12px;display:flex;flex-direction:column;gap:4px}
+.pst .urg>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pst .urg .whom{font-size:32px}
 .pst .urg .amz{font-size:22px;padding:4px 14px;border-radius:10px}.pst .urg .amz img{height:34px}
 .pst h1 span{color:#ffb547}
@@ -279,6 +289,7 @@ const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
+const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 const shortCat = (n) => n.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
 const titleCase = (s) => String(s || "").replace(/\b([a-z])([a-z]*)/g, (m, a, b) => (/^(for|and|of|the|a|an|to|with|on|in)$/.test(m) ? m : a.toUpperCase() + b));
 const topLine = (r) => (r.items.length > 1 ? `Top ${r.items.length} ${shortCat(r.catName)}` : `Best ${shortCat(r.catName)}`);
@@ -307,11 +318,30 @@ export function hookSlide(r) {
   </div>`);
 }
 
+const dayMonth = (iso) => new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" });
+const timeOf = (iso) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+function priceBox(p) {
+  if (p.price == null) return "";
+  const facts = [
+    p.deal ? `<span class="fact deal">🏷️ ${esc(p.deal)}${p.dealEnds ? ` · ends ${dayMonth(p.dealEnds)}` : ""}</span>` : p.dealEnds ? `<span class="fact deal">⏳ Deal ends ${dayMonth(p.dealEnds)}</span>` : "",
+    p.lowStock ? `<span class="fact low">⚡ ${esc(p.lowStock.replace(/\.$/, ""))}</span>` : "",
+    p.primeOnly ? `<span class="fact prime">Prime deal</span>` : "",
+  ].filter(Boolean).slice(0, 2).join("");
+  return `<div class="pb">
+    <div class="now">${inr(p.price)}</div>
+    ${p.was && p.was > p.price ? `<div class="mrp">M.R.P. <s>${inr(p.was)}</s></div>` : ""}
+    ${p.off ? `<span class="off">${Math.round(p.off)}% off</span>` : ""}
+    ${facts}
+    ${p.priceAt ? `<div class="at">Amazon.in price at ${timeOf(p.priceAt)}</div>` : ""}
+  </div>`;
+}
+
 export function productSlide(r, p, rank, idx, total) {
   const chips = p.specs.slice(0, 4).map((s) => `<span class="chip">${esc(s)}</span>`).join("");
   return page(`${top(`${idx + 1}/${total}`)}<div class="safe">
     <div class="photo">
-      ${p.image ? `<img class="trim" src="${p.image}">` : `<div class="ico">${svg(r.icon, 300)}</div>`}
+      <div class="pic">${p.image ? `<img class="trim" src="${p.image}">` : `<div class="ico">${svg(r.icon, 260)}</div>`}</div>
+      ${priceBox(p)}
       <span class="rk">#${rank}</span>
       ${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ""}
     </div>
@@ -340,7 +370,6 @@ export function ctaSlide(r) {
   </div>`);
 }
 
-const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 
 /* one image with every pick: #1 hero card, the rest as a 2-column grid; price as Amazon confirmed it */
 export function posterSlide(r) {

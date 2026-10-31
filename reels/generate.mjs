@@ -13,7 +13,7 @@
    node generate.mjs --sample     saved sample picks (no network)
    ONLY=refrigerators,tvs         only these category slugs (env or --only=…)
    MAX_ITEMS=5                    picks per reel (top N by rank)
-   Reels never print prices (they stay up for weeks); post.jpg does, stamped with the time Amazon confirmed them. */
+   Prices (slides and post.jpg) are stamped with the time Amazon confirmed them, since they change daily. */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -97,7 +97,7 @@ function reelsOf({ cats, subs, picks }) {
           cons: clean(p.limitations).slice(0, 2),
           tip: (tipsFor(cat.slug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
           badge: p.rank === 1 ? "🏆 Top pick" : "",
-          price: d.price ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", /* poster only */
+          price: d.price ?? null, was: d.was ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", primeOnly: Boolean(d.primeOnly),
           deal: d.deal || "", dealEnds: d.dealEnds || "", lowStock: d.lowStock || "", /* facts the AI copy may use */
         };
       });
