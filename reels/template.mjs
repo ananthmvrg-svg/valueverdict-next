@@ -138,10 +138,10 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .tip{font-weight:500;font-size:32px;line-height:1.35;color:#dbe7ff;background:rgba(30,144,255,.12);border:2px solid rgba(30,144,255,.35);border-radius:22px;padding:16px 22px}
 .tip b{color:#7cc4ff}
 .tip span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.dots{position:absolute;left:0;right:0;bottom:250px;display:flex;justify-content:center;gap:14px}
+.dots{position:absolute;left:0;right:0;bottom:244px;display:flex;justify-content:center;gap:14px}
 /* "where to buy" on every slide: above Instagram's caption area */
-.safe.prod{bottom:385px}
-.ctabar{position:absolute;left:0;right:0;bottom:296px;display:flex;justify-content:center}
+.safe.prod{bottom:400px}
+.ctabar{position:absolute;left:0;right:0;bottom:286px;display:flex;justify-content:center}
 .ctabar span{font-weight:800;font-size:36px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffc04d);border-radius:999px;padding:12px 34px;box-shadow:0 10px 30px rgba(255,138,0,.45)}
 .ctabar b{font-weight:800}
 .hookline+.ctabar,.safe>.ctabar{position:static;margin-top:30px;justify-content:flex-start}
