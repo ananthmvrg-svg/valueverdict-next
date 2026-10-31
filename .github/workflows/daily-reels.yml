@@ -14,6 +14,10 @@ on:
         description: "Products per reel (1-5)"
         required: false
         default: "5"
+      season:
+        description: "Festival/season for the AI hooks (empty = reels/season.json)"
+        required: false
+        default: ""
 
 jobs:
   reels:
@@ -35,6 +39,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # AI hooks; without it the reels use plain lines
+          SEASON: ${{ github.event.inputs.season }}
           ONLY: ${{ github.event.inputs.only }}
           MAX_ITEMS: ${{ github.event.inputs.max_items || '5' }}
         run: npm run generate
