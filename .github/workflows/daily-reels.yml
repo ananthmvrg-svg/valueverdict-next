@@ -23,9 +23,9 @@ on:
         required: false
         default: ""
       youtube:
-        description: "Upload the best Shorts to YouTube as private"
+        description: "Also upload the best Shorts to YouTube as private (paused by default; titles/descriptions always come in the ZIP)"
         type: boolean
-        default: true
+        default: false
       shorts:
         description: "How many Shorts to upload"
         required: false
@@ -82,14 +82,18 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # AI hooks; without it the reels use plain lines
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # AI hooks and YouTube texts; without it plain lines
+          # YouTube SEO research for the <name>_youtube.txt files (most viewed Shorts per search); no uploads here
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           SEASON: ${{ github.event.inputs.season }}
           ONLY: ${{ github.event.inputs.only }}
           MAX_ITEMS: ${{ github.event.inputs.max_items || '5' }}
           GH_TOKEN: ${{ github.token }}
         run: npm run generate
       - name: Upload best Shorts to YouTube (private)
-        if: success() && github.event.inputs.youtube != 'false'
+        if: success() && github.event.inputs.youtube == 'true'
         continue-on-error: true # a YouTube problem never blocks the reels ZIP
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}

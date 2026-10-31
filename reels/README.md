@@ -36,7 +36,12 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
 - Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
 - Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
 
-## YouTube Shorts (`youtube.mjs`, runs after the reels in "Daily Reels")
+## YouTube Shorts (`youtube.mjs`)
+
+**Now:** uploads are paused. Every reel folder gets `<name>_youtube.txt` (title, description, tags, hashtags, researched
+the same way) so you post the Short yourself from the YouTube app with a trending sound. Tick "youtube" in Run workflow to
+upload private Shorts again.
+
 
 - Uploads the day's best 6 reels as **private** Shorts: Today's Top 10 Deals, Top 10 Amazon Finds, and 4 budget pages that take turns.
   You add a sound in YouTube Studio (Editor → Audio) and make them public. Telegram gets a list with Studio links.

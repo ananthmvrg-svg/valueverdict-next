@@ -23,8 +23,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 const DRY = process.argv.includes("--dry-run");
 const PER_DAY = Math.max(1, parseInt(process.env.YT_SHORTS_PER_DAY || "6", 10) || 6);
 const MODEL = process.env.REELS_MODEL || "claude-haiku-5-5";
-const manifest = JSON.parse(readFileSync(join(here, "out", "latest.json"), "utf8"));
-const season = seasonFor(manifest.date);
+/* the run being worked on: out/latest.json when run on its own, or handed over by generate.mjs */
+let manifest = null, season = "";
+export function useRun(run) { manifest = run; season = seasonFor(run.date); }
 
 /* ---------- which reels ---------- */
 function choose(reels) {
@@ -172,14 +173,18 @@ function withCategories(description) {
   return out.join("\n").slice(0, 4900);
 }
 
-/* ---------- video: the cover as the first frame (Shorts can't take a custom thumbnail through the API) ---------- */
-function withCover(dir) {
-  const out = join(dir, "youtube.mp4");
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-loop", "1", "-t", "0.8", "-i", join(dir, "cover.jpg"), "-i", join(dir, "reel.mp4"),
-    "-f", "lavfi", "-t", "0.8", "-i", "anullsrc=r=44100:cl=stereo",
-    "-filter_complex", "[0:v]scale=1080:1920,fps=30,format=yuv420p,setsar=1[c];[1:v]fps=30,format=yuv420p,setsar=1[v];[c][2:a][v][1:a]concat=n=2:v=1:a=1[ov][oa]",
-    "-map", "[ov]", "-map", "[oa]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out]);
-  return out;
+/* researched metadata for one reel: query, autocomplete, top Shorts, AI title/description/tags */
+export async function seoFor(r) {
+  const q = mainQuery(r);
+  const [suggest, top] = await Promise.all([autocomplete(q), process.env.YT_REFRESH_TOKEN ? topShorts(q) : []]);
+  const meta = await write(r, q, suggest, top);
+  meta.description = withCategories(meta.description);
+  return { query: q, autocomplete: suggest, ...meta };
+}
+/* the same, as a text file to copy from on the phone */
+export function seoText(m) {
+  return [`TITLE`, m.title, "", `DESCRIPTION`, m.description, "", `TAGS (YouTube Studio → Show more → Tags)`, m.tags.join(", "), "",
+    `HASHTAGS`, m.hashtags.join(" "), "", `(main search phrase: "${m.query}"; YouTube autocomplete: ${m.autocomplete.join(" · ") || "-"})`, ""].join("\n");
 }
 
 async function upload(file, meta) {
@@ -202,9 +207,9 @@ async function upload(file, meta) {
 
 /* our cover as the Short's thumbnail. YouTube may refuse it (custom thumbnails need a phone-verified channel, and
    Shorts thumbnails can't always be set by API); the upload stays, and the cover is the first frame anyway. */
-async function setThumbnail(id, dir) {
+async function setThumbnail(id, dir, base) {
   const jpg = join(dir, "thumb.jpg");
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(dir, "cover.jpg"), "-vf", "scale=720:1280", "-q:v", "3", jpg]); /* well under the 2 MB limit */
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(dir, `${base}_cover.jpg`), "-vf", "scale=720:1280", "-q:v", "3", jpg]); /* well under the 2 MB limit */
   const r = await fetch(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${id}&uploadType=media`, {
     method: "POST", headers: { Authorization: `Bearer ${await accessToken()}`, "Content-Type": "image/jpeg" }, body: readFileSync(jpg),
   });
@@ -218,34 +223,38 @@ async function telegram(text) {
     body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } }) }).catch(() => {});
 }
 
-/* ---------- main ---------- */
-if (!DRY && !(process.env.YT_CLIENT_ID && process.env.YT_CLIENT_SECRET && process.env.YT_REFRESH_TOKEN)) {
-  console.log("YouTube: YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN not set, skipping");
-  process.exit(0);
+/* ---------- main: upload as private Shorts (paused in the workflow; the texts come with the ZIP instead) ---------- */
+if (process.argv[1] && process.argv[1].endsWith("youtube.mjs")) {
+  useRun(JSON.parse(readFileSync(join(here, "out", "latest.json"), "utf8")));
+  if (!DRY && !(process.env.YT_CLIENT_ID && process.env.YT_CLIENT_SECRET && process.env.YT_REFRESH_TOKEN)) {
+    console.log("YouTube: YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN not set, skipping");
+    process.exit(0);
+  }
+  const canSearch = Boolean(process.env.YT_REFRESH_TOKEN);
+  const done = [];
+  for (const r of choose(manifest.reels)) {
+    const dir = join(manifest.dir, r.slug), file = join(dir, `${r.base}.mp4`);
+    if (!existsSync(file)) continue;
+    const q = mainQuery(r);
+    console.log(`• ${r.slug}: "${q}"`);
+    const [suggest, top] = await Promise.all([autocomplete(q), canSearch ? topShorts(q) : []]);
+    const meta = await write(r, q, suggest, top);
+    meta.description = withCategories(meta.description);
+    writeFileSync(join(dir, "youtube.json"), JSON.stringify({ query: q, autocomplete: suggest, topShorts: top, ...meta }, null, 1));
+    if (DRY) { console.log(`  ${meta.title}\n  tags: ${meta.tags.join(", ")}\n  ${meta.hashtags.join(" ")}`); continue; }
+    try {
+      const id = await upload(file, meta); /* the cover is already its first frame */
+      let thumb = true;
+      try { await setThumbnail(id, dir, r.base); } catch (e) { thumb = false; console.warn(`  thumbnail not set (${e.message})`); }
+      done.push({ id, title: meta.title, thumb });
+      console.log(`  ✔ uploaded private: https://studio.youtube.com/video/${id}/edit${thumb ? " (thumbnail set)" : ""}`);
+    } catch (e) { console.error(`  ✖ ${e.message}`); if (/quota|uploadLimitExceeded/i.test(e.message)) break; }
+  }
+  if (done.length) {
+    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+    await telegram([`📺 <b>${done.length} Shorts uploaded to YouTube as Private</b>`, "Add a sound in Studio (Editor → Audio) and set them Public:", "",
+      ...done.map((d, i) => `${i + 1}. <a href="https://studio.youtube.com/video/${d.id}/edit">${esc(d.title)}</a>${d.thumb ? "" : " (pick the cover frame as thumbnail in the YouTube app)"}`)].join("\n"));
+  }
+  console.log(`✔ YouTube: ${done.length} Shorts uploaded as private`);
+
 }
-const canSearch = Boolean(process.env.YT_REFRESH_TOKEN);
-const done = [];
-for (const r of choose(manifest.reels)) {
-  const dir = join(manifest.dir, r.slug);
-  if (!existsSync(join(dir, "reel.mp4"))) continue;
-  const q = mainQuery(r);
-  console.log(`• ${r.slug}: "${q}"`);
-  const [suggest, top] = await Promise.all([autocomplete(q), canSearch ? topShorts(q) : []]);
-  const meta = await write(r, q, suggest, top);
-  meta.description = withCategories(meta.description);
-  writeFileSync(join(dir, "youtube.json"), JSON.stringify({ query: q, autocomplete: suggest, topShorts: top, ...meta }, null, 1));
-  if (DRY) { console.log(`  ${meta.title}\n  tags: ${meta.tags.join(", ")}\n  ${meta.hashtags.join(" ")}`); continue; }
-  try {
-    const id = await upload(withCover(dir), meta);
-    let thumb = true;
-    try { await setThumbnail(id, dir); } catch (e) { thumb = false; console.warn(`  thumbnail not set (${e.message})`); }
-    done.push({ id, title: meta.title, thumb });
-    console.log(`  ✔ uploaded private: https://studio.youtube.com/video/${id}/edit${thumb ? " (thumbnail set)" : ""}`);
-  } catch (e) { console.error(`  ✖ ${e.message}`); if (/quota|uploadLimitExceeded/i.test(e.message)) break; }
-}
-if (done.length) {
-  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
-  await telegram([`📺 <b>${done.length} Shorts uploaded to YouTube as Private</b>`, "Add a sound in Studio (Editor → Audio) and set them Public:", "",
-    ...done.map((d, i) => `${i + 1}. <a href="https://studio.youtube.com/video/${d.id}/edit">${esc(d.title)}</a>${d.thumb ? "" : " (pick the cover frame as thumbnail in the YouTube app)"}`)].join("\n"));
-}
-console.log(`✔ YouTube: ${done.length} Shorts uploaded as private`);
