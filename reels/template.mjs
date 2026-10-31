@@ -133,26 +133,27 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 /* poster (1080×1350 single-image post): #1 as a wide hero card, the rest in a 2-column grid */
 .pst{position:absolute;inset:0;padding:40px 44px 36px;display:flex;flex-direction:column}
 .pst .hd{display:flex;align-items:center;gap:20px}
-.pst .hd img{width:96px;height:96px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.14),0 0 40px rgba(30,144,255,.6)}
+.pst .hd img{width:84px;height:84px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.14),0 0 40px rgba(30,144,255,.6)}
 .pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
 .pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
 .pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
-.pst h1{font-size:62px;margin:18px 0 8px;line-height:1.02}
-.pst .urg{font-weight:700;font-size:27px;color:#fff;margin-bottom:16px}
+.pst h1{font-size:58px;margin:14px 0 6px;line-height:1.02}
+.pst .urg{font-weight:700;font-size:25px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.pst .urg .amz{font-size:22px;padding:4px 14px;border-radius:10px}.pst .urg .amz img{height:34px}
 .pst h1 span{color:#ffb547}
 .gridp{flex:1;min-height:0;display:grid;gap:16px;grid-template-columns:1fr 1fr}
 .gc{position:relative;display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.14);border-radius:26px;padding:12px;min-height:0;overflow:hidden}
-.gc .ph{flex:1;min-height:0;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;padding:14px}
+.gc .ph{flex:1;min-height:0;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;padding:10px 10px 8px}
 .gc .ph img{max-width:100%;max-height:100%;object-fit:contain}
 .gc .ph .ico{color:#9db7dc}
 .gc .rk2{position:absolute;left:12px;top:12px;font-weight:800;font-size:40px;line-height:1;padding:6px 16px 9px;border-radius:0 0 16px 0;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00;border-top-left-radius:18px}
-.gc .nm{margin-top:10px;font-weight:700;font-size:25px;line-height:1.2;height:60px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 4px}
+.gc .nm{margin-top:8px;font-weight:700;font-size:25px;line-height:1.2;height:30px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding:0 4px}
 .gc .nm b{color:#7cc4ff}
 .gc .pr{display:flex;align-items:center;gap:12px;margin-top:6px;padding:0 4px}
 .gc .pr b{font-weight:800;font-size:36px}
 .gc .pr span{font-weight:800;font-size:21px;background:#16a34a;border-radius:9px;padding:2px 10px}
 .gc.hero{grid-column:1 / -1;flex-direction:row;gap:22px;border-color:rgba(255,181,71,.75);background:linear-gradient(160deg,rgba(255,181,71,.2),rgba(255,255,255,.04))}
-.gc.hero .ph{flex:none;width:44%}
+.gc.hero .ph{flex:none;width:50%}
 .gc.hero .bx{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0}
 .gc.hero .tp{align-self:flex-start;font-weight:800;font-size:24px;background:#16a34a;border-radius:10px;padding:4px 14px}
 .gc.hero .nm{font-size:34px;height:auto;max-height:82px;-webkit-line-clamp:2;margin:0}
@@ -161,6 +162,20 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pst .ft{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .pst .ft .go{font-weight:800;font-size:32px;color:#0b1530;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:12px 28px;border-radius:999px;white-space:nowrap}
 .pst .ft .note{font-weight:500;font-size:19px;color:#9fb3d9;line-height:1.35;text-align:right}
+/* amazon mark */
+.amz{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:34px;color:#111;background:#fff;border-radius:16px;padding:10px 24px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.amz img{height:64px;display:block}
+/* cover (reel thumbnail): key content inside the centre 1080×1440 that the profile grid shows */
+.cv{position:absolute;left:56px;right:56px;top:250px;bottom:250px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.cv .tag{font-weight:800;font-size:40px;letter-spacing:.14em;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:12px 34px;border-radius:999px}
+.cv .big{margin-top:24px;font-weight:800;font-size:250px;line-height:.86;letter-spacing:-.04em;background:linear-gradient(180deg,#ffd27a,#ff8a00);-webkit-background-clip:text;color:transparent}
+.cv .cat{font-weight:800;font-size:118px;line-height:1;letter-spacing:-.02em;margin-top:6px}
+.cv .pics{position:relative;width:100%;height:560px;margin-top:34px}
+.cv .pics .t{position:absolute;top:0;width:420px;height:540px;background:#fff;border-radius:44px;display:flex;align-items:center;justify-content:center;padding:36px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cv .pics .t img{max-width:100%;max-height:100%;object-fit:contain}
+.cv .pics .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff}
+.cv .row{margin-top:34px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap}
+.cv .row .pill{font-size:58px;align-self:center}
 /* cta */
 .cta{align-items:center;text-align:center;justify-content:center}
 .cta img{width:400px;height:400px;border-radius:50%;box-shadow:0 0 0 5px rgba(255,255,255,.12),0 0 140px rgba(30,144,255,.6);margin-bottom:54px}
@@ -173,7 +188,42 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .cta .urg{margin-top:18px;font-weight:600;font-size:34px;color:#ffb547}
 `;
 
-const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body><div class="bg"></div><div class="grid"></div>${body}</body></html>`;
+/* Amazon photos come with wide white margins; crop them to the product so it fills its frame */
+const TRIM = `<script>
+window.__ready = (async () => {
+  await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+  for (const img of document.querySelectorAll("img.trim")) {
+    try {
+      const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) continue;
+      const s = Math.min(1, 400 / Math.max(w, h)), c = document.createElement("canvas");
+      c.width = Math.round(w * s); c.height = Math.round(h * s);
+      const x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
+      const d = x.getImageData(0, 0, c.width, c.height).data;
+      let t = c.height, l = c.width, b = -1, r = -1;
+      for (let y = 0; y < c.height; y++) for (let k = 0; k < c.width; k++) {
+        const i = (y * c.width + k) * 4;
+        if (d[i] < 240 || d[i + 1] < 240 || d[i + 2] < 240) { if (y < t) t = y; if (y > b) b = y; if (k < l) l = k; if (k > r) r = k; }
+      }
+      if (r <= l || b <= t) continue;
+      const p = 3, sx = Math.max(0, (l - p) / s), sy = Math.max(0, (t - p) / s);
+      const sw = Math.min(w - sx, (r - l + 2 * p) / s), sh = Math.min(h - sy, (b - t + 2 * p) / s);
+      const o = document.createElement("canvas"); o.width = Math.round(sw); o.height = Math.round(sh);
+      o.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, o.width, o.height);
+      img.src = o.toDataURL("image/jpeg", 0.92);
+      await img.decode().catch(() => {});
+    } catch (e) {}
+  }
+})();
+</script>`;
+
+/* "on Amazon.in" mark: Amazon's own "Available at Amazon" badge if reels/amazon-badge.png is there
+   (download it from Associates Central; the logo itself may only be used as Amazon supplies it), else a text chip */
+const BADGE_FILE = join(here, "amazon-badge.png");
+const BADGE = existsSync(BADGE_FILE) ? `data:image/png;base64,${readFileSync(BADGE_FILE).toString("base64")}` : "";
+const amazon = (text = "Top picks on Amazon.in") =>
+  BADGE ? `<span class="amz"><img src="${BADGE}" alt="Available at Amazon"></span>` : `<span class="amz">🛒 ${text}</span>`;
+
+const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body><div class="bg"></div><div class="grid"></div>${body}${TRIM}</body></html>`;
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
@@ -190,12 +240,12 @@ export function hookSlide(r) {
     [[60, -6], [560, 6]],
     [[20, -8], [580, 8], [300, 0]],
   ][pics.length - 1] || [];
-  const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img src="${p.image}"></div>`).join("");
+  const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img class="trim" src="${p.image}"></div>`).join("");
   return page(`${top()}<div class="safe">
     <div class="collage">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
     <div class="kicker">${esc(c.season_tag).toUpperCase()}</div>
     <h1 style="font-size:${c.hook_title.length <= 14 ? 132 : c.hook_title.length <= 24 ? 108 : 92}px"><em>${esc(c.hook_title)}</em></h1>
-    <div class="pill">${esc(r.subName)}</div>
+    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div class="pill">${esc(r.subName)}</div>${amazon()}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
   </div>`);
 }
@@ -204,7 +254,7 @@ export function productSlide(r, p, rank, idx, total) {
   const chips = p.specs.slice(0, 4).map((s) => `<span class="chip">${esc(s)}</span>`).join("");
   return page(`${top(`${idx + 1}/${total}`)}<div class="safe">
     <div class="photo">
-      ${p.image ? `<img src="${p.image}">` : `<div class="ico">${svg(r.icon, 300)}</div>`}
+      ${p.image ? `<img class="trim" src="${p.image}">` : `<div class="ico">${svg(r.icon, 300)}</div>`}
       <span class="rk">#${rank}</span>
       ${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ""}
     </div>
@@ -240,7 +290,7 @@ export function posterSlide(r) {
   const n = r.items.length;
   const price = (p) => (p.price != null ? `<div class="pr"><b>${inr(p.price)}</b>${p.off ? `<span>${Math.round(p.off)}% off</span>` : ""}</div>` : "");
   const name = (p) => `<div class="nm">${p.brand ? `<b>${esc(p.brand)}</b> ` : ""}${esc(p.name)}</div>`;
-  const photo = (p) => `<div class="ph">${p.image ? `<img src="${p.image}">` : `<div class="ico">${svg(r.icon, 120)}</div>`}</div>`;
+  const photo = (p) => `<div class="ph">${p.image ? `<img class="trim" src="${p.image}">` : `<div class="ico">${svg(r.icon, 120)}</div>`}</div>`;
   /* 2 picks: side by side; 1, 3, 4, 5: #1 across the top, the rest two per row */
   const cards = r.items.map((p, i) => {
     if (i === 0 && n !== 2) return `<div class="gc hero">${photo(p)}<span class="rk2">#1</span>
@@ -253,9 +303,25 @@ export function posterSlide(r) {
   return page(`<style>html,body{height:1350px}</style><div class="pst">
     <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div><div class="bud">${esc(r.subName)}</div></div>
     <h1><span>${esc(r.copy.post_title)}</span></h1>
-    <div class="urg">⏳ ${esc(r.copy.urgency)} · Top ${n} picks</div>
+    <div class="urg">${amazon(`Top ${n} on Amazon.in`)}<span>⏳ ${esc(r.copy.urgency)}</span></div>
     <div class="gridp" style="grid-template-rows:${rows}">${cards.join("")}</div>
     <div class="ft"><div class="go">🔗 Link in bio · 💛 Follow for more</div>
       <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
+  </div>`);
+}
+
+/* reel cover / thumbnail: "TOP 5" + product type + big product photos + budget + Amazon mark */
+export function coverSlide(r) {
+  const n = r.items.length, c = r.copy;
+  const pics = r.items.filter((p) => p.image).slice(0, 3);
+  const pos = [[[300, 0]], [[70, -5], [530, 5]], [[0, -7], [600, 7], [300, 0]]][pics.length - 1] || [];
+  const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img class="trim" src="${p.image}"></div>`).join("");
+  const short = r.catName.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
+  return page(`${top()}<div class="cv">
+    <div class="tag">${esc(c.season_tag).toUpperCase()}</div>
+    <div class="big">${n > 1 ? `TOP ${n}` : "#1"}</div>
+    <div class="cat">${esc(short)}</div>
+    <div class="pics">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
+    <div class="row"><div class="pill">${esc(r.subName)}</div>${amazon("on Amazon.in")}</div>
   </div>`);
 }

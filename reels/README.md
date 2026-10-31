@@ -21,4 +21,5 @@ Run now from the phone: GitHub app → this repo → Actions → **Daily Reels**
 (optional: only some category slugs, picks per reel). Repo secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
 
 Local: `cd reels && npm install && npx playwright install chromium && npm run sample` (needs Node 22.18+, ffmpeg, zip).
+Optional: put Amazon's official "Available at Amazon" badge (Associates Central) at `reels/amazon-badge.png` and it replaces the "on Amazon.in" text chip.
 Design lives in `template.mjs`; data, timings, captions and hashtags in `generate.mjs`.
