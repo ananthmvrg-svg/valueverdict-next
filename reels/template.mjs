@@ -130,31 +130,35 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .dots i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25)}
 .dots i.on{background:#ff8a00;width:60px;border-radius:12px}
 
-/* poster (1080×1350 single-image post) */
-.pst{position:absolute;inset:0;padding:44px 48px 40px;display:flex;flex-direction:column}
-.pst .hd{display:flex;align-items:center;gap:22px}
-.pst .hd img{width:104px;height:104px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.14),0 0 40px rgba(30,144,255,.6)}
-.pst .hd .wm{font-weight:800;font-size:40px;letter-spacing:.06em;line-height:1}
-.pst .hd .wm small{display:block;font-weight:500;font-size:22px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
-.pst h1{font-size:70px;margin:26px 0 6px;line-height:1.02}
+/* poster (1080×1350 single-image post): #1 as a wide hero card, the rest in a 2-column grid */
+.pst{position:absolute;inset:0;padding:40px 44px 36px;display:flex;flex-direction:column}
+.pst .hd{display:flex;align-items:center;gap:20px}
+.pst .hd img{width:96px;height:96px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.14),0 0 40px rgba(30,144,255,.6)}
+.pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
+.pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
+.pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
+.pst h1{font-size:66px;margin:22px 0 20px;line-height:1}
 .pst h1 span{color:#ffb547}
-.pst .sub{font-weight:600;font-size:28px;color:#c9d6f2;margin-bottom:22px}
-.rows{display:flex;flex-direction:column;gap:14px;flex:1}
-.row{flex:1;display:flex;align-items:center;gap:22px;background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.13);border-radius:26px;padding:10px 22px 10px 12px;min-height:0}
-.row .r{flex:none;width:72px;font-weight:800;font-size:46px;color:#ffb547;text-align:center}
-.row .th{flex:none;width:138px;height:138px;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;padding:10px}
-.row .th img{max-width:100%;max-height:100%;object-fit:contain}
-.row .th .ico{color:#9db7dc}
-.row .tx{flex:1;min-width:0}
-.row .nm{font-weight:700;font-size:31px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.row .nm b{color:#7cc4ff}
-.row .bf{font-weight:500;font-size:24px;color:#c9d6f2;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .pr{flex:none;text-align:right}
-.row .pr b{display:block;font-weight:800;font-size:42px;color:#fff}
-.row .pr span{display:inline-block;margin-top:4px;font-weight:800;font-size:24px;color:#fff;background:#16a34a;border-radius:10px;padding:2px 12px}
-.row.first{border-color:rgba(255,181,71,.7);background:linear-gradient(160deg,rgba(255,181,71,.18),rgba(255,255,255,.04))}
-.pst .ft{margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.pst .ft .go{font-weight:800;font-size:34px;color:#0b1530;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:14px 30px;border-radius:999px;white-space:nowrap}
+.gridp{flex:1;min-height:0;display:grid;gap:16px;grid-template-columns:1fr 1fr}
+.gc{position:relative;display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.14);border-radius:26px;padding:12px;min-height:0;overflow:hidden}
+.gc .ph{flex:1;min-height:0;background:#fff;border-radius:18px;display:flex;align-items:center;justify-content:center;padding:14px}
+.gc .ph img{max-width:100%;max-height:100%;object-fit:contain}
+.gc .ph .ico{color:#9db7dc}
+.gc .rk2{position:absolute;left:12px;top:12px;font-weight:800;font-size:40px;line-height:1;padding:6px 16px 9px;border-radius:0 0 16px 0;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00;border-top-left-radius:18px}
+.gc .nm{margin-top:10px;font-weight:700;font-size:25px;line-height:1.2;height:60px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:0 4px}
+.gc .nm b{color:#7cc4ff}
+.gc .pr{display:flex;align-items:center;gap:12px;margin-top:6px;padding:0 4px}
+.gc .pr b{font-weight:800;font-size:36px}
+.gc .pr span{font-weight:800;font-size:21px;background:#16a34a;border-radius:9px;padding:2px 10px}
+.gc.hero{grid-column:1 / -1;flex-direction:row;gap:22px;border-color:rgba(255,181,71,.75);background:linear-gradient(160deg,rgba(255,181,71,.2),rgba(255,255,255,.04))}
+.gc.hero .ph{flex:none;width:44%}
+.gc.hero .bx{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0}
+.gc.hero .tp{align-self:flex-start;font-weight:800;font-size:24px;background:#16a34a;border-radius:10px;padding:4px 14px}
+.gc.hero .nm{font-size:34px;height:auto;max-height:82px;-webkit-line-clamp:2;margin:0}
+.gc.hero .bf{font-weight:500;font-size:24px;color:#c9d6f2;line-height:1.3;padding:0 4px}
+.gc.hero .pr b{font-size:52px}.gc.hero .pr span{font-size:26px}
+.pst .ft{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.pst .ft .go{font-weight:800;font-size:32px;color:#0b1530;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:12px 28px;border-radius:999px;white-space:nowrap}
 .pst .ft .note{font-weight:500;font-size:19px;color:#9fb3d9;line-height:1.35;text-align:right}
 /* cta */
 .cta{align-items:center;text-align:center;justify-content:center}
@@ -227,20 +231,25 @@ export function ctaSlide(r) {
 
 const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 
-/* one image with every pick: rank, photo, name, who it's for, price at the time Amazon confirmed it */
+/* one image with every pick: #1 hero card, the rest as a 2-column grid; price as Amazon confirmed it */
 export function posterSlide(r) {
-  const rows = r.items.map((p, i) => `<div class="row${i === 0 ? " first" : ""}">
-      <div class="r">#${i + 1}</div>
-      <div class="th">${p.image ? `<img src="${p.image}">` : `<div class="ico">${svg(r.icon, 100)}</div>`}</div>
-      <div class="tx"><div class="nm">${p.brand ? `<b>${esc(p.brand)}</b> ` : ""}${esc(p.name)}</div>${p.bestFor ? `<div class="bf">👍 ${esc(p.bestFor)}</div>` : ""}</div>
-      ${p.price != null ? `<div class="pr"><b>${inr(p.price)}</b>${p.off ? `<span>${Math.round(p.off)}% off</span>` : ""}</div>` : ""}
-    </div>`).join("");
   const n = r.items.length;
+  const price = (p) => (p.price != null ? `<div class="pr"><b>${inr(p.price)}</b>${p.off ? `<span>${Math.round(p.off)}% off</span>` : ""}</div>` : "");
+  const name = (p) => `<div class="nm">${p.brand ? `<b>${esc(p.brand)}</b> ` : ""}${esc(p.name)}</div>`;
+  const photo = (p) => `<div class="ph">${p.image ? `<img src="${p.image}">` : `<div class="ico">${svg(r.icon, 120)}</div>`}</div>`;
+  /* 2 picks: side by side; 1, 3, 4, 5: #1 across the top, the rest two per row */
+  const cards = r.items.map((p, i) => {
+    if (i === 0 && n !== 2) return `<div class="gc hero">${photo(p)}<span class="rk2">#1</span>
+      <div class="bx"><span class="tp">🏆 Top pick</span>${name(p)}${p.bestFor ? `<div class="bf">👍 ${esc(p.bestFor)}</div>` : ""}${price(p)}</div></div>`;
+    return `<div class="gc">${photo(p)}<span class="rk2">#${i + 1}</span>${name(p)}${price(p)}</div>`;
+  });
+  /* an odd card left over (#4 of 4) spans both columns */
+  if (n === 4) cards[3] = cards[3].replace('<div class="gc">', '<div class="gc" style="grid-column:1 / -1">');
+  const rows = n === 2 ? "1fr" : n === 1 ? "1fr" : n === 3 ? "1.1fr 1fr" : n === 4 ? "1.1fr 1fr 1fr" : "1fr 1fr 1fr";
   return page(`<style>html,body{height:1350px}</style><div class="pst">
-    <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div></div>
+    <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div><div class="bud">${esc(r.subName)}</div></div>
     <h1>${n > 1 ? `Top ${n} ` : "Best "}<span>${esc(r.catName)}</span></h1>
-    <div class="sub">${esc(r.subName)} · Hand-picked ${esc(r.month)} ${r.year}</div>
-    <div class="rows">${rows}</div>
+    <div class="gridp" style="grid-template-rows:${rows}">${cards.join("")}</div>
     <div class="ft"><div class="go">🔗 Link in bio for full details</div>
       <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
   </div>`);
