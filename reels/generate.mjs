@@ -20,6 +20,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hookSlide, productSlide, ctaSlide, posterSlide, iconKey } from "./template.mjs";
+import { writeCopy, seasonFor } from "./copy.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
 
@@ -97,6 +98,7 @@ function reelsOf({ cats, subs, picks }) {
           tip: (tipsFor(cat.slug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
           badge: p.rank === 1 ? "🏆 Top pick" : "",
           price: d.price ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", /* poster only */
+          deal: d.deal || "", dealEnds: d.dealEnds || "", lowStock: d.lowStock || "", /* facts the AI copy may use */
         };
       });
       if (!items.length) continue;
@@ -152,13 +154,16 @@ function caption(r) {
   const n = r.items.length;
   const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
   return [
-    `${n === 1 ? "The one" : `Top ${n}`} ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} — ${MONTH} ${YEAR} 🔥`,
+    r.copy.caption_hook,
+    `${n === 1 ? "Our pick" : `Top ${n}`}: ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} (${MONTH} ${YEAR})`,
     "",
     list,
     "",
     `👉 Pros, cons & today's price for each: link in bio`,
     `(${r.url.replace(/^https?:\/\//, "")})`,
-    `💾 Save this for later · Follow for daily best-value picks`,
+    `⏳ ${r.copy.urgency}`,
+    `💛 ${r.copy.follow_line}`,
+    `💾 Save this for later`,
     "",
     "As an Amazon Associate we earn from qualifying purchases.",
     "",
@@ -237,6 +242,8 @@ if (!reels.length) throw new Error("No budget group with products found" + (ONLY
 const name = `ValueVerdict_${DATE}`, outDir = join(here, "out"), root = join(outDir, name);
 rmSync(root, { recursive: true, force: true });
 for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
+const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
+for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();
 for (const r of reels) {
   console.log(`• ${r.slug} (${r.items.length} products)`);

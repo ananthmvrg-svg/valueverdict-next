@@ -10,7 +10,12 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
 - `reel.mp4` (1080×1920, silent: add a trending sound in Instagram), `cover.jpg`, `slides/*.jpg`, `caption.txt` (5 hashtags)
 - Telegram gets every reel with its caption, plus one ZIP per category
 
-Prices and discounts are never printed: a reel stays up for weeks, Amazon prices change daily.
+AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
+caption opener and post title for every page, using the season from `season.json` (edit it for the next festival) and only
+real facts from the picks (Amazon deal labels, deal end dates, low stock). Needs the `ANTHROPIC_API_KEY` secret the site
+already uses; without it, plain lines are used.
+
+Reels never print prices or discounts: a reel stays up for weeks, Amazon prices change daily.
 
 Run now from the phone: GitHub app → this repo → Actions → **Daily Reels** → **Run workflow**
 (optional: only some category slugs, picks per reel). Repo secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.

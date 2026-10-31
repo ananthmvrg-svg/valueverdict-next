@@ -137,7 +137,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
 .pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
 .pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
-.pst h1{font-size:66px;margin:22px 0 20px;line-height:1}
+.pst h1{font-size:62px;margin:18px 0 8px;line-height:1.02}
+.pst .urg{font-weight:700;font-size:27px;color:#fff;margin-bottom:16px}
 .pst h1 span{color:#ffb547}
 .gridp{flex:1;min-height:0;display:grid;gap:16px;grid-template-columns:1fr 1fr}
 .gc{position:relative;display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:2px solid rgba(255,255,255,.14);border-radius:26px;padding:12px;min-height:0;overflow:hidden}
@@ -168,7 +169,8 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .cta .ticks{margin-top:34px;display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
 .cta .url{margin-top:40px;font-weight:700;font-size:40px;padding:20px 40px;border-radius:24px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);line-height:1.35}
 .cta .bio{margin-top:40px;font-weight:800;font-size:62px;color:#0b1530;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:14px 48px;border-radius:999px}
-.cta .follow{margin-top:26px;font-weight:700;font-size:40px;color:#fff}
+.cta .follow{margin-top:34px;font-weight:800;font-size:46px;line-height:1.25;color:#fff}
+.cta .urg{margin-top:18px;font-weight:600;font-size:34px;color:#ffb547}
 `;
 
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body><div class="bg"></div><div class="grid"></div>${body}</body></html>`;
@@ -180,6 +182,7 @@ const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 export function hookSlide(r) {
   const n = r.items.length;
   const line = n === 1 ? "Our #1 pick 👇" : n >= 4 ? `Top ${n} picks · counting down 👇` : `Top ${n} picks 👇`;
+  const c = r.copy;
   /* fanned photos of the picks; the icon when no photo is available */
   const pics = r.items.filter((p) => p.image).slice(0, 3);
   const pos = [
@@ -190,10 +193,10 @@ export function hookSlide(r) {
   const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img src="${p.image}"></div>`).join("");
   return page(`${top()}<div class="safe">
     <div class="collage">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
-    <div class="kicker">TODAY'S BEST</div>
-    <h1><em>${esc(r.catName)}</em></h1>
+    <div class="kicker">${esc(c.season_tag).toUpperCase()}</div>
+    <h1 style="font-size:${c.hook_title.length <= 14 ? 136 : c.hook_title.length <= 22 ? 112 : 96}px"><em>${esc(c.hook_title)}</em></h1>
     <div class="pill">${esc(r.subName)}</div>
-    <div class="hookline">${line}<small>Pros, cons & who each one is for · ${esc(r.month)} ${r.year}</small></div>
+    <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
   </div>`);
 }
 
@@ -225,7 +228,8 @@ export function ctaSlide(r) {
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
     <div class="bio">🔗 Link in bio</div>
-    <div class="follow">Follow @ Value Verdict for daily picks</div>
+    <div class="follow">💛 ${esc(r.copy.follow_line)}</div>
+    <div class="urg">⏳ ${esc(r.copy.urgency)}</div>
   </div>`);
 }
 
@@ -248,9 +252,10 @@ export function posterSlide(r) {
   const rows = n === 2 ? "1fr" : n === 1 ? "1fr" : n === 3 ? "1.1fr 1fr" : n === 4 ? "1.1fr 1fr 1fr" : "1fr 1fr 1fr";
   return page(`<style>html,body{height:1350px}</style><div class="pst">
     <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div><div class="bud">${esc(r.subName)}</div></div>
-    <h1>${n > 1 ? `Top ${n} ` : "Best "}<span>${esc(r.catName)}</span></h1>
+    <h1><span>${esc(r.copy.post_title)}</span></h1>
+    <div class="urg">⏳ ${esc(r.copy.urgency)} · Top ${n} picks</div>
     <div class="gridp" style="grid-template-rows:${rows}">${cards.join("")}</div>
-    <div class="ft"><div class="go">🔗 Link in bio for full details</div>
+    <div class="ft"><div class="go">🔗 Link in bio · 💛 Follow for more</div>
       <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
   </div>`);
 }
