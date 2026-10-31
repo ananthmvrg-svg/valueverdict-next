@@ -60,11 +60,11 @@ async function menu({ cats, picks }) {
   const live = new Set(picks.map((p) => p.group_key.split("/")[0]));
   const list = cats.filter((c) => c.active !== false && !["amazon-finds", "top-100"].includes(c.slug) && live.has(c.slug))
     .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
-  const btn = (c) => ({ text: `${c.icon || "🛍️"} ${c.name}`, url: site(`/${c.slug}`) });
+  const btn = (c) => ({ text: `${c.icon || "🛍️"} ${c.name}`, url: site(`/${c.slug}`), style: "primary" });
   const rows = [];
   for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2).map(btn));
-  rows.push([{ text: "🔥 Today's Top 100 Deals", url: site("/top-deals") }]);
-  if (picks.some((p) => p.group_key === "amazon-finds")) rows.push([{ text: "🛒 Amazon Finds", url: site("/amazon-finds") }]);
+  rows.push([{ text: "🔥 Today's Top 100 Deals", url: site("/top-deals"), style: "danger" }]);
+  if (picks.some((p) => p.group_key === "amazon-finds")) rows.push([{ text: "🛒 Amazon Finds", url: site("/amazon-finds"), style: "success" }]);
   const day = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
   const text = [
     `🪔 <b>Today's best picks · ${esc(day)}</b>`,
@@ -133,7 +133,8 @@ function dealPost({ p, compare, label }) {
     photo: d.image ? d.image.replace(/\._SL\d+_\./, "._SL1000_.") : undefined,
     caption: lines.join("\n").slice(0, 1024),
     parse_mode: "HTML",
-    reply_markup: { inline_keyboard: [[{ text: "🛒 Buy on Amazon", url: d.url }, { text: "📊 Compare top 5", url: site(compare) }]] },
+    /* coloured buttons (Telegram Bot API "style"; older apps show them plain) */
+    reply_markup: { inline_keyboard: [[{ text: "🛒 Buy on Amazon", url: d.url, style: "success" }, { text: "📊 Compare top 5", url: site(compare), style: "primary" }]] },
   };
 }
 
