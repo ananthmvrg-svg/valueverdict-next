@@ -2,7 +2,7 @@
    Reads the same AI picks the website shows (Supabase "deal_picks": rank, why, best for, pros, cons, product
    photo from the Amazon API), and for every budget page (e.g. refrigerators/under-35k) with 1–5 picks makes:
      slides/*.jpg   hook, one slide per product (#1…#5), call-to-action
-     cover.jpg      reel cover
+     cover.jpg      reel cover / thumbnail (upload it as the reel's cover in Instagram)
      reel.mp4       1080×1920 silent video (add a trending sound in the Instagram app)
      post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
      caption.txt    caption + 5 hashtags, ready to paste
@@ -19,7 +19,7 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, posterSlide, iconKey } from "./template.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey } from "./template.mjs";
 import { writeCopy, seasonFor } from "./copy.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
@@ -178,6 +178,7 @@ async function render(browser, r, dir) {
   const shot = async (html, file, type = "jpeg") => {
     await page.setContent(html, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => window.__ready); /* photos cropped to the product */
     await page.screenshot({ path: file, type, ...(type === "jpeg" ? { quality: 92 } : {}) });
   };
   const steps = plan(r), frames = [];
@@ -191,7 +192,7 @@ async function render(browser, r, dir) {
   const cta = join(slides, `${String(steps.length + 2).padStart(2, "0")}-cta.jpg`);
   await shot(ctaSlide(r), cta);
   frames.push({ file: cta, dur: 2.6 });
-  await shot(hookSlide(r), join(dir, "cover.jpg"), "jpeg");
+  await shot(coverSlide(r), join(dir, "cover.jpg"), "jpeg");
   /* single-image post (4:5): all picks with photo, name and today's price */
   await page.setViewportSize({ width: 1080, height: 1350 });
   await shot(posterSlide(r), join(dir, "post.jpg"));
