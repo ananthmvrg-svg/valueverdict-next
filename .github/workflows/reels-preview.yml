@@ -1,0 +1,28 @@
+name: Reels preview (temporary)
+on:
+  push:
+    branches: [reels-preview]
+permissions:
+  contents: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg zip
+      - working-directory: reels
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - working-directory: reels
+        env:
+          ONLY: refrigerators,tvs
+        run: npm run generate -- --no-send
+      - name: Push previews to reels-preview-out
+        run: |
+          mkdir /tmp/p && cd reels/out && for d in ValueVerdict_*/*/; do n=$(basename $d); cp $d/post.jpg /tmp/p/$n-post.jpg; cp $d/slides/01-hook.jpg /tmp/p/$n-hook.jpg; cp $d/slides/0[2-3]-*.jpg /tmp/p/ 2>/dev/null || true; for f in $d/slides/0[2-3]-*.jpg; do cp $f /tmp/p/$n-$(basename $f); done; done
+          d=$(ls -d ValueVerdict_*/refrigerators-under-35k 2>/dev/null | head -1); [ -n "$d" ] && cp $d/reel.mp4 /tmp/p/refrigerators-under-35k-reel.mp4
+          cd /tmp/p && git init -q && git checkout -q -b reels-preview-out && git add . && git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm preview
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" reels-preview-out
