@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   post:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # pinned: ffmpeg + Chromium deps are known-good here
     timeout-minutes: 10
     defaults:
       run:
