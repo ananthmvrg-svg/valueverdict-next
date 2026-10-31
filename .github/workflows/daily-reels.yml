@@ -18,6 +18,14 @@ on:
         description: "Festival/season for the AI hooks (empty = reels/season.json)"
         required: false
         default: ""
+      youtube:
+        description: "Upload the best Shorts to YouTube as private"
+        type: boolean
+        default: true
+      shorts:
+        description: "How many Shorts to upload"
+        required: false
+        default: "6"
 
 permissions:
   contents: write # publish the daily ZIP as a release when it's too big for Telegram
@@ -48,6 +56,19 @@ jobs:
           MAX_ITEMS: ${{ github.event.inputs.max_items || '5' }}
           GH_TOKEN: ${{ github.token }}
         run: npm run generate
+      - name: Upload best Shorts to YouTube (private)
+        if: success() && github.event.inputs.youtube != 'false'
+        continue-on-error: true # a YouTube problem never blocks the reels ZIP
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          YT_SHORTS_PER_DAY: ${{ github.event.inputs.shorts || '6' }}
+          SEASON: ${{ github.event.inputs.season }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON youtube.mjs
       - name: Keep the ZIP on the run page (7 days)
         if: always()
         uses: actions/upload-artifact@v4

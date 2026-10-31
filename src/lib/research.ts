@@ -143,6 +143,9 @@ async function researchNotes(client: Anthropic, inputs: Inputs): Promise<{ text:
   for (let turn = 0; turn < 4; turn++) {
     const msg = await client.beta.messages.stream({
       model: MODEL, max_tokens: 16000, system: RESEARCH_SYSTEM, messages,
+      /* prompt caching: a paused turn is continued with the same (growing) conversation, so its prefix is read
+         from the cache at a fraction of the input price instead of being paid in full again */
+      cache_control: { type: "ephemeral" },
       betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
       output_config: { effort: "high" },
       tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 10, user_location: { type: "approximate", country: "IN", timezone: "Asia/Kolkata" } }],

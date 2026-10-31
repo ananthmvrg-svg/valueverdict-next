@@ -35,3 +35,13 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
   Categories take turns; a product posted in the last 3 days is skipped (state kept in the Actions cache).
 - Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
 - Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
+
+## YouTube Shorts (`youtube.mjs`, runs after the reels in "Daily Reels")
+
+- Uploads the day's best 6 reels as **private** Shorts: Today's Top 10 Deals, Top 10 Amazon Finds, and 4 budget pages that take turns.
+  You add a sound in YouTube Studio (Editor → Audio) and make them public. Telegram gets a list with Studio links.
+- SEO researched fresh for each Short: YouTube autocomplete for the page's main query, the most viewed Shorts of the
+  last 30 days for it (titles and tags), and our own data; Claude Haiku writes title, description, tags and hashtags
+  (saved next to the video as `youtube.json`). The cover is the first frame, since Shorts can't take a custom thumbnail by API.
+- Secrets: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`. Without them the step is skipped.
+- Preview the metadata without uploading: `node youtube.mjs --dry-run` after `npm run sample`.

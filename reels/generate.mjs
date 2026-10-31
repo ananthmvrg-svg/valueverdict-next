@@ -253,6 +253,12 @@ for (const r of reels) {
   await render(browser, r, join(root, r.slug));
 }
 await browser.close();
+/* manifest for later steps (YouTube upload): what each folder holds, without the inlined photos */
+writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: DATE, dir: root, reels: reels.map((r) => ({
+  slug: r.slug, catSlug: r.catSlug, catName: r.catName, subName: r.subName, url: r.url, headline: r.headline || "", coverLine: r.coverLine || "",
+  more: r.more || "", copy: r.copy, items: r.items.map((p) => ({ brand: p.brand, name: p.name, bestFor: p.bestFor, specs: p.specs, price: p.price, off: p.off })),
+})) }, null, 1));
+
 /* everything in one ZIP: one folder per reel (reel.mp4, cover.jpg, post.jpg, caption.txt, slides/) */
 const zip = join(outDir, `${name}.zip`);
 rmSync(zip, { force: true });
