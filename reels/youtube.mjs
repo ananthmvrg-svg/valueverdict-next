@@ -151,6 +151,24 @@ async function write(r, q, suggest, top) {
   } catch (e) { console.warn(`  AI metadata failed (${e.message}), using plain`); return base; }
 }
 
+/* every category page, in every description (plain text: Shorts links aren't clickable, long videos' are) */
+function categoryBlock() {
+  const seen = new Map();
+  for (const r of manifest.reels) {
+    if (r.catSlug === "top-100") seen.set("top-100", ["🔥 Today's Top 100 Deals", "valueverdict.in/top-deals"]);
+    else if (r.catSlug === "amazon-finds") seen.set("amazon-finds", ["🛒 Amazon Finds", "valueverdict.in/amazon-finds"]);
+    else if (!seen.has(r.catSlug)) seen.set(r.catSlug, [`${r.catName}`, `valueverdict.in/${r.catSlug}`]);
+  }
+  return ["Best picks by category:", ...[...seen.values()].map(([n, u]) => `▸ ${n}: ${u}`)].join("\n");
+}
+function withCategories(description) {
+  const lines = description.trimEnd().split("\n"), last = lines[lines.length - 1] || "";
+  const block = categoryBlock();
+  /* keep the hashtags as the last line */
+  const out = /^\s*#/.test(last) ? [...lines.slice(0, -1), block, "", last] : [...lines, "", block];
+  return out.join("\n").slice(0, 4900);
+}
+
 /* ---------- video: the cover as the first frame (Shorts can't take a custom thumbnail through the API) ---------- */
 function withCover(dir) {
   const out = join(dir, "youtube.mp4");
@@ -200,6 +218,7 @@ for (const r of choose(manifest.reels)) {
   console.log(`• ${r.slug}: "${q}"`);
   const [suggest, top] = await Promise.all([autocomplete(q), canSearch ? topShorts(q) : []]);
   const meta = await write(r, q, suggest, top);
+  meta.description = withCategories(meta.description);
   writeFileSync(join(dir, "youtube.json"), JSON.stringify({ query: q, autocomplete: suggest, topShorts: top, ...meta }, null, 1));
   if (DRY) { console.log(`  ${meta.title}\n  tags: ${meta.tags.join(", ")}\n  ${meta.hashtags.join(" ")}`); continue; }
   try {
