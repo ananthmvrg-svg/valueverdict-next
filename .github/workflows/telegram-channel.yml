@@ -1,0 +1,59 @@
+name: Telegram Channel
+
+# 8:00 AM IST: today's category menu (pinned). 8:30 AM – 10:00 PM IST: one deal every 30 minutes.
+# Needs the TELEGRAM_BOT_TOKEN secret; the bot must be an admin of the channel (post + pin messages).
+# Channel: repository variable TELEGRAM_CHANNEL (default @valueverdict).
+on:
+  schedule:
+    - cron: "30 2 * * *"      # 02:30 UTC = 08:00 IST → menu
+    - cron: "*/30 3-16 * * *" # 03:00–16:30 UTC = 08:30 AM – 10:00 PM IST → deal
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "menu or deal"
+        required: true
+        default: "deal"
+        type: choice
+        options: [deal, menu]
+      count:
+        description: "Deals to post now (deal mode)"
+        required: false
+        default: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegram-channel
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: reels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # which products were posted recently, so the channel doesn't repeat itself
+      - uses: actions/cache/restore@v4
+        with:
+          path: reels/channel-state.json
+          key: channel-state-${{ github.run_id }}
+          restore-keys: channel-state-
+      - name: Post
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ vars.TELEGRAM_CHANNEL || '@valueverdict' }}
+          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '30 2 * * *' && 'menu' || 'deal') || inputs.mode }}
+          DEALS_PER_RUN: ${{ inputs.count || '1' }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON channel.mjs --$MODE
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: reels/channel-state.json
+          key: channel-state-${{ github.run_id }}

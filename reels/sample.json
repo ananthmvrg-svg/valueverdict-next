@@ -5,28 +5,32 @@
    "name": "Refrigerators",
    "slug": "refrigerators",
    "sort_order": 1,
-   "active": true
+   "active": true,
+   "icon": "🧊"
   },
   {
    "category_id": "CAT05",
    "name": "TVs",
    "slug": "tvs",
    "sort_order": 5,
-   "active": true
+   "active": true,
+   "icon": "📺"
   },
   {
    "category_id": "CAT07",
    "name": "Air Conditioners",
    "slug": "air-conditioners",
    "sort_order": 7,
-   "active": true
+   "active": true,
+   "icon": "❄️"
   },
   {
    "category_id": "CAT08",
    "name": "Amazon Finds",
    "slug": "amazon-finds",
    "sort_order": 0,
-   "active": true
+   "active": true,
+   "icon": "🛒"
   }
  ],
  "subs": [
@@ -85,7 +89,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE000",
+    "url": "https://www.amazon.in/dp/B0SAMPLE000?tag=valueverdic03-21"
    },
    "best_for": "Medium rooms, inverter cooling, smart home control",
    "strengths": [
@@ -120,7 +126,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE001",
+    "url": "https://www.amazon.in/dp/B0SAMPLE001?tag=valueverdic03-21"
    },
    "best_for": "Small families, inverter efficiency",
    "strengths": [
@@ -155,7 +163,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE002",
+    "url": "https://www.amazon.in/dp/B0SAMPLE002?tag=valueverdic03-21"
    },
    "best_for": "Families needing flexible storage",
    "strengths": [
@@ -190,7 +200,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-07T18:25:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE003",
+    "url": "https://www.amazon.in/dp/B0SAMPLE003?tag=valueverdic03-21"
    },
    "best_for": "Three to four member families",
    "strengths": [
@@ -223,7 +235,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-15T18:25:00Z",
     "lowStock": "Only 2 left in stock.",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE004",
+    "url": "https://www.amazon.in/dp/B0SAMPLE004?tag=valueverdic03-21"
    },
    "best_for": "Families wanting space, deep discount",
    "strengths": [
@@ -257,7 +271,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE005",
+    "url": "https://www.amazon.in/dp/B0SAMPLE005?tag=valueverdic03-21"
    },
    "best_for": "Couples, low running cost",
    "strengths": [
@@ -292,7 +308,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-05T14:30:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE006",
+    "url": "https://www.amazon.in/dp/B0SAMPLE006?tag=valueverdic03-21"
    },
    "best_for": "Everyday viewing, basic smart TV buyers",
    "strengths": [
@@ -326,7 +344,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE007",
+    "url": "https://www.amazon.in/dp/B0SAMPLE007?tag=valueverdic03-21"
    },
    "best_for": "Buyers wanting Wi-Fi 5 and Bluetooth",
    "strengths": [
@@ -361,7 +381,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE008",
+    "url": "https://www.amazon.in/dp/B0SAMPLE008?tag=valueverdic03-21"
    },
    "best_for": "Budget 4K smart viewing, gaming-ready refresh",
    "strengths": [
@@ -395,7 +417,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE009",
+    "url": "https://www.amazon.in/dp/B0SAMPLE009?tag=valueverdic03-21"
    },
    "best_for": "Picture quality seekers, multi-device setups",
    "strengths": [
@@ -429,7 +453,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE010",
+    "url": "https://www.amazon.in/dp/B0SAMPLE010?tag=valueverdic03-21"
    },
    "best_for": "Casual 4K viewing, mid-range budget",
    "strengths": [
@@ -463,7 +489,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE011",
+    "url": "https://www.amazon.in/dp/B0SAMPLE011?tag=valueverdic03-21"
    },
    "best_for": "Medium rooms, inverter cooling, smart home control",
    "strengths": [
@@ -499,7 +527,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE012",
+    "url": "https://www.amazon.in/dp/B0SAMPLE012?tag=valueverdic03-21"
    },
    "best_for": "Small families, inverter efficiency",
    "strengths": [
@@ -535,7 +565,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE013",
+    "url": "https://www.amazon.in/dp/B0SAMPLE013?tag=valueverdic03-21"
    },
    "best_for": "Families needing flexible storage",
    "strengths": [
@@ -571,7 +603,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-07T18:25:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE014",
+    "url": "https://www.amazon.in/dp/B0SAMPLE014?tag=valueverdic03-21"
    },
    "best_for": "Three to four member families",
    "strengths": [
@@ -605,7 +639,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-15T18:25:00Z",
     "lowStock": "Only 2 left in stock.",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE015",
+    "url": "https://www.amazon.in/dp/B0SAMPLE015?tag=valueverdic03-21"
    },
    "best_for": "Families wanting space, deep discount",
    "strengths": [
@@ -640,7 +676,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE016",
+    "url": "https://www.amazon.in/dp/B0SAMPLE016?tag=valueverdic03-21"
    },
    "best_for": "Couples, low running cost",
    "strengths": [
@@ -676,7 +714,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-05T14:30:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE017",
+    "url": "https://www.amazon.in/dp/B0SAMPLE017?tag=valueverdic03-21"
    },
    "best_for": "Everyday viewing, basic smart TV buyers",
    "strengths": [
@@ -711,7 +751,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE018",
+    "url": "https://www.amazon.in/dp/B0SAMPLE018?tag=valueverdic03-21"
    },
    "best_for": "Buyers wanting Wi-Fi 5 and Bluetooth",
    "strengths": [
@@ -747,7 +789,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE019",
+    "url": "https://www.amazon.in/dp/B0SAMPLE019?tag=valueverdic03-21"
    },
    "best_for": "Budget 4K smart viewing, gaming-ready refresh",
    "strengths": [
@@ -782,7 +826,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE020",
+    "url": "https://www.amazon.in/dp/B0SAMPLE020?tag=valueverdic03-21"
    },
    "best_for": "Picture quality seekers, multi-device setups",
    "strengths": [
@@ -817,7 +863,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE021",
+    "url": "https://www.amazon.in/dp/B0SAMPLE021?tag=valueverdic03-21"
    },
    "best_for": "Casual 4K viewing, mid-range budget",
    "strengths": [
@@ -852,7 +900,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE022",
+    "url": "https://www.amazon.in/dp/B0SAMPLE022?tag=valueverdic03-21"
    },
    "best_for": "Medium rooms, inverter cooling, smart home control",
    "strengths": [
@@ -888,7 +938,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-07T18:25:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE023",
+    "url": "https://www.amazon.in/dp/B0SAMPLE023?tag=valueverdic03-21"
    },
    "best_for": "Three to four member families",
    "strengths": [
@@ -922,7 +974,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-15T18:25:00Z",
     "lowStock": "Only 2 left in stock.",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE024",
+    "url": "https://www.amazon.in/dp/B0SAMPLE024?tag=valueverdic03-21"
    },
    "best_for": "Families wanting space, deep discount",
    "strengths": [
@@ -957,7 +1011,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE025",
+    "url": "https://www.amazon.in/dp/B0SAMPLE025?tag=valueverdic03-21"
    },
    "best_for": "Couples, low running cost",
    "strengths": [
@@ -993,7 +1049,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-05T14:30:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE026",
+    "url": "https://www.amazon.in/dp/B0SAMPLE026?tag=valueverdic03-21"
    },
    "best_for": "Everyday viewing, basic smart TV buyers",
    "strengths": [
@@ -1028,7 +1086,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE027",
+    "url": "https://www.amazon.in/dp/B0SAMPLE027?tag=valueverdic03-21"
    },
    "best_for": "Buyers wanting Wi-Fi 5 and Bluetooth",
    "strengths": [
@@ -1064,7 +1124,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE028",
+    "url": "https://www.amazon.in/dp/B0SAMPLE028?tag=valueverdic03-21"
    },
    "best_for": "Budget 4K smart viewing, gaming-ready refresh",
    "strengths": [
@@ -1099,7 +1161,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE029",
+    "url": "https://www.amazon.in/dp/B0SAMPLE029?tag=valueverdic03-21"
    },
    "best_for": "Picture quality seekers, multi-device setups",
    "strengths": [
@@ -1134,7 +1198,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE030",
+    "url": "https://www.amazon.in/dp/B0SAMPLE030?tag=valueverdic03-21"
    },
    "best_for": "Casual 4K viewing, mid-range budget",
    "strengths": [
@@ -1169,7 +1235,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE031",
+    "url": "https://www.amazon.in/dp/B0SAMPLE031?tag=valueverdic03-21"
    },
    "best_for": "Medium rooms, inverter cooling, smart home control",
    "strengths": [
@@ -1205,7 +1273,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE032",
+    "url": "https://www.amazon.in/dp/B0SAMPLE032?tag=valueverdic03-21"
    },
    "best_for": "Small families, inverter efficiency",
    "strengths": [
@@ -1241,7 +1311,9 @@
     "deal": "",
     "dealEnds": null,
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE033",
+    "url": "https://www.amazon.in/dp/B0SAMPLE033?tag=valueverdic03-21"
    },
    "best_for": "Families needing flexible storage",
    "strengths": [
@@ -1277,7 +1349,9 @@
     "deal": "Great Indian Festival",
     "dealEnds": "2026-11-07T18:25:00Z",
     "lowStock": "",
-    "primeOnly": false
+    "primeOnly": false,
+    "asin": "B0SAMPLE034",
+    "url": "https://www.amazon.in/dp/B0SAMPLE034?tag=valueverdic03-21"
    },
    "best_for": "Three to four member families",
    "strengths": [
