@@ -79,33 +79,57 @@ const PRICEY = /₹|%|\boff\b|price|cheap|discount|deal\b/i;
 const clean = (xs) => (xs || []).map((s) => String(s).trim()).filter((s) => s && !PRICEY.test(s));
 const brandCase = (b) => (b && b === b.toLowerCase() || b === b.toUpperCase() && b.length > 3 ? b.charAt(0).toUpperCase() + b.slice(1).toLowerCase() : b);
 
-const SKIP = new Set(["amazon-finds", "top-100"]); /* mixed lists, not a budget page */
+const SKIP = new Set(["amazon-finds", "top-100"]); /* mixed lists: made as their own top-10 reels in reelsOf */
+function mapItem(p, catSlug, badge) {
+  const d = p.data, brand = brandCase(d.brand || "");
+  return {
+    brand, name: shortName(d.title, d.brand), imageUrl: d.image,
+    specs: specChips(catSlug, d.specs || {}).slice(0, 5),
+    bestFor: p.best_for || "",
+    pros: clean(p.strengths).slice(0, 3),
+    cons: clean(p.limitations).slice(0, 2),
+    tip: (tipsFor(catSlug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
+    badge,
+    price: d.price ?? null, was: d.was ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", primeOnly: Boolean(d.primeOnly),
+    deal: d.deal || "", dealEnds: d.dealEnds || "", lowStock: d.lowStock || "", /* facts the AI copy may use */
+  };
+}
+const priceTime = (items) => {
+  const at = items.map((p) => p.priceAt).filter(Boolean).sort()[0];
+  return at ? new Date(at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+};
+const want = (slug) => !ONLY.length || ONLY.includes(slug);
+const sectionName = (p) => String(p.section || "").replace(/\s*deals?$/i, "");
+
 function reelsOf({ cats, subs, picks }) {
   const ord = (a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999);
   const out = [];
+  /* the two mixed lists: their top 10 on the reel, the rest on the website */
+  const group = (key) => picks.filter((p) => p.group_key === key && p.data).sort((a, b) => a.rank - b.rank);
+  const top = group("top-100");
+  if (top.length && want("top-100")) {
+    const items = top.slice(0, 10).map((p, i) => mapItem(p, p.category, i === 0 ? "🏆 Deal of the day" : sectionName(p)));
+    out.push({ catName: "Deals", catSlug: "top-100", subName: `Today's top ${top.length}`, items, year: YEAR, month: MONTH, priceAt: priceTime(items),
+      slug: "top-100-deals", icon: "generic", url: `${SITE_URL}/top-deals`, headline: `Top ${items.length} Deals`, coverLine: `Today's Top ${items.length} Deals`,
+      pill: `${top.length} deals checked today`, more: `See all ${top.length} deals` });
+  }
+  const finds = group("amazon-finds");
+  if (finds.length && want("amazon-finds")) {
+    /* one per section (its #1), so earbuds, power banks, tablets… all get a turn */
+    const seen = new Set(), firsts = finds.filter((p) => !seen.has(p.section) && seen.add(p.section));
+    const items = firsts.slice(0, 10).map((p, i) => mapItem(p, "amazon-finds", i === 0 ? `🏆 ${sectionName(p)}` : sectionName(p)));
+    out.push({ catName: "Amazon Finds", catSlug: "amazon-finds", subName: "Gadgets & more", items, year: YEAR, month: MONTH, priceAt: priceTime(items),
+      slug: "amazon-finds", icon: "generic", url: `${SITE_URL}/amazon-finds`, headline: `Top ${items.length} Finds`, coverLine: `Top ${items.length} Amazon Finds`,
+      pill: `${finds.length} finds on our site`, more: `See all ${finds.length} finds` });
+  }
   for (const cat of cats.filter((c) => c.active !== false && !SKIP.has(c.slug)).sort(ord)) {
-    if (ONLY.length && !ONLY.includes(String(cat.slug).toLowerCase())) continue;
+    if (!want(String(cat.slug).toLowerCase())) continue;
     for (const sub of subs.filter((s) => s.category_id === cat.category_id && s.active !== false).sort(ord)) {
-      const group = `${cat.slug}/${sub.slug}`;
-      const items = picks.filter((p) => p.group_key === group && p.data).sort((a, b) => a.rank - b.rank).slice(0, MAX_ITEMS).map((p) => {
-        const d = p.data, brand = brandCase(d.brand || "");
-        return {
-          brand, name: shortName(d.title, d.brand), imageUrl: d.image,
-          specs: specChips(cat.slug, d.specs || {}).slice(0, 5),
-          bestFor: p.best_for || "",
-          pros: clean(p.strengths).slice(0, 3),
-          cons: clean(p.limitations).slice(0, 2),
-          tip: (tipsFor(cat.slug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
-          badge: p.rank === 1 ? "🏆 Top pick" : "",
-          price: d.price ?? null, was: d.was ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", primeOnly: Boolean(d.primeOnly),
-          deal: d.deal || "", dealEnds: d.dealEnds || "", lowStock: d.lowStock || "", /* facts the AI copy may use */
-        };
-      });
+      const key = `${cat.slug}/${sub.slug}`;
+      const items = group(key).slice(0, MAX_ITEMS).map((p) => mapItem(p, cat.slug, p.rank === 1 ? "🏆 Top pick" : ""));
       if (!items.length) continue;
-      const at = items.map((p) => p.priceAt).filter(Boolean).sort()[0];
-      const priceAt = at ? new Date(at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
       out.push({
-        catName: cat.name, catSlug: cat.slug, subName: sub.name, items, year: YEAR, month: MONTH, priceAt,
+        catName: cat.name, catSlug: cat.slug, subName: sub.name, items, year: YEAR, month: MONTH, priceAt: priceTime(items),
         slug: `${cat.slug}-${sub.slug}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
         icon: iconKey(cat.slug, cat.name),
         url: `${SITE_URL}/${cat.slug}/${sub.slug}`,
@@ -139,11 +163,12 @@ function plan(r) {
   const n = r.items.length;
   const order = r.items.map((p, i) => ({ p, rank: i + 1 }));
   if (n >= 4) order.reverse();
-  const per = n === 1 ? 6 : n === 2 ? 4.5 : n === 3 ? 3.8 : 3.2;
+  const per = n === 1 ? 6 : n === 2 ? 4.5 : n === 3 ? 3.8 : n <= 5 ? 3.2 : 2.8;
   return order.map((o) => ({ ...o, dur: n >= 4 && o.rank === 1 ? 3.8 : per }));
 }
 
 const HASHTAGS = {
+  "top-100": ["#dealoftheday", "#festivedeals", "#onlineshopping"], "amazon-finds": ["#amazonfinds", "#gadgets", "#techdeals"],
   refrigerators: ["#refrigerator", "#fridge", "#homeappliances"], "washing-machines": ["#washingmachine", "#laundry", "#homeappliances"],
   tvs: ["#smarttv", "#tv", "#techdeals"], "air-conditioners": ["#airconditioner", "#ac", "#summeressentials"],
   laptops: ["#laptop", "#laptops", "#techdeals"], "soundbars-speakers": ["#soundbar", "#hometheatre", "#techdeals"],
@@ -155,11 +180,11 @@ function caption(r) {
   const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
   return [
     r.copy.caption_hook,
-    `${n === 1 ? "Our pick" : `Top ${n}`}: ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} (${MONTH} ${YEAR})`,
+    r.coverLine ? `${r.coverLine} (${MONTH} ${YEAR})` : `${n === 1 ? "Our pick" : `Top ${n}`}: ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} (${MONTH} ${YEAR})`,
     "",
     list,
     "",
-    `👉 Pros, cons & today's price for each: link in bio`,
+    r.more ? `👉 ${r.more} on our site: link in bio` : `👉 Pros, cons & today's price for each: link in bio`,
     `(${r.url.replace(/^https?:\/\//, "")})`,
     `⏳ ${r.copy.urgency}`,
     `💛 ${r.copy.follow_line}`,
