@@ -237,7 +237,25 @@ window.__ready = (async () => {
       const sw = Math.min(w - sx, (r - l + 2 * p) / s), sh = Math.min(h - sy, (b - t + 2 * p) / s);
       const o = document.createElement("canvas"); o.width = Math.round(sw); o.height = Math.round(sh);
       o.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, o.width, o.height);
-      img.src = o.toDataURL("image/jpeg", 0.92);
+      if (img.classList.contains("cutout")) {
+        const g = o.getContext("2d"), W = o.width, H = o.height, im = g.getImageData(0, 0, W, H), px = im.data;
+        const seen = new Uint8Array(W * H), q = [];
+        const white = (i) => px[i * 4] > 232 && px[i * 4 + 1] > 232 && px[i * 4 + 2] > 232;
+        for (let k = 0; k < W; k++) q.push(k, (H - 1) * W + k);
+        for (let k = 0; k < H; k++) q.push(k * W, k * W + W - 1);
+        while (q.length) {
+          const i = q.pop();
+          if (seen[i] || !white(i)) continue;
+          seen[i] = 1; px[i * 4 + 3] = 0;
+          const x = i % W, y = (i / W) | 0;
+          if (x > 0) q.push(i - 1); if (x < W - 1) q.push(i + 1); if (y > 0) q.push(i - W); if (y < H - 1) q.push(i + W);
+        }
+        /* soften the edge: half-transparent light pixels next to removed ones */
+        for (let i = 0; i < W * H; i++) if (!seen[i] && px[i * 4] > 200 && px[i * 4 + 1] > 200 && px[i * 4 + 2] > 200 &&
+          ((i % W > 0 && seen[i - 1]) || (i % W < W - 1 && seen[i + 1]) || (i >= W && seen[i - W]) || (i < W * H - W && seen[i + W]))) px[i * 4 + 3] = 120;
+        g.putImageData(im, 0, 0);
+        img.src = o.toDataURL("image/png");
+      } else img.src = o.toDataURL("image/jpeg", 0.92);
       await img.decode().catch(() => {});
     } catch (e) {}
   }
@@ -397,7 +415,87 @@ export function posterSlide(r) {
 }
 
 /* reel cover / thumbnail: "TOP 5" + product type + big product photos + budget + Amazon mark */
+/* Photo-style thumbnail: a festive photo background (reels/backgrounds/<theme>.jpg, an empty stage with no product),
+   glossy 3D headline "TOP FRIDGE DEALS / ON AMAZON", budget pill, and the #1 pick cut out of its white background,
+   standing on the stage with a glow. Used whenever that background file exists; otherwise the drawn cover below. */
+const bgFile = (theme) => [join(here, "backgrounds", `${theme}.jpg`), join(here, "backgrounds", `${theme}.png`)].find(existsSync);
+const ONE = { Refrigerators: "Fridge", TVs: "TV", "Washing Machines": "Washer", "Air Conditioners": "AC", Laptops: "Laptop",
+  "Soundbars & Speakers": "Soundbar", "Home Appliances": "Appliance", "Fridge Accessories": "Stabilizer" };
+const COVER_CSS = `
+.stage{position:absolute;left:0;top:0}
+.pc-bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.pc-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,30,.55) 0%,rgba(10,6,30,.15) 40%,rgba(10,6,30,0) 60%,rgba(10,6,30,.35) 100%)}
+.pc-top{position:absolute;top:70px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:24px}
+.pc-top img{width:150px;height:150px;border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 50px rgba(30,144,255,.6)}
+.pc-top .wm{font-weight:800;font-size:64px;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,.6)}
+.pc-top .wm small{display:block;font-weight:600;font-size:32px;color:#ffc94a;margin-top:10px}
+.pc-head{position:absolute;top:290px;left:30px;right:30px;text-align:center}
+.g3d{position:relative;display:block;font-weight:800;text-transform:uppercase;line-height:.98;letter-spacing:-.01em}
+.g3d .b{position:absolute;inset:0;color:#7c2d12;-webkit-text-stroke:14px #5a1a05;
+  text-shadow:0 2px 0 #92400e,0 4px 0 #92400e,0 6px 0 #7c2d12,0 8px 0 #7c2d12,0 10px 0 #6b2108,0 12px 0 #5a1a05,0 22px 40px rgba(0,0,0,.6)}
+.g3d .f{position:relative;background:linear-gradient(180deg,#fff7d1 0%,#ffd75a 38%,#ffa41b 62%,#e8700a 100%);-webkit-background-clip:text;color:transparent;-webkit-text-stroke:2px #fff3c4}
+.g3d.w .f{background:linear-gradient(180deg,#ffffff 0%,#fff6e6 55%,#ffd9a8 100%);-webkit-background-clip:text}
+.g3d.w .b{color:#c2410c;-webkit-text-stroke:14px #9a3412}
+.pc-pill{display:inline-flex;align-items:center;gap:22px;margin-top:30px;font-weight:800;font-size:54px;color:#1a0e00;background:linear-gradient(180deg,#ffe08a,#ffb22e);border:4px solid #fff1c1;border-radius:999px;padding:14px 44px;box-shadow:0 0 40px rgba(255,190,60,.55),0 12px 30px rgba(0,0,0,.4)}
+.pc-pill:before,.pc-pill:after{content:"✦";color:#7c2d12;font-size:36px}
+.pc-prod{position:absolute;left:90px;right:90px;bottom:250px;top:1000px;display:flex;align-items:flex-end;justify-content:center}
+.pc-prod:before{content:"";position:absolute;left:50%;bottom:-30px;width:760px;height:140px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:0}
+.pc-prod:after{content:"";position:absolute;left:50%;top:10%;width:900px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,200,90,.45),transparent);z-index:0}
+.pc-prod img{position:relative;z-index:1;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 24px 30px rgba(0,0,0,.55))}
+`;
+/* drawn Diwali stage when no background photo is supplied: marigold strings, lanterns, bokeh lights, rangoli floor, diyas */
+function stageArt() {
+  const garland = (x) => { let s = ""; for (let y = -10, k = 0; y < 1180; y += 26, k++) s += `<circle cx="${x + Math.sin(k) * 3}" cy="${y}" r="${k % 3 === 2 ? 15 : 17}" fill="${k % 2 ? "#ffb81c" : "#ff7b00"}"/>${k % 4 === 0 ? `<ellipse cx="${x + 16}" cy="${y + 8}" rx="6" ry="12" fill="#2f9e44" transform="rotate(35 ${x + 16} ${y + 8})"/>` : ""}`; return s; };
+  const lantern = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">
+    <line x1="0" y1="-160" x2="0" y2="-70" stroke="#c98a2b" stroke-width="4"/>
+    <circle cx="0" cy="0" r="120" fill="url(#lglow)"/>
+    <path d="M-34 -70 h68 l10 18 h-88z" fill="#b7791f"/>
+    <path d="M-44 -52 h88 q14 52 0 104 h-88 q-14 -52 0 -104z" fill="url(#lbody)" stroke="#c98a2b" stroke-width="4"/>
+    <path d="M-30 -52 v104 M0 -52 v104 M30 -52 v104 M-46 0 h92" stroke="#7c4a0a" stroke-width="3" opacity=".55"/>
+    <path d="M-44 52 h88 l-10 16 h-68z" fill="#b7791f"/><path d="M0 68 v40" stroke="#ff9a1f" stroke-width="5"/><circle cx="0" cy="112" r="8" fill="#ff9a1f"/></g>`;
+  let bokeh = "";
+  const pts = [[150,980,26],[260,1060,18],[90,1180,22],[330,1210,14],[200,1320,30],[60,1420,16],[300,1440,20],[930,990,24],[820,1070,18],[1000,1170,26],[760,1230,14],[880,1330,30],[1020,1410,16],[790,1450,20],[470,1010,10],[610,1030,12],[400,1300,12],[680,1320,12]];
+  for (const [x, y, rr] of pts) bokeh += `<circle cx="${x}" cy="${y}" r="${rr}" fill="#ffc861" opacity=".55" filter="url(#blur)"/><circle cx="${x}" cy="${y}" r="${rr * .35}" fill="#fff1c9" opacity=".8"/>`;
+  let rings = "";
+  const cols = ["#7a1f5c", "#d9480f", "#f59f00", "#1c3d8a", "#c2255c", "#f08c00", "#5f3dc4", "#e8590c"];
+  for (let i = 0; i < 8; i++) rings += `<circle r="${520 - i * 62}" fill="${cols[i]}"/>`;
+  let petals = "";
+  for (let i = 0; i < 24; i++) petals += `<ellipse cx="0" cy="-330" rx="40" ry="90" fill="#ffd36b" opacity=".85" transform="rotate(${i * 15})"/>`;
+  for (let i = 0; i < 16; i++) petals += `<ellipse cx="0" cy="-170" rx="30" ry="64" fill="#ff6b9a" transform="rotate(${i * 22.5 + 11})"/>`;
+  const floor = `<g transform="translate(540 1720) scale(1 .34)">${rings}${petals}<circle r="60" fill="#ffd36b"/></g>`;
+  const diya = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="-58" rx="60" ry="80" fill="url(#dglow)"/>
+    <path d="M0 -96 C16 -72 13 -52 0 -44 C-13 -52 -16 -72 0 -96Z" fill="#ffd23f"/><path d="M0 -80 C6 -67 5 -55 0 -50 C-5 -55 -6 -67 0 -80Z" fill="#fff6cf"/>
+    <path d="M-66 -40 Q0 -26 66 -40 Q52 8 0 12 Q-52 8 -66 -40Z" fill="#b8410b"/><path d="M-66 -40 Q0 -26 66 -40" stroke="#ffb347" stroke-width="6" fill="none"/></g>`;
+  const flowers = (x, y) => [0, 1, 2, 3, 4].map((k) => `<circle cx="${x + k * 34 - 68}" cy="${y + (k % 2) * 12}" r="20" fill="${k % 2 ? "#ffb81c" : "#ff7b00"}"/>`).join("");
+  return `<svg class="stage" width="1080" height="1920" viewBox="0 0 1080 1920"><defs>
+    <radialGradient id="lglow"><stop offset="0" stop-color="#ffb000" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient>
+    <linearGradient id="lbody" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe7a3"/><stop offset=".5" stop-color="#ffb02e"/><stop offset="1" stop-color="#e36d0a"/></linearGradient>
+    <radialGradient id="dglow"><stop offset="0" stop-color="#ffb000" stop-opacity=".8"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient>
+    <radialGradient id="spot" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#ffb347" stop-opacity=".35"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="6"/></filter></defs>
+    <rect width="1080" height="1920" fill="url(#spot)"/>${bokeh}${floor}
+    ${garland(28)}${garland(84)}${garland(996)}${garland(1052)}
+    ${lantern(150, 440, 1)}${lantern(930, 440, 1)}${lantern(70, 900, .8)}${lantern(1010, 900, .8)}
+    ${flowers(130, 1800)}${flowers(950, 1800)}${diya(120, 1790, 1)}${diya(960, 1790, 1)}${diya(250, 1880, .8)}${diya(830, 1880, .8)}</svg>`;
+}
+
+function photoCover(r, bg) {
+  const n = r.items.length, one = ONE[r.catName] || shortCat(r.catName).replace(/s$/, "");
+  const l1 = `Top ${one} Deals`, l2 = "on Amazon";
+  const size = l1.length <= 14 ? 168 : l1.length <= 18 ? 140 : 118, size2 = Math.min(size, 150);
+  const pill = /^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`;
+  const hero = r.items.find((p) => p.image);
+  const word = (txt, cls, px) => `<span class="g3d ${cls}" style="font-size:${px}px"><span class="b">${esc(txt)}</span><span class="f">${esc(txt)}</span></span>`;
+  return page(`<style>${COVER_CSS}.toran,.diyas,.deco{display:none}</style>
+    ${bg ? `<div class="pc-bg" style="background-image:url(data:image/jpeg;base64,${readFileSync(bg).toString("base64")})"></div>` : `<div class="pc-bg" style="background:radial-gradient(1100px 900px at 50% 45%,#22305e,#0b1230 60%,#060a1c)"></div>${stageArt()}`}<div class="pc-shade"></div>
+    <div class="pc-top"><img src="${LOGO}"><div class="wm">Value Verdict<small>Compare smart. Buy better.</small></div></div>
+    <div class="pc-head">${word(l1, "", size)}${word(l2, "w", size2)}<div class="pc-pill">${esc(pill.toUpperCase())}</div></div>
+    <div class="pc-prod">${hero ? `<img class="trim cutout" src="${hero.image}">` : `<div class="ico" style="color:#ffd36b">${svg(r.icon, 520)}</div>`}</div>`);
+}
+
 export function coverSlide(r) {
+  const bg = bgFile(THEME || "default");
+  if (bg || THEME === "diwali") return photoCover(r, bg);
   const n = r.items.length, c = r.copy;
   const pics = r.items.filter((p) => p.image).slice(0, 3);
   const pos = [[[300, 0]], [[70, -5], [530, 5]], [[0, -7], [600, 7], [300, 0]]][pics.length - 1] || [];
