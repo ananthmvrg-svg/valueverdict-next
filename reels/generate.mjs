@@ -19,8 +19,8 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey } from "./template.mjs";
-import { writeCopy, seasonFor } from "./copy.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme } from "./template.mjs";
+import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
 
@@ -243,6 +243,7 @@ if (!reels.length) throw new Error("No budget group with products found" + (ONLY
 const name = `ValueVerdict_${DATE}`, outDir = join(here, "out"), root = join(outDir, name);
 rmSync(root, { recursive: true, force: true });
 for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
+setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so */
 const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
 for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();
