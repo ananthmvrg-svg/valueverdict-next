@@ -137,9 +137,10 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
 .pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
 .pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
-.pst h1{font-size:56px;margin:14px 0 6px;line-height:1.02}
+.pst h1{font-size:56px;margin:12px 0 4px;line-height:1.02}
 .pst h1 .amzbig{font-size:56px}
-.pst .urg{font-weight:700;font-size:24px;color:#fff;margin-bottom:12px;display:flex;align-items:baseline;gap:16px}
+.pst .urg{font-weight:700;font-size:24px;color:#fff;margin-bottom:12px;display:flex;flex-direction:column;gap:4px}
+.pst .urg>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pst .urg .whom{font-size:32px}
 .pst .urg .amz{font-size:22px;padding:4px 14px;border-radius:10px}.pst .urg .amz img{height:34px}
 .pst h1 span{color:#ffb547}
