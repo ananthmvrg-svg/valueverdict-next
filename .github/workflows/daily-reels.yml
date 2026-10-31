@@ -1,0 +1,54 @@
+name: Daily Reels
+
+# Runs every day at 8:00 AM IST, and from the GitHub app: Actions → Daily Reels → Run workflow.
+on:
+  schedule:
+    - cron: "30 2 * * *" # 02:30 UTC = 08:00 IST
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Only these category slugs, comma separated (empty = all)"
+        required: false
+        default: ""
+      max_items:
+        description: "Products per reel (1-5)"
+        required: false
+        default: "5"
+      season:
+        description: "Festival/season for the AI hooks (empty = reels/season.json)"
+        required: false
+        default: ""
+
+jobs:
+  reels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: reels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg zip
+      - name: Install packages
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Generate reels and send to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # AI hooks; without it the reels use plain lines
+          SEASON: ${{ github.event.inputs.season }}
+          ONLY: ${{ github.event.inputs.only }}
+          MAX_ITEMS: ${{ github.event.inputs.max_items || '5' }}
+        run: npm run generate
+      - name: Keep the ZIP on the run page (7 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reels-kit
+          path: reels/out/*.zip
+          retention-days: 7
+          if-no-files-found: ignore

@@ -1,0 +1,467 @@
+{
+ "cats": [
+  {
+   "category_id": "CAT01",
+   "name": "Refrigerators",
+   "slug": "refrigerators",
+   "sort_order": 1,
+   "active": true
+  },
+  {
+   "category_id": "CAT05",
+   "name": "TVs",
+   "slug": "tvs",
+   "sort_order": 5,
+   "active": true
+  },
+  {
+   "category_id": "CAT07",
+   "name": "Air Conditioners",
+   "slug": "air-conditioners",
+   "sort_order": 7,
+   "active": true
+  },
+  {
+   "category_id": "CAT08",
+   "name": "Amazon Finds",
+   "slug": "amazon-finds",
+   "sort_order": 0,
+   "active": true
+  }
+ ],
+ "subs": [
+  {
+   "subcategory_id": "SUB03",
+   "category_id": "CAT01",
+   "name": "Under ₹35,000",
+   "slug": "under-35k",
+   "sort_order": 3,
+   "active": true
+  },
+  {
+   "subcategory_id": "SUB15",
+   "category_id": "CAT05",
+   "name": "32″ TVs",
+   "slug": "32-inch-tvs",
+   "sort_order": 1,
+   "active": true
+  },
+  {
+   "subcategory_id": "SUB18",
+   "category_id": "CAT05",
+   "name": "55″ TVs",
+   "slug": "55-inch-tvs",
+   "sort_order": 4,
+   "active": true
+  },
+  {
+   "subcategory_id": "SUB33",
+   "category_id": "CAT07",
+   "name": "Under ₹75,000",
+   "slug": "under-75k",
+   "sort_order": 3,
+   "active": true
+  }
+ ],
+ "picks": [
+  {
+   "group_key": "air-conditioners/under-75k",
+   "rank": 1,
+   "category": "air-conditioners",
+   "data": {
+    "brand": "Samsung",
+    "image": "samples/product1.jpg",
+    "specs": {
+     "tons": 1.5,
+     "type": "Split",
+     "copper": true,
+     "inverter": true,
+     "energy_stars": 3
+    },
+    "title": "Samsung 1.5 Ton 3 Star Bespoke AI Inverter Smart Split AC (2026 Model, WiFi, Energy Saving, Voice Control, Copper, AR50H19D1XHNNA)",
+    "price": 36490,
+    "off": 54,
+    "was": 79990,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Medium rooms, inverter cooling, smart home control",
+   "strengths": [
+    "Inverter compressor",
+    "Copper coils",
+    "54% off reference price"
+   ],
+   "limitations": [
+    "3-star energy rating"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "refrigerators/under-35k",
+   "rank": 1,
+   "category": "refrigerators",
+   "data": {
+    "brand": "Haier",
+    "image": "samples/product1.jpg",
+    "specs": {
+     "doors": "Double door",
+     "cooling": "Frost free",
+     "inverter": true,
+     "capacity_l": 258,
+     "convertible": true,
+     "energy_stars": 3
+    },
+    "title": "Haier 258 L 3 Star Inverter Frost-Free Double Door Refrigerator Appliance (HEF-25TDS, Dazzle Steel, Convertible)",
+    "price": 24490,
+    "off": 38,
+    "was": 39600,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Small families, inverter efficiency",
+   "strengths": [
+    "3-star inverter frost-free",
+    "258 L capacity",
+    "38% off reference price"
+   ],
+   "limitations": [
+    "Mid-range capacity for larger families"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "refrigerators/under-35k",
+   "rank": 2,
+   "category": "refrigerators",
+   "data": {
+    "brand": "Godrej",
+    "image": "samples/product2.jpg",
+    "specs": {
+     "doors": "Double door",
+     "cooling": "Frost free",
+     "inverter": true,
+     "capacity_l": 294,
+     "convertible": true,
+     "energy_stars": 3
+    },
+    "title": "Godrej 294 L 3 Star Inverter Frost Free 6-In-1 Convertible Freezer Double Door Refrigerator Appliance (RF EON 294C 35 RCIF ST RH, Steel Rush)",
+    "price": 29290,
+    "off": 14,
+    "was": 34000,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Families needing flexible storage",
+   "strengths": [
+    "294 L convertible capacity",
+    "3-star inverter frost-free",
+    "Frost-free double door"
+   ],
+   "limitations": [
+    "Only 14% off reference price"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "refrigerators/under-35k",
+   "rank": 3,
+   "category": "refrigerators",
+   "data": {
+    "brand": "LG",
+    "image": "samples/product3.jpg",
+    "specs": {
+     "doors": "Double door",
+     "cooling": "Frost free",
+     "inverter": true,
+     "capacity_l": 276,
+     "convertible": true,
+     "energy_stars": 2
+    },
+    "title": "LG 276 L, 2 Star, Smart Inverter, Smart & Dairy Mode, Frost-Free Double Door Convertible Refrigerator (GLT2826XWOB, Onyx Black)",
+    "price": 30990,
+    "off": 34,
+    "was": 46990,
+    "deal": "Great Indian Festival",
+    "dealEnds": "2026-11-07T18:25:00Z",
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Three to four member families",
+   "strengths": [
+    "276 L convertible capacity",
+    "Inverter with Smart modes",
+    "34% off reference price"
+   ],
+   "limitations": [
+    "Only 2-star energy rating"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "refrigerators/under-35k",
+   "rank": 4,
+   "category": "refrigerators",
+   "data": {
+    "brand": "IFB",
+    "image": "samples/product1.jpg",
+    "specs": {
+     "doors": "Double door",
+     "cooling": "Frost free",
+     "capacity_l": 265,
+     "energy_stars": 2
+    },
+    "title": "IFB 265 L Frost Free Double Door Top Mount 2 Star Refrigerator (Eco-Cool IFBFF-3152IRGT)",
+    "price": 30390,
+    "off": 38,
+    "was": 48950,
+    "deal": "Great Indian Festival",
+    "dealEnds": "2026-11-15T18:25:00Z",
+    "lowStock": "Only 2 left in stock.",
+    "primeOnly": false
+   },
+   "best_for": "Families wanting space, deep discount",
+   "strengths": [
+    "265 L frost-free double door",
+    "38% off reference price",
+    "Top mount design"
+   ],
+   "limitations": [
+    "Only 2-star energy rating"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "refrigerators/under-35k",
+   "rank": 5,
+   "category": "refrigerators",
+   "data": {
+    "brand": "LG",
+    "image": "samples/product2.jpg",
+    "specs": {
+     "doors": "Single door",
+     "cooling": "Direct cool",
+     "inverter": true,
+     "capacity_l": 190,
+     "energy_stars": 5
+    },
+    "title": "LG 190 L 5 Star Inverter Direct-Cool Single Door Refrigerator (GL-D201APZZ, Shiny Steel, Base stand with drawer)",
+    "price": 17790,
+    "off": 25,
+    "was": 23599,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Couples, low running cost",
+   "strengths": [
+    "5-star inverter rating",
+    "Lowest price on this page",
+    "25% off reference price"
+   ],
+   "limitations": [
+    "Single door, 190 L capacity"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "tvs/32-inch-tvs",
+   "rank": 1,
+   "category": "tvs",
+   "data": {
+    "brand": "TOSHIBA",
+    "image": "samples/product3.jpg",
+    "specs": {
+     "display": "LED",
+     "platform": "VIDAA",
+     "hdmi_ports": 2,
+     "refresh_hz": 60,
+     "resolution": "HD",
+     "screen_inches": 32
+    },
+    "title": "Toshiba 80 cm (32 Inches) HD Ready Smart LED TV | Dolby Audio & DTS Virtual:X | Game Mode | REGZA Engine | VIDAA OS | 32V35RP (Black)",
+    "price": 14990,
+    "off": 40,
+    "was": 24999,
+    "deal": "Great Indian Festival",
+    "dealEnds": "2026-11-05T14:30:00Z",
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Everyday viewing, basic smart TV buyers",
+   "strengths": [
+    "40% off the listed was price",
+    "60 Hz refresh rate",
+    "VIDAA OS and REGZA engine"
+   ],
+   "limitations": [
+    "Only 2 HDMI ports",
+    "HD Ready 1366x768 resolution"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "tvs/32-inch-tvs",
+   "rank": 2,
+   "category": "tvs",
+   "data": {
+    "brand": "Samsung",
+    "image": "samples/product1.jpg",
+    "specs": {
+     "display": "LED",
+     "refresh_hz": 50,
+     "resolution": "HD",
+     "screen_inches": 32
+    },
+    "title": "Samsung 80 cm (32 inches) HD Smart LED TV UA32H4550FUXXL",
+    "price": 15490,
+    "off": 13,
+    "was": 17900,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Buyers wanting Wi-Fi 5 and Bluetooth",
+   "strengths": [
+    "Wi-Fi 5 and Bluetooth connectivity",
+    "Smart LED display, 32 inches",
+    "13% off the listed was price"
+   ],
+   "limitations": [
+    "50 Hz refresh rate",
+    "Only 13% off, less discount than alternative"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "tvs/55-inch-tvs",
+   "rank": 1,
+   "category": "tvs",
+   "data": {
+    "brand": "PHILIPS",
+    "image": "samples/product2.jpg",
+    "specs": {
+     "display": "Mini LED",
+     "platform": "Google TV",
+     "hdmi_ports": 3,
+     "resolution": "4K",
+     "screen_inches": 55
+    },
+    "title": "PHILIPS 138 cm (55 inches) 4K Ultra HD QLED Smart QD-Mini LED Google TV 55MLED610/94",
+    "price": 44199,
+    "off": 48,
+    "was": 84999,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Budget 4K smart viewing, gaming-ready refresh",
+   "strengths": [
+    "48% off listed price",
+    "120 Hz refresh rate",
+    "Google TV platform, 4K resolution"
+   ],
+   "limitations": [
+    "Only 3 HDMI ports"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "tvs/55-inch-tvs",
+   "rank": 2,
+   "category": "tvs",
+   "data": {
+    "brand": "Samsung",
+    "image": "samples/product3.jpg",
+    "specs": {
+     "display": "OLED",
+     "hdmi_ports": 4,
+     "refresh_hz": 120,
+     "resolution": "4K",
+     "screen_inches": 55
+    },
+    "title": "Samsung 55 inches OLED 4K Samsung Vision AI 2026 Smart TV QA55S85HAELXL",
+    "price": 94990,
+    "off": 32,
+    "was": 138900,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Picture quality seekers, multi-device setups",
+   "strengths": [
+    "OLED 4K panel",
+    "120 Hz refresh rate",
+    "4 HDMI ports"
+   ],
+   "limitations": [
+    "Highest price of the three"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "tvs/55-inch-tvs",
+   "rank": 3,
+   "category": "tvs",
+   "data": {
+    "brand": "Samsung",
+    "image": "samples/product1.jpg",
+    "specs": {
+     "display": "Mini LED",
+     "hdmi_ports": 3,
+     "refresh_hz": 50,
+     "resolution": "4K",
+     "screen_inches": 55
+    },
+    "title": "Samsung 55 inch (138cm) Neo QLED 4K Vision AI 2026 Smart TV | NQ4 AI Processor | 4K Upscaling | Quantum Mini LED | QA55QN2EHAULXL",
+    "price": 68990,
+    "off": 31,
+    "was": 99900,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "Casual 4K viewing, mid-range budget",
+   "strengths": [
+    "31% off listed price",
+    "Mini LED 4K panel",
+    "3 HDMI ports"
+   ],
+   "limitations": [
+    "Only 50 Hz refresh rate"
+   ],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  },
+  {
+   "group_key": "amazon-finds",
+   "rank": 1,
+   "category": "",
+   "data": {
+    "brand": "x",
+    "title": "skipped: not a budget page",
+    "specs": {},
+    "price": 0,
+    "off": 0,
+    "was": 0,
+    "deal": "",
+    "dealEnds": null,
+    "lowStock": "",
+    "primeOnly": false
+   },
+   "best_for": "",
+   "strengths": [],
+   "limitations": [],
+   "price_checked_at": "2026-10-31T02:35:00+00:00"
+  }
+ ]
+}
