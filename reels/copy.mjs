@@ -18,7 +18,16 @@ export function seasonFor(dateISO) {
   } catch { return ""; }
 }
 
-const LIMITS = { hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
+/* background theme for today: THEME env wins, else the season.json row's "theme" */
+export function themeFor(dateISO) {
+  if (process.env.THEME) return process.env.THEME;
+  try {
+    const rows = JSON.parse(readFileSync(join(here, "season.json"), "utf8"));
+    return rows.find((s) => dateISO >= s.from && dateISO <= s.to)?.theme || "";
+  } catch { return ""; }
+}
+
+const LIMITS = { for_whom: 32, hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
 const SCHEMA = {
   type: "object",
   properties: {
@@ -29,6 +38,7 @@ const SCHEMA = {
         properties: {
           id: { type: "string" },
           season_tag: { type: "string", description: "2-3 word label for the top of the hook slide, e.g. 'Diwali picks' (max 22 chars)" },
+          for_whom: { type: "string", description: "who these picks suit, starting with 'for', max 30 chars, e.g. 'for growing families', 'for movie-night families', 'for first homes'" },
           hook_title: { type: "string", description: "big hook headline naming the product type, max 30 chars, a complete phrase" },
           hook_sub: { type: "string", description: "one emotional line under the headline, max 70 chars" },
           urgency: { type: "string", description: "one honest urgency line built only from the given facts, max 60 chars" },
@@ -36,7 +46,7 @@ const SCHEMA = {
           caption_hook: { type: "string", description: "first line of the Instagram caption, max 110 chars, may use 1 emoji" },
           post_title: { type: "string", description: "headline for the single-image post naming the product type, max 30 chars" },
         },
-        required: ["id", "season_tag", "hook_title", "hook_sub", "urgency", "follow_line", "caption_hook", "post_title"],
+        required: ["id", "for_whom", "season_tag", "hook_title", "hook_sub", "urgency", "follow_line", "caption_hook", "post_title"],
         additionalProperties: false,
       },
     },
@@ -59,6 +69,7 @@ Goals for every budget page:
 - Follow: give a personal reason to follow Value Verdict (we research so you don't overspend, daily picks, honest pros
   and cons). Make following feel like joining a smart-shopper family, not a demand.
 - No rupee amounts, no percentages, no hashtags, at most one emoji per line, no ALL CAPS sentences.
+- for_whom finishes the headline "Top 5 <product> on Amazon <for_whom>": make it specific to who the picks suit.
 - Vary wording between pages; don't repeat the same hook.`;
 
 /* a line that runs too long is dropped (plain line used), never cut mid-phrase */
@@ -73,6 +84,7 @@ export function fallbackCopy(r, season) {
   const fest = season ? season.split(/[\s,(—-]/)[0] : "";
   return {
     season_tag: fest ? `${fest} picks` : "Today's best",
+    for_whom: "for every home",
     hook_title: r.catName,
     hook_sub: "We compared them so you don't have to",
     urgency: fest ? `${fest} offers are live: prices change daily` : "Offers change daily: check today's price",
@@ -116,6 +128,7 @@ export async function writeCopy(reels, { date, season }) {
       if (!out.has(c.id)) continue;
       const base = out.get(c.id), merged = { ...base };
       for (const [k, n] of Object.entries(LIMITS)) { const v = clip(c[k], n); if (v && safe(v)) merged[k] = v; }
+      if (!/^for\s/i.test(merged.for_whom)) merged.for_whom = "for " + merged.for_whom;
       out.set(c.id, merged); used++;
     }
     console.log(`AI copy: ${used}/${reels.length} pages written by ${MODEL}`);

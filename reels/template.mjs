@@ -93,8 +93,8 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .chip{font-weight:700;font-size:34px;padding:8px 24px;border-radius:14px;background:rgba(30,144,255,.18);border:2px solid rgba(30,144,255,.5);color:#d8ecff;white-space:nowrap}
 
 /* hook */
-.collage{position:relative;height:560px;margin:10px 0 36px}
-.collage .t{position:absolute;top:30px;width:400px;height:480px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.collage{position:relative;height:500px;margin:0 0 26px}
+.collage .t{position:absolute;top:20px;width:380px;height:440px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
@@ -137,8 +137,10 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pst .hd .wm{font-weight:800;font-size:38px;letter-spacing:.06em;line-height:1}
 .pst .hd .wm small{display:block;font-weight:500;font-size:21px;color:#ffb547;margin-top:8px;letter-spacing:.02em}
 .pst .hd .bud{margin-left:auto;font-weight:800;font-size:32px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:10px 26px;border-radius:999px}
-.pst h1{font-size:58px;margin:14px 0 6px;line-height:1.02}
-.pst .urg{font-weight:700;font-size:25px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.pst h1{font-size:56px;margin:14px 0 6px;line-height:1.02}
+.pst h1 .amzbig{font-size:56px}
+.pst .urg{font-weight:700;font-size:24px;color:#fff;margin-bottom:12px;display:flex;align-items:baseline;gap:16px}
+.pst .urg .whom{font-size:32px}
 .pst .urg .amz{font-size:22px;padding:4px 14px;border-radius:10px}.pst .urg .amz img{height:34px}
 .pst h1 span{color:#ffb547}
 .gridp{flex:1;min-height:0;display:grid;gap:16px;grid-template-columns:1fr 1fr}
@@ -166,16 +168,32 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .amz{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:34px;color:#111;background:#fff;border-radius:16px;padding:10px 24px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .amz img{height:64px;display:block}
 /* cover (reel thumbnail): key content inside the centre 1080×1440 that the profile grid shows */
-.cv{position:absolute;left:56px;right:56px;top:250px;bottom:250px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.cv{position:absolute;left:56px;right:56px;top:240px;bottom:200px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .cv .tag{font-weight:800;font-size:40px;letter-spacing:.14em;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffb547);padding:12px 34px;border-radius:999px}
-.cv .big{margin-top:24px;font-weight:800;font-size:250px;line-height:.86;letter-spacing:-.04em;background:linear-gradient(180deg,#ffd27a,#ff8a00);-webkit-background-clip:text;color:transparent}
-.cv .cat{font-weight:800;font-size:118px;line-height:1;letter-spacing:-.02em;margin-top:6px}
-.cv .pics{position:relative;width:100%;height:560px;margin-top:34px}
-.cv .pics .t{position:absolute;top:0;width:420px;height:540px;background:#fff;border-radius:44px;display:flex;align-items:center;justify-content:center;padding:36px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cv .big{margin-top:20px;font-weight:800;font-size:210px;line-height:.86;letter-spacing:-.04em;background:linear-gradient(180deg,#ffd27a,#ff8a00);-webkit-background-clip:text;color:transparent}
+.cv .cat{font-weight:800;font-size:112px;line-height:1;letter-spacing:-.02em;margin-top:6px}
+.cv .pics{position:relative;width:100%;height:460px;margin-top:26px}
+.cv .pics .t{position:absolute;top:0;width:380px;height:450px;background:#fff;border-radius:44px;display:flex;align-items:center;justify-content:center;padding:36px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
 .cv .pics .t img{max-width:100%;max-height:100%;object-fit:contain}
 .cv .pics .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff}
 .cv .row{margin-top:34px;display:flex;gap:18px;align-items:center;justify-content:center;flex-wrap:wrap}
 .cv .row .pill{font-size:58px;align-self:center}
+/* diwali theme */
+body.diwali .bg{background:
+  radial-gradient(900px 600px at 50% 0%,rgba(255,176,0,.30),transparent 65%),
+  radial-gradient(700px 600px at 100% 45%,rgba(255,77,141,.18),transparent 65%),
+  radial-gradient(900px 800px at 0% 100%,rgba(255,122,0,.35),transparent 65%),
+  linear-gradient(170deg,#3a0c3f 0%,#1d0830 50%,#120a2a 100%)}
+.deco{position:absolute;left:0;top:0;pointer-events:none}
+.toran{position:absolute;left:0;top:0}
+.diyas{position:absolute;left:0;bottom:6px}
+body.diwali .top{top:104px}
+body.diwali .top .step{background:#ffd36b}
+body.diwali .safe{top:278px}
+/* headline: "Top 5 Fridges" / "on Amazon" / "for Growing Families" */
+.amzbig{font-weight:800;color:#fff;line-height:1;letter-spacing:-.02em}
+.amzbig u{text-decoration:none;background:linear-gradient(transparent 78%,#ff9900 78%,#ff9900 94%,transparent 94%)}
+.whom{font-weight:800;color:#ffb547;line-height:1.1}
 /* cta */
 .cta{align-items:center;text-align:center;justify-content:center}
 .cta img{width:400px;height:400px;border-radius:50%;box-shadow:0 0 0 5px rgba(255,255,255,.12),0 0 140px rgba(30,144,255,.6);margin-bottom:54px}
@@ -223,10 +241,47 @@ const BADGE = existsSync(BADGE_FILE) ? `data:image/png;base64,${readFileSync(BAD
 const amazon = (text = "Top picks on Amazon.in") =>
   BADGE ? `<span class="amz"><img src="${BADGE}" alt="Available at Amazon"></span>` : `<span class="amz">🛒 ${text}</span>`;
 
-const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body><div class="bg"></div><div class="grid"></div>${body}${TRIM}</body></html>`;
+
+/* ---------- festive theme (season.json "theme") ---------- */
+let THEME = "";
+export const setTheme = (name) => { THEME = String(name || "").toLowerCase(); };
+
+/* Diwali decorations, all drawn here: marigold toran on top, gold sparkles, a faint rangoli, diyas at the bottom */
+function diwaliDeco() {
+  const W = 1080, swags = 4, sw = W / swags;
+  let beads = "";
+  for (let s = 0; s < swags; s++) {
+    for (let k = 0; k <= 14; k++) {
+      const u = k / 14, x = s * sw + u * sw, y = 6 + 70 * 4 * u * (1 - u);
+      beads += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${k % 2 ? 11 : 13}" fill="${k % 2 ? "#ffc23a" : "#ff7a00"}"/>`;
+      if (k % 3 === 0) beads += `<ellipse cx="${(x + 6).toFixed(1)}" cy="${(y + 14).toFixed(1)}" rx="5" ry="10" fill="#2f9e44" transform="rotate(30 ${x + 6} ${y + 14})"/>`;
+    }
+    beads += `<circle cx="${s * sw}" cy="10" r="16" fill="#ff5c00"/><path d="M${s * sw} 26 l0 40" stroke="#ffc23a" stroke-width="4"/><circle cx="${s * sw}" cy="72" r="9" fill="#ffc23a"/>`;
+  }
+  const spark = (x, y, r, o) => `<path transform="translate(${x} ${y})" opacity="${o}" fill="#ffd36b" d="M0 -${r} C${r * 0.15} -${r * 0.15} ${r * 0.15} -${r * 0.15} ${r} 0 C${r * 0.15} ${r * 0.15} ${r * 0.15} ${r * 0.15} 0 ${r} C-${r * 0.15} ${r * 0.15} -${r * 0.15} ${r * 0.15} -${r} 0 C-${r * 0.15} -${r * 0.15} -${r * 0.15} -${r * 0.15} 0 -${r}Z"/>`;
+  const sparks = [[60, 260, 14, .7], [1010, 300, 18, .8], [980, 620, 10, .5], [40, 760, 12, .5], [1030, 980, 14, .6], [70, 1180, 10, .45],
+    [1000, 1380, 12, .5], [30, 1500, 16, .55], [520, 230, 8, .4], [880, 180, 9, .5], [200, 180, 7, .45], [990, 1700, 10, .4]].map((s) => spark(...s)).join("");
+  let petals = "";
+  for (let i = 0; i < 16; i++) petals += `<ellipse cx="0" cy="-120" rx="34" ry="78" transform="rotate(${i * 22.5})" fill="none" stroke="#ff9a2e" stroke-width="5"/>`;
+  for (let i = 0; i < 8; i++) petals += `<ellipse cx="0" cy="-60" rx="20" ry="44" transform="rotate(${i * 45 + 22.5})" fill="#ff4d8d" opacity=".7"/>`;
+  const rangoli = `<g transform="translate(1040 1880)" opacity=".16">${petals}<circle r="200" fill="none" stroke="#ffd36b" stroke-width="6" stroke-dasharray="4 18"/><circle r="26" fill="#ffd36b"/></g>`;
+  const diya = (x) => `<g transform="translate(${x} 0)">
+      <ellipse cx="0" cy="-58" rx="40" ry="60" fill="url(#glow)"/>
+      <path d="M0 -92 C14 -70 12 -52 0 -44 C-12 -52 -14 -70 0 -92Z" fill="#ffd23f"/><path d="M0 -78 C6 -66 5 -55 0 -50 C-5 -55 -6 -66 0 -78Z" fill="#fff4c2"/>
+      <path d="M-62 -40 Q0 -28 62 -40 Q50 6 0 10 Q-50 6 -62 -40Z" fill="#c2410c"/><path d="M-62 -40 Q0 -28 62 -40" stroke="#ffb347" stroke-width="6" fill="none"/>
+      <circle cx="-26" cy="-14" r="5" fill="#ffd36b"/><circle cx="0" cy="-10" r="5" fill="#ffd36b"/><circle cx="26" cy="-14" r="5" fill="#ffd36b"/></g>`;
+  const diyas = `<svg class="diyas" viewBox="0 -110 1080 130" width="1080" height="130">${[110, 330, 540, 750, 970].map(diya).join("")}</svg>`;
+  return `<svg class="deco" width="1080" height="1920" viewBox="0 0 1080 1920"><defs><radialGradient id="glow"><stop offset="0" stop-color="#ffb000" stop-opacity=".7"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient></defs>${sparks}${rangoli}</svg><svg class="toran" width="1080" height="96" viewBox="0 0 1080 96">${beads}</svg>${diyas}`;
+}
+
+const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body class="${THEME}"><div class="bg"></div>${THEME === "diwali" ? diwaliDeco() : `<div class="grid"></div>`}${body}${TRIM}</body></html>`;
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
+
+const shortCat = (n) => n.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
+const titleCase = (s) => String(s || "").replace(/\b([a-z])([a-z]*)/g, (m, a, b) => (/^(for|and|of|the|a|an|to|with|on|in)$/.test(m) ? m : a.toUpperCase() + b));
+const topLine = (r) => (r.items.length > 1 ? `Top ${r.items.length} ${shortCat(r.catName)}` : `Best ${shortCat(r.catName)}`);
 
 /* reel: { catName, subName, items:[product], icon, url, year } */
 export function hookSlide(r) {
@@ -244,8 +299,10 @@ export function hookSlide(r) {
   return page(`${top()}<div class="safe">
     <div class="collage">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
     <div class="kicker">${esc(c.season_tag).toUpperCase()}</div>
-    <h1 style="font-size:${c.hook_title.length <= 14 ? 132 : c.hook_title.length <= 24 ? 108 : 92}px"><em>${esc(c.hook_title)}</em></h1>
-    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div class="pill">${esc(r.subName)}</div>${amazon()}</div>
+    <h1 style="font-size:${topLine(r).length <= 13 ? 124 : 104}px;margin-bottom:4px"><em>${esc(topLine(r))}</em></h1>
+    <div class="amzbig" style="font-size:96px">on <u>Amazon</u></div>
+    <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
+    <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
   </div>`);
 }
@@ -300,10 +357,10 @@ export function posterSlide(r) {
   /* an odd card left over (#4 of 4) spans both columns */
   if (n === 4) cards[3] = cards[3].replace('<div class="gc">', '<div class="gc" style="grid-column:1 / -1">');
   const rows = n === 2 ? "1fr" : n === 1 ? "1fr" : n === 3 ? "1.1fr 1fr" : n === 4 ? "1.1fr 1fr 1fr" : "1fr 1fr 1fr";
-  return page(`<style>html,body{height:1350px}</style><div class="pst">
+  return page(`<style>html,body{height:1350px}.diyas{display:none}.pst{padding-top:${THEME === "diwali" ? 70 : 40}px}</style><div class="pst">
     <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div><div class="bud">${esc(r.subName)}</div></div>
-    <h1><span>${esc(r.copy.post_title)}</span></h1>
-    <div class="urg">${amazon(`Top ${n} on Amazon.in`)}<span>⏳ ${esc(r.copy.urgency)}</span></div>
+    <h1>${esc(topLine(r))} <span class="amzbig">on <u>Amazon</u></span></h1>
+    <div class="urg"><span class="whom">${esc(titleCase(r.copy.for_whom))}</span><span>⏳ ${esc(r.copy.urgency)}</span></div>
     <div class="gridp" style="grid-template-rows:${rows}">${cards.join("")}</div>
     <div class="ft"><div class="go">🔗 Link in bio · 💛 Follow for more</div>
       <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
@@ -316,12 +373,14 @@ export function coverSlide(r) {
   const pics = r.items.filter((p) => p.image).slice(0, 3);
   const pos = [[[300, 0]], [[70, -5], [530, 5]], [[0, -7], [600, 7], [300, 0]]][pics.length - 1] || [];
   const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img class="trim" src="${p.image}"></div>`).join("");
-  const short = r.catName.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
+  const short = shortCat(r.catName);
   return page(`${top()}<div class="cv">
     <div class="tag">${esc(c.season_tag).toUpperCase()}</div>
     <div class="big">${n > 1 ? `TOP ${n}` : "#1"}</div>
     <div class="cat">${esc(short)}</div>
-    <div class="pics">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
-    <div class="row"><div class="pill">${esc(r.subName)}</div>${amazon("on Amazon.in")}</div>
+    <div class="amzbig" style="font-size:100px;margin-top:6px">on <u>Amazon</u></div>
+    <div class="whom" style="font-size:56px;margin-top:12px">${esc(titleCase(c.for_whom))}</div>
+    <div class="pics">${tiles || `<div class="ico">${svg(r.icon, 380)}</div>`}</div>
+    <div class="row"><div class="pill">${esc(r.subName)}</div></div>
   </div>`);
 }
