@@ -18,7 +18,7 @@ jobs:
         run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
       - working-directory: reels
         env:
-          ONLY: top-100,amazon-finds,refrigerators
+          ONLY: top-100,amazon-finds
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: npm run generate -- --no-send
       - name: Push previews to reels-preview-out

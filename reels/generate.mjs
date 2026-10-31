@@ -60,7 +60,7 @@ async function loadData() {
   const [cats, subs, picks] = await Promise.all([
     select("categories", "select=category_id,name,slug,icon,sort_order,active"),
     select("subcategories", "select=subcategory_id,category_id,name,slug,sort_order,active"),
-    select("deal_picks", `select=group_key,rank,reason,category,data,best_for,strengths,limitations,price_checked_at&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`),
+    select("deal_picks", `select=group_key,rank,reason,section,category,data,best_for,strengths,limitations,price_checked_at&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`),
   ]);
   return { cats, subs, picks };
 }
