@@ -11,7 +11,7 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
   (spec chips and Good to know come from the site's own `src/lib/specs.ts` and `src/lib/tips.ts`)
 - 1–3 picks play #1 → #N; 4–5 count down #N → #1
 - `reel.mp4` (1080×1920, silent: add a trending sound in Instagram), `cover.jpg`, `slides/*.jpg`, `caption.txt` (5 hashtags)
-- Telegram gets every reel with its caption, plus one ZIP per category
+- Telegram gets one message with one ZIP of everything (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
 
 AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
 caption opener and post title for every page, using the season from `season.json` (edit it for the next festival) and only

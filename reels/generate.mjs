@@ -250,7 +250,7 @@ function video(frames, out) {
     "-y", "-v", "error", ...inputs,
     "-f", "lavfi", "-t", total.toFixed(2), "-i", "anullsrc=r=44100:cl=stereo",
     "-filter_complex", parts.join(";"), "-map", `[${last}]`, "-map", `${frames.length}:a`,
-    "-t", total.toFixed(2), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-t", total.toFixed(2), "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out,
   ]);
 }
@@ -283,28 +283,34 @@ for (const r of reels) {
   await render(browser, r, join(root, r.slug));
 }
 await browser.close();
-/* one ZIP per category keeps each file under Telegram's 50 MB bot limit */
-const zips = [];
-for (const cat of [...new Set(reels.map((r) => r.catSlug))]) {
-  const dirs = reels.filter((r) => r.catSlug === cat).map((r) => join(name, r.slug));
-  const zip = join(outDir, `${name}_${cat}.zip`);
-  rmSync(zip, { force: true });
-  execFileSync("zip", ["-qr", zip, ...dirs], { cwd: outDir });
-  zips.push({ cat, zip, mb: statSync(zip).size / 1048576 });
+/* everything in one ZIP: one folder per reel (reel.mp4, cover.jpg, post.jpg, caption.txt, slides/) */
+const zip = join(outDir, `${name}.zip`);
+rmSync(zip, { force: true });
+execFileSync("zip", ["-qr", zip, name], { cwd: outDir });
+const mb = statSync(zip).size / 1048576;
+console.log(`✔ ${reels.length} reels → ${zip} (${mb.toFixed(0)} MB)`);
+
+/* Telegram bots can send files up to 50 MB; a bigger ZIP goes to a GitHub release (when run in GitHub Actions)
+   and Telegram gets one message with a download button. Old reel releases are pruned to the last 7. */
+function publishRelease() {
+  const repo = process.env.GITHUB_REPOSITORY, tag = `reels-${STAMP}`;
+  execFileSync("gh", ["release", "create", tag, zip, "--repo", repo, "--title", `Reels ${STAMP.replace("_", " ")} IST`,
+    "--notes", `${reels.length} reels: reel.mp4, cover.jpg, post.jpg, caption.txt and slides for each.`], { stdio: "inherit" });
+  try {
+    const old = execFileSync("gh", ["release", "list", "--repo", repo, "--limit", "100", "--json", "tagName", "--jq", ".[].tagName"], { encoding: "utf8" })
+      .split("\n").filter((t) => t.startsWith("reels-")).sort().reverse().slice(7);
+    for (const t of old) execFileSync("gh", ["release", "delete", t, "--repo", repo, "--yes", "--cleanup-tag"], { stdio: "inherit" });
+  } catch (e) { console.warn("old releases not pruned:", e.message); }
+  return `https://github.com/${repo}/releases/download/${tag}/${name}.zip`;
 }
-console.log(`✔ ${reels.length} reels → ${zips.length} ZIPs in ${outDir}`);
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  await tg("sendMessage", { text: `🎬 Value Verdict reels — ${DATE}\n${reels.length} reels ready. Each video comes with its caption: save it, post it on Instagram, add a trending sound.` });
-  for (const r of reels) {
-    const cap = caption(r);
-    await tg("sendVideo", { caption: cap.length > 1024 ? cap.slice(0, 1020) + "…" : cap, width: "1080", height: "1920", supports_streaming: "true" },
-      { field: "video", path: join(root, r.slug, "reel.mp4"), name: `${r.slug}.mp4` });
-  }
-  for (const z of zips) {
-    if (z.mb < 49) await tg("sendDocument", { caption: `📦 ${z.cat}: slides, covers, captions — ${DATE}` }, { field: "document", path: z.zip, name: z.zip.split("/").pop() });
-    else await tg("sendMessage", { text: `📦 ${z.cat} ZIP is ${z.mb.toFixed(0)} MB (over Telegram's 50 MB limit): download it from the GitHub Actions run.` });
-  }
+  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with reel.mp4, cover.jpg, post.jpg and caption.txt.`;
+  if (mb < 49) await tg("sendDocument", { caption: text }, { field: "document", path: zip, name: `${name}.zip` });
+  else if (process.env.GITHUB_ACTIONS) {
+    const url = publishRelease();
+    await tg("sendMessage", { text, reply_markup: JSON.stringify({ inline_keyboard: [[{ text: `⬇️ Download ZIP (${mb.toFixed(0)} MB)`, url }]] }) });
+  } else await tg("sendMessage", { text: `${text}\nToo big for Telegram (${mb.toFixed(0)} MB): find it in ${zip}` });
   console.log("✔ sent to Telegram");
 }

@@ -95,7 +95,14 @@ export function fallbackCopy(r, season) {
   };
 }
 
-export async function writeCopy(reels, { date, season }) {
+/* pages go to the AI in batches of 10 so a long list never runs past the token or time limit */
+export async function writeCopy(reels, ctx) {
+  const out = new Map();
+  for (let i = 0; i < reels.length; i += 10) for (const [k, v] of await writeBatch(reels.slice(i, i + 10), ctx)) out.set(k, v);
+  return out;
+}
+
+async function writeBatch(reels, { date, season }) {
   const out = new Map(reels.map((r) => [r.slug, fallbackCopy(r, season)]));
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) { console.log("AI copy: ANTHROPIC_API_KEY not set, using plain lines"); return out; }
@@ -113,10 +120,10 @@ export async function writeCopy(reels, { date, season }) {
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(240000),
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
-        model: MODEL, max_tokens: 16000, system: SYSTEM,
+        model: MODEL, max_tokens: 8000, system: SYSTEM,
         output_config: { format: { type: "json_schema", schema: SCHEMA } },
         messages: [{ role: "user", content: `Today is ${date} (India). Season: ${season || "no festival, use everyday framing"}.\nWrite copy for each budget page below, one entry per id.\n\n${facts.join("\n")}` }],
       }),

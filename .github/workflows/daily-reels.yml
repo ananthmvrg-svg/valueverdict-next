@@ -19,6 +19,9 @@ on:
         required: false
         default: ""
 
+permissions:
+  contents: write # publish the daily ZIP as a release when it's too big for Telegram
+
 jobs:
   reels:
     runs-on: ubuntu-latest
@@ -43,6 +46,7 @@ jobs:
           SEASON: ${{ github.event.inputs.season }}
           ONLY: ${{ github.event.inputs.only }}
           MAX_ITEMS: ${{ github.event.inputs.max_items || '5' }}
+          GH_TOKEN: ${{ github.token }}
         run: npm run generate
       - name: Keep the ZIP on the run page (7 days)
         if: always()
