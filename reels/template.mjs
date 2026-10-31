@@ -438,10 +438,10 @@ const COVER_CSS = `
 .g3d.w .b{color:#c2410c;-webkit-text-stroke:14px #9a3412}
 .pc-pill{display:inline-flex;align-items:center;gap:22px;margin-top:30px;font-weight:800;font-size:54px;color:#1a0e00;background:linear-gradient(180deg,#ffe08a,#ffb22e);border:4px solid #fff1c1;border-radius:999px;padding:14px 44px;box-shadow:0 0 40px rgba(255,190,60,.55),0 12px 30px rgba(0,0,0,.4)}
 .pc-pill:before,.pc-pill:after{content:"✦";color:#7c2d12;font-size:36px}
-.pc-prod{position:absolute;left:90px;right:90px;bottom:250px;top:1000px;display:flex;align-items:flex-end;justify-content:center}
+.pc-prod{position:absolute;left:70px;right:70px;bottom:230px;top:930px;display:flex;align-items:flex-end;justify-content:center}
 .pc-prod:before{content:"";position:absolute;left:50%;bottom:-30px;width:760px;height:140px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:0}
 .pc-prod:after{content:"";position:absolute;left:50%;top:10%;width:900px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,200,90,.45),transparent);z-index:0}
-.pc-prod img{position:relative;z-index:1;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 24px 30px rgba(0,0,0,.55))}
+.pc-prod img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.55))}
 `;
 /* drawn Diwali stage when no background photo is supplied: marigold strings, lanterns, bokeh lights, rangoli floor, diyas */
 function stageArt() {
