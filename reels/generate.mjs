@@ -4,6 +4,7 @@
      slides/*.jpg   hook, one slide per product (#1…#5), call-to-action
      cover.jpg      reel cover
      reel.mp4       1080×1920 silent video (add a trending sound in the Instagram app)
+     post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
      caption.txt    caption + 5 hashtags, ready to paste
    Then zips everything (one ZIP per category) and sends it to Telegram.
 
@@ -12,13 +13,13 @@
    node generate.mjs --sample     saved sample picks (no network)
    ONLY=refrigerators,tvs         only these category slugs (env or --only=…)
    MAX_ITEMS=5                    picks per reel (top N by rank)
-   Prices and discounts are never printed: a reel lives for weeks, Amazon prices don't. */
+   Reels never print prices (they stay up for weeks); post.jpg does, stamped with the time Amazon confirmed them. */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, iconKey } from "./template.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, iconKey } from "./template.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
 
@@ -58,7 +59,7 @@ async function loadData() {
   const [cats, subs, picks] = await Promise.all([
     select("categories", "select=category_id,name,slug,icon,sort_order,active"),
     select("subcategories", "select=subcategory_id,category_id,name,slug,sort_order,active"),
-    select("deal_picks", `select=group_key,rank,reason,category,data,best_for,strengths,limitations&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`),
+    select("deal_picks", `select=group_key,rank,reason,category,data,best_for,strengths,limitations,price_checked_at&price_checked_at=gte.${encodeURIComponent(since)}&order=group_key.asc,rank.asc&limit=3000`),
   ]);
   return { cats, subs, picks };
 }
@@ -95,11 +96,14 @@ function reelsOf({ cats, subs, picks }) {
           cons: clean(p.limitations).slice(0, 2),
           tip: (tipsFor(cat.slug, d.specs || {}, 1)[0] || "").match(/^.*?[.!?](?=\s|$)/)?.[0] || "", /* first sentence keeps it to two lines */
           badge: p.rank === 1 ? "🏆 Top pick" : "",
+          price: d.price ?? null, off: d.off ?? null, priceAt: p.price_checked_at || "", /* poster only */
         };
       });
       if (!items.length) continue;
+      const at = items.map((p) => p.priceAt).filter(Boolean).sort()[0];
+      const priceAt = at ? new Date(at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
       out.push({
-        catName: cat.name, catSlug: cat.slug, subName: sub.name, items, year: YEAR, month: MONTH,
+        catName: cat.name, catSlug: cat.slug, subName: sub.name, items, year: YEAR, month: MONTH, priceAt,
         slug: `${cat.slug}-${sub.slug}`.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
         icon: iconKey(cat.slug, cat.name),
         url: `${SITE_URL}/${cat.slug}/${sub.slug}`,
@@ -183,6 +187,9 @@ async function render(browser, r, dir) {
   await shot(ctaSlide(r), cta);
   frames.push({ file: cta, dur: 2.6 });
   await shot(hookSlide(r), join(dir, "cover.jpg"), "jpeg");
+  /* single-image post (4:5): all picks with photo, name and today's price */
+  await page.setViewportSize({ width: 1080, height: 1350 });
+  await shot(posterSlide(r), join(dir, "post.jpg"));
   await page.close();
   video(frames, join(dir, "reel.mp4"));
   writeFileSync(join(dir, "caption.txt"), caption(r) + "\n");
