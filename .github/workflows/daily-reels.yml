@@ -1,9 +1,13 @@
 name: Daily Reels
 
-# Runs every day at 8:00 AM IST, and from the GitHub app: Actions → Daily Reels → Run workflow.
+# Runs once a day at the time in reels/schedule.json (default 08:00 IST), and from the GitHub app:
+# Actions → Daily Reels → Run workflow. To change the daily time without touching code, set the repository
+# variable REELS_TIME (Settings → Secrets and variables → Actions → Variables), e.g. 06:30 (24-hour, India time).
+# GitHub wakes this every 15 minutes; a tiny check runs the real job only when today's time has come and
+# today's reels haven't been made yet.
 on:
   schedule:
-    - cron: "30 2 * * *" # 02:30 UTC = 08:00 IST
+    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       only:
@@ -31,7 +35,35 @@ permissions:
   contents: write # publish the daily ZIP as a release when it's too big for Telegram
 
 jobs:
+  when:
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      date: ${{ steps.time.outputs.date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: reels
+      - id: time
+        env:
+          REELS_TIME: ${{ vars.REELS_TIME }}
+        run: node reels/when.mjs reels
+      - id: done
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: reels-done.txt
+          key: reels-done-${{ steps.time.outputs.date }}
+          lookup-only: true
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT";
+          elif [ "${{ steps.time.outputs.go }}" = "true" ] && [ "${{ steps.done.outputs.cache-hit }}" != "true" ]; then echo "run=true" >> "$GITHUB_OUTPUT";
+          else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
   reels:
+    needs: when
+    if: needs.when.outputs.run == 'true'
     runs-on: ubuntu-24.04 # pinned: ffmpeg + Chromium deps are known-good here
     timeout-minutes: 30
     defaults:
@@ -69,6 +101,15 @@ jobs:
           YT_SHORTS_PER_DAY: ${{ github.event.inputs.shorts || '6' }}
           SEASON: ${{ github.event.inputs.season }}
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON youtube.mjs
+      # mark today as done (scheduled runs only), so the 15-minute check doesn't make them again
+      - name: Mark today done
+        if: always() && github.event_name == 'schedule'
+        run: echo done > ../reels-done.txt
+      - uses: actions/cache/save@v4
+        if: always() && github.event_name == 'schedule'
+        with:
+          path: reels-done.txt
+          key: reels-done-${{ needs.when.outputs.date }}
       - name: Keep the ZIP on the run page (7 days)
         if: always()
         uses: actions/upload-artifact@v4
