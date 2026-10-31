@@ -1,5 +1,8 @@
 # Value Verdict reel kit
 
+Two extra reels come from the mixed lists: **Today's Top 10 Deals** (first 10 of the Top 100) and **Top 10 Amazon Finds**
+(the #1 of each Amazon Finds section); both point to the website for the rest.
+
 Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the same AI picks the website shows
 (Supabase `deal_picks`) and makes one reel per budget page, e.g. Refrigerators · Under ₹35,000, with its top 1–5 picks:
 
