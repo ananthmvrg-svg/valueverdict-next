@@ -18,12 +18,12 @@ jobs:
         run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
       - working-directory: reels
         env:
-          ONLY: refrigerators,tvs
+          ONLY: top-100,amazon-finds,refrigerators
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: npm run generate -- --no-send
       - name: Push previews to reels-preview-out
         run: |
-          mkdir /tmp/p && cd reels/out && for d in ValueVerdict_*/*/; do n=$(basename $d); cp $d/post.jpg /tmp/p/$n-post.jpg; cp $d/caption.txt /tmp/p/$n-caption.txt; cp $d/slides/*cta.jpg /tmp/p/$n-cta.jpg; cp $d/cover.jpg /tmp/p/$n-cover.jpg; cp $d/slides/01-hook.jpg /tmp/p/$n-hook.jpg; cp $d/slides/0[2-3]-*.jpg /tmp/p/ 2>/dev/null || true; for f in $d/slides/0[2-3]-*.jpg; do cp $f /tmp/p/$n-$(basename $f); done; done
+          mkdir /tmp/p && cd reels/out && for d in ValueVerdict_*/*/; do n=$(basename $d); cp $d/post.jpg /tmp/p/$n-post.jpg; cp $d/reel.mp4 /tmp/p/$n-reel.mp4 2>/dev/null || true; cp $d/caption.txt /tmp/p/$n-caption.txt; cp $d/slides/*cta.jpg /tmp/p/$n-cta.jpg; cp $d/cover.jpg /tmp/p/$n-cover.jpg; cp $d/slides/01-hook.jpg /tmp/p/$n-hook.jpg; cp $d/slides/0[2-3]-*.jpg /tmp/p/ 2>/dev/null || true; for f in $d/slides/0[2-3]-*.jpg; do cp $f /tmp/p/$n-$(basename $f); done; done
           d=$(ls -d ValueVerdict_*/refrigerators-under-35k 2>/dev/null | head -1); [ -n "$d" ] && cp $d/reel.mp4 /tmp/p/refrigerators-under-35k-reel.mp4
           cd /tmp/p && git init -q && git checkout -q -b reels-preview-out && git add . && git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm preview
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" reels-preview-out

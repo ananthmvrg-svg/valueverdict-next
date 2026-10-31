@@ -135,7 +135,7 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .pc .con li:before{content:"✕";position:absolute;left:2px;top:0;font-weight:800;color:#f87171}
 .tip{font-weight:500;font-size:32px;line-height:1.35;color:#dbe7ff;background:rgba(30,144,255,.12);border:2px solid rgba(30,144,255,.35);border-radius:22px;padding:16px 22px}
 .tip b{color:#7cc4ff}
-.dots{position:absolute;left:64px;bottom:250px;display:flex;gap:14px}
+.dots{position:absolute;left:0;right:0;bottom:250px;display:flex;justify-content:center;gap:14px}
 .dots i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25)}
 .dots i.on{background:#ff8a00;width:60px;border-radius:12px}
 
@@ -310,7 +310,7 @@ const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 const shortCat = (n) => n.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
 const titleCase = (s) => String(s || "").replace(/\b([a-z])([a-z]*)/g, (m, a, b) => (/^(for|and|of|the|a|an|to|with|on|in)$/.test(m) ? m : a.toUpperCase() + b));
-const topLine = (r) => (r.items.length > 1 ? `Top ${r.items.length} ${shortCat(r.catName)}` : `Best ${shortCat(r.catName)}`);
+const topLine = (r) => r.headline || (r.items.length > 1 ? `Top ${r.items.length} ${shortCat(r.catName)}` : `Best ${shortCat(r.catName)}`);
 
 /* reel: { catName, subName, items:[product], icon, url, year } */
 export function hookSlide(r) {
@@ -379,7 +379,7 @@ export function productSlide(r, p, rank, idx, total) {
 export function ctaSlide(r) {
   return page(`<div class="safe cta">
     <img src="${LOGO}">
-    <h2>Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks<br>+ <em>today's price</em></h2>
+    <h2>${r.more ? esc(r.more) : `Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks`}<br>+ <em>today's price</em></h2>
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
     <div class="bio">🔗 Link in bio</div>
@@ -388,6 +388,23 @@ export function ctaSlide(r) {
   </div>`);
 }
 
+
+/* 6–10 picks: #1 across the top, the rest three per row with a smaller name and price */
+function posterMany(r, cards) {
+  const rest = cards.length - 1, rows = Math.ceil(rest / 3);
+  return page(`<style>html,body{height:1350px}.diyas{display:none}.pst{padding-top:${THEME === "diwali" ? 70 : 40}px}
+    .gridp{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1.25fr repeat(${rows},1fr);gap:12px}
+    .gc{padding:8px;border-radius:20px}.gc .rk2{font-size:28px;padding:4px 12px 6px}.gc .nm{font-size:19px;height:24px;margin-top:6px}
+    .gc .pr b{font-size:26px}.gc .pr span{font-size:16px;padding:1px 7px}.gc.hero .pr b{font-size:46px}.gc.hero .nm{font-size:30px;max-height:74px}</style>
+    <div class="pst">
+    <div class="hd"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div><div class="bud">${esc(r.subName)}</div></div>
+    <h1>${esc(topLine(r))} <span class="amzbig">on <u>Amazon</u></span></h1>
+    <div class="urg"><span class="whom">${esc(titleCase(r.copy.for_whom))}</span><span>⏳ ${esc(r.copy.urgency)}</span></div>
+    <div class="gridp">${cards.join("")}</div>
+    <div class="ft"><div class="go">🔗 ${esc(r.more || "Link in bio")}: link in bio</div>
+      <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
+  </div>`);
+}
 
 /* one image with every pick: #1 hero card, the rest as a 2-column grid; price as Amazon confirmed it */
 export function posterSlide(r) {
@@ -401,6 +418,7 @@ export function posterSlide(r) {
       <div class="bx"><span class="tp">🏆 Top pick</span>${name(p)}${p.bestFor ? `<div class="bf">👍 ${esc(p.bestFor)}</div>` : ""}${price(p)}</div></div>`;
     return `<div class="gc">${photo(p)}<span class="rk2">#${i + 1}</span>${name(p)}${price(p)}</div>`;
   });
+  if (n > 5) return posterMany(r, cards);
   /* an odd card left over (#4 of 4) spans both columns */
   if (n === 4) cards[3] = cards[3].replace('<div class="gc">', '<div class="gc" style="grid-column:1 / -1">');
   const rows = n === 2 ? "1fr" : n === 1 ? "1fr" : n === 3 ? "1.1fr 1fr" : n === 4 ? "1.1fr 1fr 1fr" : "1fr 1fr 1fr";
@@ -409,7 +427,7 @@ export function posterSlide(r) {
     <h1>${esc(topLine(r))} <span class="amzbig">on <u>Amazon</u></span></h1>
     <div class="urg"><span class="whom">${esc(titleCase(r.copy.for_whom))}</span><span>⏳ ${esc(r.copy.urgency)}</span></div>
     <div class="gridp" style="grid-template-rows:${rows}">${cards.join("")}</div>
-    <div class="ft"><div class="go">🔗 Link in bio · 💛 Follow for more</div>
+    <div class="ft"><div class="go">${r.more ? `🔗 ${esc(r.more)}: link in bio` : "🔗 Link in bio · 💛 Follow for more"}</div>
       <div class="note">Amazon.in prices as of<br>${esc(r.priceAt || "today")} IST · may change</div></div>
   </div>`);
 }
@@ -481,9 +499,9 @@ function stageArt() {
 
 function photoCover(r, bg) {
   const n = r.items.length, one = ONE[r.catName] || shortCat(r.catName).replace(/s$/, "");
-  const l1 = `Top ${one} Deals`, l2 = "on Amazon";
+  const l1 = r.coverLine || `Top ${one} Deals`, l2 = "on Amazon";
   const size = l1.length <= 14 ? 168 : l1.length <= 18 ? 140 : 118, size2 = Math.min(size, 150);
-  const pill = /^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`;
+  const pill = r.pill || (/^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`);
   const hero = r.items.find((p) => p.image);
   const word = (txt, cls, px) => `<span class="g3d ${cls}" style="font-size:${px}px"><span class="b">${esc(txt)}</span><span class="f">${esc(txt)}</span></span>`;
   return page(`<style>${COVER_CSS}.toran,.diyas,.deco{display:none}</style>

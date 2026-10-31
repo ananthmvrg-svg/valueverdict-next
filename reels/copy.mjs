@@ -89,7 +89,8 @@ export function fallbackCopy(r, season) {
     hook_sub: "We compared them so you don't have to",
     urgency: fest ? `${fest} offers are live: prices change daily` : "Offers change daily: check today's price",
     follow_line: "Follow Value Verdict: smart picks every day",
-    caption_hook: `${fest ? fest + " shopping? " : ""}The ${r.catName.toLowerCase()} worth your money ${r.subName.replace(/^Under/, "under")} 🔥`,
+    caption_hook: r.coverLine ? `${fest ? fest + " shopping? " : ""}${r.coverLine} on Amazon, hand-picked for you 🔥`
+      : `${fest ? fest + " shopping? " : ""}The ${r.catName.toLowerCase()} worth your money ${r.subName.replace(/^Under/, "under")} 🔥`,
     post_title: `Best ${r.catName}`,
   };
 }
