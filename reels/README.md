@@ -16,7 +16,11 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
   - `youtube/`: video ("Subscribe · valueverdict.in" instead of "link in bio"), thumbnail ("on Amazon"), `_youtube.txt`
 - Background music from `reels/audio/` (royalty-free tracks you upload; see the README there), the same track in both versions.
   No tracks: silent videos.
-- Telegram gets one message with one ZIP of everything (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
+- Every slide also says where the rest are: "Didn't find what you want? Every budget & brand on our website: link in bio"
+  (YouTube: "at valueverdict.in"), since a reel shows only the top picks.
+- **Telegram ZIP = only the reels you post yourself** with a trending sound (variable `MANUAL_REELS`, default
+  `top-100,amazon-finds`; they're made silent). All reels, for the automatic posting, are in the run's `reels-kit` artifact.
+- Telegram gets one message with that ZIP (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
 
 AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
 caption opener and post title for every page, using the season from `season.json` (edit it for the next festival) and only

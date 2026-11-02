@@ -93,8 +93,8 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .chip{font-weight:700;font-size:34px;padding:8px 24px;border-radius:14px;background:rgba(30,144,255,.18);border:2px solid rgba(30,144,255,.5);color:#d8ecff;white-space:nowrap}
 
 /* hook */
-.collage{position:relative;height:500px;margin:0 0 26px}
-.collage .t{position:absolute;top:20px;width:380px;height:440px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.collage{position:relative;height:450px;margin:0 0 30px;flex-shrink:0}
+.collage .t{position:absolute;top:14px;width:360px;height:400px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
@@ -140,7 +140,11 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .tip span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dots{position:absolute;left:0;right:0;bottom:244px;display:flex;justify-content:center;gap:14px}
 /* "where to buy" on every slide: above Instagram's caption area */
-.safe.prod{bottom:400px}
+.safe.prod{bottom:480px}
+.more{position:absolute;left:40px;right:40px;bottom:384px;text-align:center;font-weight:600;font-size:30px;line-height:1.3;color:#ffe2b0;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.more i{display:block;font-style:normal;font-weight:800;color:#fff}
+.more b{color:#fff}
+.safe>.more{position:static;text-align:left;margin-top:18px;left:auto;right:auto}
 .ctabar{position:absolute;left:0;right:0;bottom:286px;display:flex;justify-content:center}
 .ctabar span{font-weight:800;font-size:36px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffc04d);border-radius:999px;padding:12px 34px;box-shadow:0 10px 30px rgba(255,138,0,.45)}
 .ctabar b{font-weight:800}
@@ -350,6 +354,13 @@ const SUB_BTN = (px) => `<span class="ytsub" style="font-size:${px}px"><i>Subscr
 const ctaBar = () => YT()
   ? `<div class="ctabar yt">${SUB_BTN(40)}<span class="site">🔗 valueverdict.in</span></div>`
   : `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
+/* the reel shows only the top picks: every slide says where the rest are */
+function moreLine(r) {
+  const where = YT() ? "at <b>valueverdict.in</b>" : "on our website: <b>link in bio</b>";
+  const n = String(r.more || "").match(/\d+/)?.[0];
+  const what = r.catSlug === "top-100" ? `All ${n || "100"} deals` : r.catSlug === "amazon-finds" ? `All ${n || "50+"} finds` : "Every budget & brand";
+  return `<div class="more"><i>🔍 Didn't find what you want?</i>${what} ${where}</div>`;
+}
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
@@ -380,6 +391,7 @@ export function hookSlide(r) {
     <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
     ${ctaBar()}
+    ${moreLine(r)}
   </div>`);
 }
 
@@ -420,7 +432,7 @@ export function productSlide(r, p, rank, idx, total) {
       </div>` : ""}
       ${p.tip ? `<div class="tip"><span><b>💡 Good to know:</b> ${esc(p.tip)}</span></div>` : ""}
     </div>
-  </div>${ctaBar()}${dots(total, idx)}`);
+  </div>${moreLine(r)}${ctaBar()}${dots(total, idx)}`);
 }
 
 export function ctaSlide(r) {

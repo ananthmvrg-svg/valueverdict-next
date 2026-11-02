@@ -280,11 +280,16 @@ setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so *
 const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
 for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();
-const tracks = tracksFor(reels.length, DATE, themeFor(DATE));
-for (const [i, r] of reels.entries()) {
-  r.track = tracks[i] ? tracks[i].split("/").pop() : "";
+/* reels you post yourself stay silent (you add a trending sound in the app); the rest get a track from reels/audio/ */
+const MANUAL = (process.env.MANUAL_REELS || "top-100,amazon-finds").split(",").map((s) => s.trim()).filter(Boolean);
+const isManual = (r) => MANUAL.includes(r.catSlug) || MANUAL.includes(r.slug);
+const pool = tracksFor(reels.filter((r) => !isManual(r)).length, DATE, themeFor(DATE));
+let ti = 0;
+for (const r of reels) {
+  const track = isManual(r) ? undefined : pool[ti++];
+  r.track = track ? track.split("/").pop() : "";
   console.log(`• ${r.slug} (${r.items.length} products)${r.track ? ` ♪ ${r.track}` : ""}`);
-  await render(browser, r, join(root, r.slug), tracks[i]);
+  await render(browser, r, join(root, r.slug), track);
 }
 await browser.close();
 /* manifest for later steps (YouTube upload): what each folder holds, without the inlined photos */
@@ -310,13 +315,19 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
 }
 
-/* everything in one ZIP: one folder per reel, each with instagram/ (video, cover, post, caption, slides) and
-   youtube/ (video, thumbnail, title/description/tags) */
+/* Telegram gets one ZIP with only the reels you post yourself (with a trending sound): MANUAL_REELS, default
+   Today's Top 10 Deals and Top 10 Amazon Finds, each with instagram/ and youtube/. Every reel (for the automatic
+   posting) goes in a second ZIP kept with the GitHub run. */
+const manual = reels.filter(isManual);
+const all = join(outDir, `ValueVerdict_all_${STAMP}.zip`);
+rmSync(all, { force: true });
+execFileSync("zip", ["-qr", all, name], { cwd: outDir });
 const zip = join(outDir, `${name}.zip`);
 rmSync(zip, { force: true });
-execFileSync("zip", ["-qr", zip, name], { cwd: outDir });
+if (manual.length) execFileSync("zip", ["-qr", zip, ...manual.map((r) => join(name, r.slug))], { cwd: outDir });
+else execFileSync("cp", [all, zip]);
 const mb = statSync(zip).size / 1048576;
-console.log(`✔ ${reels.length} reels → ${zip} (${mb.toFixed(0)} MB)`);
+console.log(`✔ ${reels.length} reels → ${all}; to post yourself: ${manual.map((r) => r.slug).join(", ") || "all"} → ${zip} (${mb.toFixed(0)} MB)`);
 
 /* Telegram bots can send files up to 50 MB; a bigger ZIP goes to a GitHub release (when run in GitHub Actions)
    and Telegram gets one message with a download button. Old reel releases are pruned to the last 7. */
@@ -334,7 +345,7 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags).`;
+  const text = `🎬 Value Verdict reels to post yourself · ${STAMP.replace("_", " ")} IST\n${(manual.length ? manual : reels).map((r) => `• ${r.coverLine || r.slug}`).join("\n")}\nEach folder: instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags). Add a trending sound in the app.`;
   if (mb < 49) await tg("sendDocument", { caption: text }, { field: "document", path: zip, name: `${name}.zip` });
   else if (process.env.GITHUB_ACTIONS) {
     const url = publishRelease();
