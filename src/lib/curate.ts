@@ -191,6 +191,21 @@ async function previousPicks(): Promise<Map<string, Map<string, number>>> {
 }
 const STICKY = " Our picks for this page yesterday are marked \"yesterday: #N\". Readers come back to these pages and to our videos, so keep yesterday's picks in the same order unless there is a clear reason: a candidate is clearly better value (e.g. a better energy rating, longer warranty or more capacity at a similar price, or a much lower price for similar specs), or yesterday's pick's deal got clearly worse. Don't reshuffle close calls, and never mention yesterday in what you write.";
 
+/* Readers and our reels saw yesterday's order ("#1 is X"), so it doesn't flip without a real reason:
+   picks that stay keep yesterday's order; a new pick takes a freed place at the end, and moves above an old one
+   only when its value score is clearly higher (STEADY_MARGIN points). A pick that dropped out (deal ended, out of
+   stock, price left the budget) simply frees its place. */
+const STEADY_MARGIN = 10;
+function steady(picks: Pick[], prev?: Map<string, number>): Pick[] {
+  if (!prev || !picks.some((p) => prev.has(p.asin))) return picks;
+  const out = picks.filter((p) => prev.has(p.asin)).sort((a, b) => prev.get(a.asin)! - prev.get(b.asin)!);
+  for (const p of picks.filter((x) => !prev.has(x.asin))) {
+    const at = out.findIndex((o) => !prev.has(o.asin) ? false : p.score >= o.score + STEADY_MARGIN);
+    if (at === -1) out.push(p); else out.splice(at, 0, p);
+  }
+  return out;
+}
+
 /* every saved list is also kept in deal_picks_history (one row per pick per day: page, rank, ASIN and our score only;
    Amazon's product content is never kept past 24 hours, ASINs may be). Read to see how often a page's picks change,
    and by the reels to skip a budget page whose picks didn't change. Optional: a missing table never stops the picks. */
@@ -259,6 +274,7 @@ export async function curate(cycle: string): Promise<string> {
     const groups = await buildGroups();
     const keyOf = new Map<string, string>(JSON.parse((await admin<{ detail: string }[]>("GET", `ai_runs?id=eq.${groupsRun.id}&select=detail`))[0].detail));
     const answers = await results(client, groupsRun.batch_id!);
+    const before = await previousPicks(); /* yesterday's order, read before it's replaced */
     /* every group's picks replaced in two requests (one delete, one insert), so saving stays fast */
     /* Amazon Finds sections ("amazon-finds|Earbuds deals") are saved as one list, ranked section by section */
     const rows: Record<string, unknown>[] = [], keys = new Set<string>(), ranks = new Map<string, number>(), again: Group[] = [];
@@ -266,12 +282,12 @@ export async function curate(cycle: string): Promise<string> {
       const g = groups.find((x) => x.key === key), message = answers.get(id);
       if (!g) continue;
       const byAsin = new Map(g.items.map((x) => [x.asin, x]));
-      const picks = message ? picksFrom(message, byAsin, g.max) : [];
+      const picks = steady(message ? picksFrom(message, byAsin, g.max) : [], before.get(g.key));
       if (!enough(picks, g)) { again.push(g); continue; }
-      const saveKey = g.key.split("|")[0], before = ranks.get(saveKey) ?? 0;
+      const saveKey = g.key.split("|")[0], offset = ranks.get(saveKey) ?? 0;
       keys.add(saveKey);
-      rows.push(...pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + before })));
-      ranks.set(saveKey, before + picks.length);
+      rows.push(...pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + offset })));
+      ranks.set(saveKey, offset + picks.length);
     }
     if (keys.size) await admin("DELETE", `deal_picks?group_key=in.${encodeURIComponent(`(${[...keys].map((k) => `"${k}"`).join(",")})`)}`);
     if (rows.length) { await admin("POST", "deal_picks", rows, "return=minimal"); await keepHistory(rows); }
@@ -292,12 +308,13 @@ export async function curate(cycle: string): Promise<string> {
     const groups = await buildGroups();
     const keyOf = new Map<string, string>(JSON.parse((await admin<{ detail: string }[]>("GET", `ai_runs?id=eq.${retryRun.id}&select=detail`))[0].detail));
     const answers = await results(client, retryRun.batch_id!);
+    const before = await previousPicks();
     let saved = 0, failed = 0;
     for (const [id, key] of keyOf) {
       const g = groups.find((x) => x.key === key), message = answers.get(id);
       if (!g) continue;
       const byAsin = new Map(g.items.map((x) => [x.asin, x]));
-      const picks = message ? picksFrom(message, byAsin, g.max) : [];
+      const picks = steady(message ? picksFrom(message, byAsin, g.max) : [], before.get(g.key));
       if (!picks.length) { failed++; continue; }
       const saveKey = g.key.split("|")[0];
       if (saveKey === g.key) saved += await savePicks(g.key, cycle, picks, byAsin);
