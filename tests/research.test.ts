@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkPlan, filtersFor, type Inputs, type Plan } from "../src/lib/research";
+import { checkPlan, filtersFor, planRows, type Inputs, type Plan } from "../src/lib/research";
 
 const inputs: Inputs = {
   date: "2026-11-01", brands: ["Samsung", "LG"], searchConsole: null, searchConsoleError: "", topSellers: {}, thinSearches: [],
@@ -66,5 +66,14 @@ describe("filters for plan searches", () => {
   it("a new section gets the rating and the typical discount, not another section's rules", () => {
     const f = filtersFor(s("Room heater deals"), "13", rows)!;
     expect([f.min_rating, f.min_saving_percent, f.search_index, f.must_include]).toEqual(["3", "30", "", ""]);
+  });
+});
+
+describe("plan searches saved to amazon_deal_searches", () => {
+  it("never set an id: the table numbers its rows itself (identity column)", () => {
+    const rows = [{ category_id: "9", section: "Smart TV deals", min_rating: "4", min_saving_percent: "15", search_index: "", must_include: "", sort_by: "" }] as unknown as import("../src/lib/products").Row[];
+    const out = planRows([{ category: "tvs", keywords: "mini led smart tv", section: "Smart TV deals", reason: "r", sources: src }], inputs, rows, 7);
+    expect(out[0]).not.toHaveProperty("id");
+    expect(out[0]).toMatchObject({ category_id: "9", keywords: "mini led smart tv", source: "plan", plan_id: 7, min_rating: 4, active: true });
   });
 });

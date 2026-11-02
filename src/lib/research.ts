@@ -228,6 +228,20 @@ export function filtersFor(s: PlanSearch, catId: string, baseRows: Row[]): Row |
   } as Row;
 }
 
+/* rows for amazon_deal_searches: no "id", the table numbers its rows itself (identity column, GENERATED ALWAYS,
+   which refuses a given id); the 1 Nov 2026 run failed on exactly that */
+export function planRows(accepted: PlanSearch[], inputs: Inputs, baseRows: Row[], planId: number) {
+  return accepted.map((s) => {
+    const cat = inputs.cats.find((c) => c.slug === s.category)!;
+    const base = filtersFor(s, cat.id, baseRows)!;
+    return {
+      category_id: cat.id, section: s.section, keywords: s.keywords, search_index: base.search_index || null,
+      min_saving_percent: Number(base.min_saving_percent) || null, min_rating: Number(base.min_rating) || null,
+      sort_by: base.sort_by || null, must_include: base.must_include || null, active: true, source: "plan", plan_id: planId, reason: s.reason.slice(0, 300),
+    };
+  });
+}
+
 /* 4b. a live Amazon search with the category's own filters must find enough usable products */
 async function amazonCheck(s: PlanSearch, base: Row): Promise<number> {
   const r = await search({ ...base, keywords: s.keywords, section: s.section, max_price: "", min_price: "" } as Row, 1);
@@ -269,16 +283,7 @@ export async function runResearch(opts: { dryRun?: boolean } = {}): Promise<stri
       return "no search passed the checks; last week's plan stays active";
     }
     /* add the new searches first, then switch off the previous plan's */
-    const maxId = (await admin<{ id: number }[]>("GET", "amazon_deal_searches?select=id&order=id.desc&limit=1"))[0]?.id ?? 0;
-    await admin("POST", "amazon_deal_searches", accepted.map((s, i) => {
-      const cat = inputs.cats.find((c) => c.slug === s.category)!;
-      const base = filtersFor(s, cat.id, baseRows)!;
-      return {
-        id: maxId + 1 + i, category_id: cat.id, section: s.section, keywords: s.keywords, search_index: base.search_index || null,
-        min_saving_percent: Number(base.min_saving_percent) || null, min_rating: Number(base.min_rating) || null,
-        sort_by: base.sort_by || null, must_include: base.must_include || null, active: true, source: "plan", plan_id: row.id, reason: s.reason.slice(0, 300),
-      };
-    }), "return=minimal");
+    await admin("POST", "amazon_deal_searches", planRows(accepted, inputs, baseRows, row.id), "return=minimal");
     await admin("PATCH", `amazon_deal_searches?source=eq.plan&active=eq.true&plan_id=neq.${row.id}`, { active: false }, "return=minimal");
     await admin("PATCH", `research_plans?status=eq.active&id=neq.${row.id}`, { status: "archived" }, "return=minimal");
     await save({ status: "active", activated_at: new Date().toISOString() });
