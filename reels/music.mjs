@@ -9,7 +9,8 @@
         every new track is sent there to listen to), MUSIC_KEEP (default 40: AI tracks kept; oldest removed first)
 
    Files are named <style>-ai-<date>-<nn>.mp3. Festive ones play twice as often during a festival (audio.mjs).
-   Don't like one? Delete it from reels/audio/ on GitHub. Tracks you upload yourself are never touched. */
+   Don't like one? Tap "🗑 Remove" under it in Telegram (music-inbox.mjs), or delete it from reels/audio/ on GitHub.
+   Tracks you upload yourself are never touched. */
 import { writeFileSync, readdirSync, rmSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -99,6 +100,8 @@ async function sendAudio(file, title) {
   const fd = new FormData();
   fd.append("chat_id", chat); fd.append("title", title); fd.append("performer", "Value Verdict · Lyria");
   fd.append("audio", new Blob([readFileSync(file)]), file.split("/").pop());
+  /* one tap removes it from the library (music-inbox.mjs picks the tap up within ~15 minutes) */
+  fd.append("reply_markup", JSON.stringify({ inline_keyboard: [[{ text: "🗑 Remove this track", callback_data: `rm:${file.split("/").pop()}`, style: "danger" }]] }));
   await fetch(`https://api.telegram.org/bot${t}/sendAudio`, { method: "POST", body: fd }).catch(() => {});
   await new Promise((res) => setTimeout(res, 1100));
 }
@@ -118,7 +121,7 @@ const taken = new Set(readdirSync(DIR));
 let made = 0, n = 0;
 const intro = process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID;
 if (intro) await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, { method: "POST", headers: { "content-type": "application/json" },
-  body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: `🎵 Making ${jobs.length} new background tracks for the reels. Each one follows here; delete any you don't like from reels/audio on GitHub.` }) }).catch(() => {});
+  body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: `🎵 Making ${jobs.length} new background tracks for the reels. Each one follows here: listen, and tap 🗑 Remove on any you don't like. The rest go into the reels.` }) }).catch(() => {});
 for (const [style, prompt] of jobs) {
   do n++; while ([...taken].some((f) => f.startsWith(`${style}-ai-${DATE}-${String(n).padStart(2, "0")}.`)));
   const name = `${style}-ai-${DATE}-${String(n).padStart(2, "0")}`;

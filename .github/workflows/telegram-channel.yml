@@ -21,7 +21,7 @@ on:
         default: "1"
 
 permissions:
-  contents: read
+  contents: write # the music inbox step commits removed tracks
 
 concurrency:
   group: telegram-channel
@@ -61,3 +61,18 @@ jobs:
         with:
           path: reels/channel-state.json
           key: channel-state-${{ github.run_id }}
+      # "🗑 Remove this track" taps on the reel music in the bot chat (reels/music-inbox.mjs)
+      - name: Music removals
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON music-inbox.mjs
+          cd ..
+          git add -A reels/audio
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Reel music: tracks removed from Telegram"
+          git pull --rebase -q && git push
