@@ -4,5 +4,5 @@
  "overrides": { "2026-11-01": "06:30" },
  "deals_until": "22:00",
  "deals_per_day": 50,
- "menu_every_hours": 3
+ "summary_time": "21:30"
 }
