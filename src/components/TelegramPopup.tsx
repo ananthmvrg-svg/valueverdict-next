@@ -1,43 +1,49 @@
 "use client";
 /* "Never miss a deal" popup inviting visitors to our Telegram channel.
-   Google lowers rankings for popups that cover a page as soon as it opens (above all on phones), so it waits:
-   it appears after 10 seconds or once a third of the page has been scrolled, as a small card (a bottom sheet
-   on phones), and is easy to close (✕, Escape, tap outside). Once per visitor: after "Join" it never returns;
-   after closing, it may return after 7 days. Kept in this browser only (localStorage); events go to GA4. */
+   It appears 5 seconds after a page opens (sooner if a third of the page is scrolled first), as a small card
+   (a bottom sheet on phones), and is easy to close (✕, Escape, tap outside). After "Join" it never returns;
+   after closing, it returns 30 seconds later, on the same page or the next one.
+   Kept in this browser only (localStorage); events go to GA4. */
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/track";
 import { TelegramIcon } from "./Social";
 
 const KEY = "vv-telegram-popup";
-const DELAY_MS = 10_000, SCROLL_SHARE = 0.33, AGAIN_AFTER_DAYS = 7;
+const DELAY_MS = 5_000, SCROLL_SHARE = 0.33, AGAIN_AFTER_MS = 30_000;
 
-function due(): boolean {
+/* how long to wait before showing it: null = never (joined); at least 5 s after the page opens,
+   and 30 s after it was last closed */
+function waitMs(): number | null {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null") as { state: "joined" | "closed"; at: number } | null;
-    if (!v) return true;
-    return v.state === "closed" && Date.now() - v.at > AGAIN_AFTER_DAYS * 864e5;
-  } catch { return true; }
+    if (!v) return DELAY_MS;
+    if (v.state === "joined") return null;
+    return Math.max(DELAY_MS, AGAIN_AFTER_MS - (Date.now() - v.at));
+  } catch { return DELAY_MS; }
 }
 const remember = (state: "joined" | "closed") => { try { localStorage.setItem(KEY, JSON.stringify({ state, at: Date.now() })); } catch { /* private mode */ } };
 
 export default function TelegramPopup({ url, festival }: { url: string; festival: string | null }) {
   const [open, setOpen] = useState(false);
+  const [closes, setCloses] = useState(0); /* each close schedules the next showing */
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!url || !due()) return;
+    const ms = url ? waitMs() : null;
+    if (ms == null) return;
     let shown = false;
     const show = () => {
       if (shown) return;
-      shown = true; setOpen(true); track("telegram_popup_view", { festival: festival ?? "" });
+      shown = true; setOpen(true); track("telegram_popup_view", { festival: festival ?? "", again: closes > 0 });
       cleanup();
     };
-    const onScroll = () => { if (scrollY > (document.documentElement.scrollHeight - innerHeight) * SCROLL_SHARE) show(); };
-    const timer = setTimeout(show, DELAY_MS);
+    /* scrolling only brings the first showing forward; a closed popup waits its 30 seconds */
+    const onScroll = () => { if (ms === DELAY_MS && scrollY > (document.documentElement.scrollHeight - innerHeight) * SCROLL_SHARE) show(); };
+    const timer = setTimeout(show, ms);
     addEventListener("scroll", onScroll, { passive: true });
     const cleanup = () => { clearTimeout(timer); removeEventListener("scroll", onScroll); };
     return cleanup;
-  }, [url, festival]);
+  }, [url, festival, closes]);
 
   useEffect(() => {
     if (!open) return;
@@ -47,7 +53,7 @@ export default function TelegramPopup({ url, festival }: { url: string; festival
     return () => removeEventListener("keydown", onKey);
   });
 
-  function close() { setOpen(false); remember("closed"); track("telegram_popup_close", {}); }
+  function close() { setOpen(false); remember("closed"); setCloses((n) => n + 1); track("telegram_popup_close", {}); }
   function join() { setOpen(false); remember("joined"); track("social_click", { where: "popup", which: "telegram" }); }
 
   if (!open) return null;
