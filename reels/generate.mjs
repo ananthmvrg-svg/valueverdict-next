@@ -65,7 +65,7 @@ const SKIP = new Set(["amazon-finds", "top-100"]); /* mixed lists: made as their
 function mapItem(p, catSlug, badge) {
   const d = p.data, brand = brandCase(d.brand || "");
   return {
-    brand, name: shortName(d.title, d.brand), imageUrl: d.image,
+    asin: d.asin || "", brand, name: shortName(d.title, d.brand), imageUrl: d.image,
     specs: specChips(catSlug, d.specs || {}).slice(0, 5),
     bestFor: p.best_for || "",
     pros: clean(p.strengths).slice(0, 3),
@@ -315,10 +315,19 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
 }
 
-/* Telegram gets one ZIP with only the reels you post yourself (with a trending sound): MANUAL_REELS, default
-   Today's Top 10 Deals and Top 10 Amazon Finds, each with instagram/ and youtube/. Every reel (for the automatic
-   posting) goes in a second ZIP kept with the GitHub run. */
-const manual = reels.filter(isManual);
+/* What goes in the Telegram ZIP:
+   - AUTO_POST=true (repository variable; automatic Instagram/YouTube posting): only MANUAL_REELS, the reels you post
+     yourself with a trending sound (Today's Top 10 Deals, Top 10 Amazon Finds);
+   - AUTO_POST off (default, everything posted by hand): MANUAL_REELS plus every budget page whose picks or their
+     order changed since the last ZIP (all of them the first time). Unchanged pages are left out, so you never post
+     the same reel twice. The last-sent picks are kept in reels-state.json (Actions cache).
+   Every reel, changed or not, is in the second ZIP kept with the GitHub run. */
+const AUTO_POST = /^(1|true|yes|on)$/i.test(String(process.env.AUTO_POST || "").trim());
+const STATE_FILE = process.env.REELS_STATE || join(here, "reels-state.json");
+const sent = (() => { try { return JSON.parse(readFileSync(STATE_FILE, "utf8")); } catch { return {}; } })();
+const sig = (r) => r.items.map((p) => p.asin).join(",");
+const changed = (r) => !sent[r.slug] || sent[r.slug] !== sig(r);
+const manual = reels.filter((r) => isManual(r) || (!AUTO_POST && changed(r)));
 const all = join(outDir, `ValueVerdict_all_${STAMP}.zip`);
 rmSync(all, { force: true });
 execFileSync("zip", ["-qr", all, name], { cwd: outDir });
@@ -327,6 +336,7 @@ rmSync(zip, { force: true });
 if (manual.length) execFileSync("zip", ["-qr", zip, ...manual.map((r) => join(name, r.slug))], { cwd: outDir });
 else execFileSync("cp", [all, zip]);
 const mb = statSync(zip).size / 1048576;
+const unchanged = reels.filter((r) => !manual.includes(r));
 console.log(`✔ ${reels.length} reels → ${all}; to post yourself: ${manual.map((r) => r.slug).join(", ") || "all"} → ${zip} (${mb.toFixed(0)} MB)`);
 
 /* Telegram bots can send files up to 50 MB; a bigger ZIP goes to a GitHub release (when run in GitHub Actions)
@@ -345,11 +355,22 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const text = `🎬 Value Verdict reels to post yourself · ${STAMP.replace("_", " ")} IST\n${(manual.length ? manual : reels).map((r) => `• ${r.coverLine || r.slug}`).join("\n")}\nEach folder: instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags). Add a trending sound in the app.`;
-  if (mb < 49) await tg("sendDocument", { caption: text }, { field: "document", path: zip, name: `${name}.zip` });
+  const list = (manual.length ? manual : reels).map((r) => `• ${r.coverLine || `${r.catName} · ${r.subName}`}${!isManual(r) && sent[r.slug] ? " 🔄" : ""}`);
+  const text = [`🎬 Value Verdict reels to post · ${STAMP.replace("_", " ")} IST`, `${manual.length} reels (🔄 = picks changed since the last ZIP):`,
+    ...list, unchanged.length ? `\nNot included (same picks as before): ${unchanged.length} pages.` : "",
+    "Each folder: instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags)."].filter(Boolean).join("\n").slice(0, 4000);
+  /* a file caption holds at most 1024 characters: a long list follows as its own message */
+  if (mb < 49) {
+    const short = text.length <= 1000;
+    await tg("sendDocument", { caption: short ? text : `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST (${manual.length} reels, list below)` }, { field: "document", path: zip, name: `${name}.zip` });
+    if (!short) await tg("sendMessage", { text });
+  }
   else if (process.env.GITHUB_ACTIONS) {
     const url = publishRelease();
     await tg("sendMessage", { text, reply_markup: JSON.stringify({ inline_keyboard: [[{ text: `⬇️ Download ZIP (${mb.toFixed(0)} MB)`, url }]] }) });
   } else await tg("sendMessage", { text: `${text}\nToo big for Telegram (${mb.toFixed(0)} MB): find it in ${zip}` });
   console.log("✔ sent to Telegram");
+  /* remember what was sent, so tomorrow only changed pages come */
+  for (const r of manual) sent[r.slug] = sig(r);
+  if (!ONLY.length && !SAMPLE) writeFileSync(STATE_FILE, JSON.stringify(sent, null, 1));
 }
