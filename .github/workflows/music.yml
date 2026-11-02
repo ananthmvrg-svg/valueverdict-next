@@ -1,0 +1,60 @@
+name: Reel Music
+
+# Makes background tracks for the reels with Google's Lyria 3 (Gemini API) and adds them to reels/audio/.
+# Every Sunday 7:00 AM IST: 5 new tracks. Run workflow → "starter" once for a library of 30.
+# Needs the GEMINI_API_KEY secret (Google AI Studio, billing on). New tracks are also sent to the Telegram bot chat.
+on:
+  schedule:
+    - cron: "30 1 * * 0"
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "starter = 30 tracks, weekly = 5, custom = count + style below"
+        type: choice
+        options: [starter, weekly, custom]
+        default: starter
+      count:
+        description: "custom: how many"
+        default: "3"
+      style:
+        description: "custom: festive, folk or upbeat"
+        type: choice
+        options: [festive, folk, upbeat]
+        default: festive
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reel-music
+  cancel-in-progress: false
+
+jobs:
+  music:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make tracks
+        working-directory: reels
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          KIND: ${{ github.event_name == 'schedule' && 'weekly' || inputs.kind }}
+          COUNT: ${{ inputs.count }}
+          STYLE: ${{ inputs.style }}
+        run: |
+          if [ "$KIND" = "custom" ]; then ARGS="--count=$COUNT --style=$STYLE"; else ARGS="--$KIND"; fi
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON music.mjs $ARGS
+      - name: Save to the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A reels/audio
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -m "Reel music: new Lyria tracks ($(date -u +%F))"
+          git push
