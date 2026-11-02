@@ -191,15 +191,14 @@ async function previousPicks(): Promise<Map<string, Map<string, number>>> {
 }
 const STICKY = " Our picks for this page yesterday are marked \"yesterday: #N\". Readers come back to these pages and to our videos, so keep yesterday's picks in the same order unless there is a clear reason: a candidate is clearly better value (e.g. a better energy rating, longer warranty or more capacity at a similar price, or a much lower price for similar specs), or yesterday's pick's deal got clearly worse. Don't reshuffle close calls, and never mention yesterday in what you write.";
 
-/* every saved list is also kept in deal_picks_history (one row per pick per day), to see how often pages change.
-   Optional: a missing table never stops the picks being saved. */
+/* every saved list is also kept in deal_picks_history (one row per pick per day: page, rank, ASIN and our score only;
+   Amazon's product content is never kept past 24 hours, ASINs may be). Read to see how often a page's picks change,
+   and by the reels to skip a budget page whose picks didn't change. Optional: a missing table never stops the picks. */
 async function keepHistory(rows: Record<string, unknown>[]) {
   if (!rows.length) return;
   try {
-    await admin("POST", "deal_picks_history", rows.map((r) => {
-      const d = (r.data || {}) as Partial<Deal>;
-      return { cycle: r.cycle, group_key: r.group_key, rank: r.rank, asin: r.asin, brand: d.brand ?? null, title: d.title ?? null, price: d.price ?? null, score: r.score ?? null };
-    }), "return=minimal,resolution=ignore-duplicates");
+    await admin("POST", "deal_picks_history", rows.map((r) => ({ cycle: r.cycle, group_key: r.group_key, rank: r.rank, asin: r.asin, score: r.score ?? null })),
+      "return=minimal,resolution=ignore-duplicates");
   } catch (e) { console.warn("picks history not saved:", (e as Error).message); }
 }
 
