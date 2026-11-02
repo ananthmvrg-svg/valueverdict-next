@@ -18,6 +18,18 @@ export const SHOW_CATALOG = false;
 export const SHOW_FLIPKART = false;
 export const STORES = SHOW_FLIPKART ? "Amazon or Flipkart" : "Amazon";
 
+/* Our social channels (the join bar, header button, popup and footer); an empty one is simply not shown. */
+export const SOCIAL = {
+  telegram: "https://t.me/valueverdict",
+  instagram: "",
+  youtube: "",
+  x: "",
+};
+
+/* Festival theme (string of lights, diyas, festive wording), on from "from" to "until", India dates, both days included.
+   It switches itself off after "until"; set name to "" to switch it off now. */
+export const FESTIVAL = { name: "Diwali", from: "2026-10-20", until: "2026-11-12" };
+
 /* Tracking IDs; an empty one is simply not loaded. */
 export const TRACK = {
   ga4: "G-F3PS67TXM8", // Google Analytics 4

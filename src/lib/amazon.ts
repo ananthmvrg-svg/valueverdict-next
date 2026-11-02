@@ -36,6 +36,7 @@ const RESOURCES = [
 /* Amazon.in best-seller rank in the product's own category, e.g. { node: "Smart Televisions", rank: 1 } (null when
    not given). Amazon also lists promotion groups ("Jupiter_Phase1"); those are skipped. Like all API data it is only
    kept for 24 hours (deals are replaced every day), so it is a snapshot for today, never a history. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Amazon's response shape
 function salesRank(it: any): { node: string; rank: number } | null {
   const nodes = ((it.browseNodeInfo?.browseNodes || []) as { contextFreeName?: string; displayName?: string; salesRank?: number }[])
     .map((n) => ({ node: plain(n.contextFreeName || n.displayName || ""), rank: Number(n.salesRank) }))

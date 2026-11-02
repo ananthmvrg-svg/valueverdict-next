@@ -3,6 +3,8 @@ import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog
 import { SHOW_CATALOG, STORES } from "@/lib/config";
 import { GuideArt, themeFor } from "@/components/GuideArt";
 import { SiteIcon } from "@/components/SiteIcons";
+import { DiyaRow } from "@/components/Festive";
+import { festival } from "@/lib/festival";
 import CategoryCard from "@/components/CategoryCard";
 import { PickGrid } from "@/components/LiveDeals";
 import { getPicks, picksIn } from "@/lib/picks";
@@ -26,7 +28,7 @@ const catTheme = (slug: string) => {
 };
 
 export default async function Home() {
-  const [db, { picks }] = await Promise.all([getCatalog(), getPicks()]);
+  const [db, { picks }, fest] = await Promise.all([getCatalog(), getPicks(), festival()]);
   const topDeals = picksIn(picks, "top-100").slice(0, 8);
   const brands = new Set(db.prods.map((p) => p.brand).filter(Boolean)).size;
   /* today's picks per category, for the category cards */
@@ -38,7 +40,7 @@ export default async function Home() {
       <div className="hero">
         <div className="wrap">
           <div>
-            <span className="eyebrow">● Festive sale {SHOW_CATALOG ? "picks" : "deals"}, updated</span>
+            <span className="eyebrow">{fest ? <>🪔 {fest} {SHOW_CATALOG ? "picks" : "deals"}, updated every day</> : <>● Festive sale {SHOW_CATALOG ? "picks" : "deals"}, updated</>}</span>
             {SHOW_CATALOG ? (
               <>
                 <h1>Honest picks, <span>sorted by your budget.</span></h1>
@@ -65,6 +67,7 @@ export default async function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="hero-logo" src="/hero-logo.jpg" alt="Value Verdict" />
         </div>
+        {fest && <DiyaRow />}
       </div>
       <section>
         <div className="wrap">

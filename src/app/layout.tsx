@@ -3,7 +3,10 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { getCatalog } from "@/lib/catalog";
-import { SHOW_CATALOG, SITE_URL } from "@/lib/config";
+import { SHOW_CATALOG, SITE_URL, SOCIAL } from "@/lib/config";
+import { festival } from "@/lib/festival";
+import { JoinBar, SocialLinks, TelegramButton } from "@/components/Social";
+import TelegramPopup from "@/components/TelegramPopup";
 import Nav from "@/components/Nav";
 import Tracking from "@/components/Tracking";
 import LegacyHashRedirect from "@/components/LegacyHashRedirect";
@@ -59,10 +62,11 @@ async function Year() {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { cats } = await getCatalog();
+  const [{ cats }, fest] = await Promise.all([getCatalog(), festival()]);
   return (
     <html lang="en-IN" className={jakarta.variable}>
-      <body>
+      <body className={fest ? `festive festive-${fest.toLowerCase()}` : undefined}>
+        <JoinBar festival={fest} />
         <header className="top">
           <div className="wrap nav">
             <Link className="logo" href="/">
@@ -71,6 +75,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <span>Value <b>Verdict</b></span>
             </Link>
             <Nav cats={cats.map((c) => ({ name: c.name, slug: c.slug }))} />
+            <TelegramButton />
           </div>
         </header>
         <main>{children}</main>
@@ -94,6 +99,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   <span>Value <b>Verdict</b></span>
                 </Link>
                 <p>Today&apos;s best Amazon.in deals, filtered and sorted by budget, with plain-English buying guides so you can decide with confidence.</p>
+                <SocialLinks />
               </div>
               <nav className="footer-col" aria-label="Categories">
                 <h5>Categories</h5>
@@ -119,6 +125,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </footer>
         <CompareBar />
+        {SOCIAL.telegram && <TelegramPopup url={SOCIAL.telegram} festival={fest} />}
         <Tracking />
         <LegacyHashRedirect />
       </body>

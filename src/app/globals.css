@@ -477,3 +477,59 @@ body:has(.cmp-bar){padding-bottom:96px}
 .guide-next ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .guide-next a{display:inline-block;font-size:13.5px;font-weight:600;color:#334155;background:#f8fafc;border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none}
 .guide-next a:hover{border-color:var(--brand-2);color:var(--brand-2)}
+/* Telegram: join bar above the header, header button, footer links (components/Social.tsx) */
+.join-bar{display:block;text-align:center;padding:7px 16px;font-size:13.5px;font-weight:600;color:#fff;background:linear-gradient(90deg,#0b1530,#1e3a8a 50%,#0b1530);text-decoration:none}
+.join-bar b{color:#7dd3fc}
+.join-bar:hover b{text-decoration:underline}
+.tg-btn{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;padding:7px 12px;border-radius:999px;background:#229ed9;color:#fff;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 4px 10px rgba(34,158,217,.3);transition:background .15s}
+.tg-btn:hover{background:#1b8bc0}
+@media (max-width:860px){.nav .logo{order:0}.nav .tg-btn{order:1;margin-left:auto}.nav .nav-links{order:2}}
+@media (max-width:380px){.tg-btn span{display:none}.tg-btn{padding:8px}}
+.social-links{margin-top:14px}
+.social-title{display:block;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;margin-bottom:8px}
+.social-links div{display:flex;flex-wrap:wrap;gap:8px}
+.social-links a{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#e2e8f0;font-size:13.5px;font-weight:600;text-decoration:none}
+.social-links a:hover{background:#229ed9;border-color:#229ed9;color:#fff}
+
+/* Telegram popup (components/TelegramPopup.tsx): small card, bottom sheet on phones */
+.tg-pop-backdrop{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:flex-end;padding:20px;background:rgba(15,23,42,.25);animation:tg-fade .2s ease}
+.tg-pop{position:relative;width:min(360px,100%);background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,23,42,.3);overflow:hidden;animation:tg-up .25s ease}
+.tg-pop-x{position:absolute;top:10px;right:10px;z-index:1;width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.25);color:#fff;font-size:15px;cursor:pointer}
+.tg-pop-x:hover,.tg-pop-x:focus-visible{background:rgba(255,255,255,.4);outline:2px solid #fff}
+.tg-pop-head{padding:20px 20px 14px;color:#fff;background:linear-gradient(135deg,#229ed9,#1e3a8a)}
+.tg-pop-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2)}
+.tg-pop-icon svg{width:24px;height:24px}
+.tg-pop-kicker{margin:10px 0 2px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+.tg-pop h2{margin:0;font-size:22px;letter-spacing:-.02em;color:#fff}
+.tg-pop-text{margin:14px 20px 8px;color:#334155;font-size:14.5px}
+.tg-pop-points{margin:0 20px 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:#475569}
+.tg-pop-points li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:8px}
+.tg-pop-join{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 20px;padding:12px;border-radius:12px;background:#229ed9;color:#fff;font-weight:800;text-decoration:none}
+.tg-pop-join:hover{background:#1b8bc0}
+.tg-pop-later{display:block;margin:6px auto 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
+@keyframes tg-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+@keyframes tg-fade{from{opacity:0}to{opacity:1}}
+@media (max-width:600px){.tg-pop-backdrop{padding:0;align-items:flex-end;justify-content:center}.tg-pop{width:100%;border-radius:20px 20px 0 0}}
+
+/* Diwali (body.festive-diwali, lib/festival.ts): warm join bar, string of lights under the header, diyas in the hero */
+.festive-diwali .join-bar{background:linear-gradient(90deg,#7c2d12,#c2410c 30%,#b45309 50%,#c2410c 70%,#7c2d12)}
+.festive-diwali .join-bar b{color:#fde68a}
+.festive-diwali header.top{border-bottom:0}
+.festive-diwali header.top::after{content:"";position:absolute;left:0;right:0;bottom:-7px;height:9px;pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 70%,#fbbf24 0 2.6px,transparent 3.2px) 0 0/28px 9px repeat-x,
+    radial-gradient(circle at 50% 70%,#f97316 0 2.6px,transparent 3.2px) 14px 0/28px 9px repeat-x,
+    linear-gradient(#a16207,#a16207) 0 3px/100% 1px no-repeat;
+  filter:drop-shadow(0 0 3px rgba(251,191,36,.8));animation:diwali-twinkle 2.4s ease-in-out infinite alternate}
+@keyframes diwali-twinkle{from{opacity:.75}to{opacity:1}}
+.festive-diwali .hero{position:relative;background:radial-gradient(520px 300px at 85% 95%,rgba(251,146,60,.28),transparent 65%),radial-gradient(420px 260px at 10% 100%,rgba(250,204,21,.18),transparent 65%),#0b1530}
+.festive-diwali .eyebrow{background:rgba(251,191,36,.15);color:#fde68a;border-color:rgba(251,191,36,.45)}
+.festive-diwali .hero h1 span{background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;background-clip:text}
+.diya-row{display:block;width:min(340px,70%);height:auto;margin:-26px auto 0;padding-bottom:14px;position:relative}
+.diya-flame{transform-origin:30px 20px;animation:diya-flicker 1.4s ease-in-out infinite alternate}
+@keyframes diya-flicker{from{transform:scale(1,1)}to{transform:scale(.92,1.08)}}
+.tg-pop.festive .tg-pop-head{background:radial-gradient(240px 120px at 80% 0%,rgba(253,230,138,.35),transparent 70%),linear-gradient(135deg,#9a3412,#c2410c 55%,#b45309)}
+.tg-pop-diyas{font-size:24px;letter-spacing:4px}
+.tg-pop.festive .tg-pop-join{background:linear-gradient(90deg,#c2410c,#b45309)}
+.tg-pop.festive .tg-pop-join:hover{background:linear-gradient(90deg,#9a3412,#92400e)}
+@media (prefers-reduced-motion:reduce){.festive-diwali header.top::after,.diya-flame,.tg-pop,.tg-pop-backdrop{animation:none}}

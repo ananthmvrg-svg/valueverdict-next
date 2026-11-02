@@ -22,6 +22,9 @@ export default function Tracking() {
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      /* our social links (components/Social.tsx): data-track="social_click", where = bar / header / footer */
+      const s = (e.target as Element).closest?.<HTMLAnchorElement>("a[data-track]");
+      if (s) { if (TRACK.ga4) window.gtag?.("event", s.dataset.track!, { where: s.dataset.where, which: s.dataset.which, transport_type: "beacon" }); return; }
       const a = (e.target as Element).closest?.<HTMLAnchorElement>("a.btn.amz, a.btn.fk");
       if (!a) return;
       const store = a.classList.contains("amz") ? "Amazon" : "Flipkart";
