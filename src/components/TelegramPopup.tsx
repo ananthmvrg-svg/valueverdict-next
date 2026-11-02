@@ -2,22 +2,32 @@
 /* "Never miss a deal" popup inviting visitors to our Telegram channel.
    It appears 5 seconds after a page opens (sooner if a third of the page is scrolled first), as a small card
    (a bottom sheet on phones), and is easy to close (✕, Escape, tap outside). After "Join" it never returns;
-   after closing, it returns 30 seconds later, on the same page or the next one.
-   Kept in this browser only (localStorage); events go to GA4. */
+   after closing, it returns 30 seconds later, on the same page or the next one, at most 3 times a day
+   (India date; the count starts again the next day). Kept in this browser only (localStorage); events go to GA4. */
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/track";
 import { TelegramIcon } from "./Social";
 
-const KEY = "vv-telegram-popup";
-const DELAY_MS = 5_000, SCROLL_SHARE = 0.33, AGAIN_AFTER_MS = 30_000;
+const KEY = "vv-telegram-popup", DAY_KEY = "vv-telegram-popup-day";
+const DELAY_MS = 5_000, SCROLL_SHARE = 0.33, AGAIN_AFTER_MS = 30_000, PER_DAY = 3;
 
-/* how long to wait before showing it: null = never (joined); at least 5 s after the page opens,
-   and 30 s after it was last closed */
+const today = () => new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10);
+/* how many times it has been shown today */
+function shownToday(): number {
+  try {
+    const d = JSON.parse(localStorage.getItem(DAY_KEY) || "null") as { day: string; n: number } | null;
+    return d?.day === today() ? d.n : 0;
+  } catch { return 0; }
+}
+const countShowing = () => { try { localStorage.setItem(DAY_KEY, JSON.stringify({ day: today(), n: shownToday() + 1 })); } catch { /* private mode */ } };
+
+/* how long to wait before showing it: null = not now (joined, or shown 3 times today); at least 5 s after
+   the page opens, and 30 s after it was last closed */
 function waitMs(): number | null {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null") as { state: "joined" | "closed"; at: number } | null;
+    if (v?.state === "joined" || shownToday() >= PER_DAY) return null;
     if (!v) return DELAY_MS;
-    if (v.state === "joined") return null;
     return Math.max(DELAY_MS, AGAIN_AFTER_MS - (Date.now() - v.at));
   } catch { return DELAY_MS; }
 }
@@ -34,7 +44,8 @@ export default function TelegramPopup({ url, festival }: { url: string; festival
     let shown = false;
     const show = () => {
       if (shown) return;
-      shown = true; setOpen(true); track("telegram_popup_view", { festival: festival ?? "", again: closes > 0 });
+      if (shownToday() >= PER_DAY) return cleanup(); /* another tab may have used today's showings */
+      shown = true; countShowing(); setOpen(true); track("telegram_popup_view", { festival: festival ?? "", again: closes > 0, today: shownToday() });
       cleanup();
     };
     /* scrolling only brings the first showing forward; a closed popup waits its 30 seconds */
