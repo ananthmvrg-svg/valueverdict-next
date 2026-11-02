@@ -35,7 +35,9 @@ export function shortName(title, brand) {
 }
 /* no prices or discounts on a reel: they go stale (and Amazon requires shown prices to be current) */
 export const PRICEY = /₹|%|\boff\b|price|cheap|discount|deal\b/i;
-export const clean = (xs) => (xs || []).map((s) => String(s).trim()).filter((s) => s && !PRICEY.test(s));
+/* ranking-only signals (service network, brand standing) never appear as a pro */
+export const RANK_ONLY = /service|network|trusted|reputation|well[- ]known|established|reliable brand|popular/i;
+export const clean = (xs) => (xs || []).map((s) => String(s).trim()).filter((s) => s && !PRICEY.test(s) && !RANK_ONLY.test(s));
 export const brandCase = (b) => (b && b === b.toLowerCase() || b === b.toUpperCase() && b.length > 3 ? b.charAt(0).toUpperCase() + b.slice(1).toLowerCase() : b);
 
 

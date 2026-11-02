@@ -60,12 +60,15 @@ async function lootDeals(since) {
 /* "📤 Share" button: Telegram's share screen with a link to the post (or the channel) */
 const USERNAME = CHANNEL.startsWith("@") ? CHANNEL.slice(1) : "";
 const shareRow = (messageId, text) => USERNAME
-  ? [{ text: "📤 Share with a friend", url: `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${USERNAME}${messageId ? "/" + messageId : ""}`)}&text=${encodeURIComponent(text)}` }]
+  ? [{ text: "📤 Share", url: `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${USERNAME}${messageId ? "/" + messageId : ""}`)}&text=${encodeURIComponent(text)}` }]
   : null;
 async function addShare(sent, markup, text) {
   const row = shareRow(sent?.result?.message_id, text);
   if (!row || DRY) return;
-  await tg("editMessageReplyMarkup", { message_id: sent.result.message_id, reply_markup: { inline_keyboard: [...markup.inline_keyboard, row] } })
+  /* next to a lone last button (Compare) when there is one, else on its own row */
+  const rows = markup.inline_keyboard.map((r) => [...r]), last = rows[rows.length - 1];
+  if (last && last.length === 1 && rows.length > 1) last.push(...row); else rows.push(row);
+  await tg("editMessageReplyMarkup", { message_id: sent.result.message_id, reply_markup: { inline_keyboard: rows } })
     .catch((e) => console.warn("share button:", e.message));
 }
 
@@ -86,13 +89,14 @@ async function menu({ cats, picks }, again = false) {
   const live = new Set(picks.map((p) => p.group_key.split("/")[0]));
   const list = cats.filter((c) => c.active !== false && !["amazon-finds", "top-100"].includes(c.slug) && live.has(c.slug))
     .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
-  const btn = (c) => ({ text: `${c.icon || "🛍️"} ${c.name}`, url: site(`/${c.slug}`), style: "primary" });
+  /* category buttons stay plain (their icons, e.g. ❄️, would vanish on a blue button) */
+  const btn = (c) => ({ text: `${c.icon || "🛍️"} ${c.name}`, url: site(`/${c.slug}`) });
   const rows = [];
   for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2).map(btn));
-  rows.push([{ text: "🔥 Today's Top 100 Deals", url: site("/top-deals"), style: "danger" }]);
-  if (picks.some((p) => p.group_key === "amazon-finds")) rows.push([{ text: "🛒 Amazon Finds", url: site("/amazon-finds"), style: "success" }]);
+  rows.push([{ text: "⭐ Today's Top 100 Deals", url: site("/top-deals"), style: "danger" }]);
+  if (picks.some((p) => p.group_key === "amazon-finds")) rows.push([{ text: "🛍️ Amazon Finds", url: site("/amazon-finds"), style: "success" }]);
   const share = shareRow(0, "Value Verdict: the best Amazon deals for every budget, every day 👇");
-  if (share) rows.push(share);
+  if (share) rows.push([{ ...share[0], text: "📤 Share this channel" }]);
   const day = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
   const text = [
     `🪔 <b>Today's best picks · ${esc(day)}</b>${again ? `\n💰 <i>Prices just re-checked on Amazon (${esc(new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit" }))})</i>` : ""}`,
@@ -164,7 +168,9 @@ function dealPost(item) {
     caption: lines.join("\n").slice(0, 1024),
     parse_mode: "HTML",
     /* coloured buttons (Telegram Bot API "style"; older apps show them plain) */
-    reply_markup: { inline_keyboard: [[{ text: "🛒 Buy on Amazon", url: d.url, style: "success" }, { text: "📊 Compare top 5", url: site(compare), style: "primary" }]] },
+    /* Buy gets its own full-width row so its label never gets cut; Compare and Share share the row below.
+       Emoji picked to stand out on the coloured buttons (multi-colour bags on green, gold trophy on blue) */
+    reply_markup: { inline_keyboard: [[{ text: "🛍️ Buy on Amazon", url: d.url, style: "success" }], [{ text: "🏆 Compare", url: site(compare), style: "primary" }]] },
   };
 }
 
@@ -226,7 +232,7 @@ async function summary({ picks }) {
   const at = top.map((p) => p.price_checked_at).filter(Boolean).sort()[0];
   const text = [`🌙 <b>Today's Top 5 deals · ${esc(day)}</b>`, "Missed the day? These were the best value on Amazon today 👇", "", ...lines, "",
     `<i>Amazon.in prices at ${at ? timeOf(at) : "today"}, may change · #ad</i>`].join("\n");
-  const markup = { inline_keyboard: [[{ text: "🔥 See all 100 deals", url: site("/top-deals"), style: "danger" }]] };
+  const markup = { inline_keyboard: [[{ text: "⭐ See all 100 deals", url: site("/top-deals"), style: "danger" }]] };
   const sent = await tg("sendMessage", { text, parse_mode: "HTML", link_preview_options: { is_disabled: true }, reply_markup: markup });
   await addShare(sent, markup, `🌙 Today's Top 5 Amazon deals (${day})`);
   console.log(`✔ night summary posted (${top.length} deals)`);

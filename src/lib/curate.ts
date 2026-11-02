@@ -175,7 +175,8 @@ function picksFrom(message: Anthropic.Messages.Message, byAsin: Map<string, Cand
         reason: reasonOk ? reason : "",
         score: Math.max(1, Math.min(100, Math.round(Number(p.score) || 50))),
         best_for: supported(bestFor, x) ? bestFor : "",
-        strengths: keepSupported(p.strengths, x, 3),
+        /* service network and brand standing rank picks but are never shown as a strength */
+        strengths: keepSupported((p.strengths || []).filter((t) => !/service|network|trusted|reputation|well[- ]known|established/i.test(String(t))), x, 3),
         /* a limitation must be about the product, not about what the listing leaves out */
         limitations: keepSupported(p.limitations, x, 2).filter((l) => !GAP_NOTE.test(l)),
         /* an unsupported reason lowers confidence */
