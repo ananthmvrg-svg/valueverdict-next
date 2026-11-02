@@ -332,7 +332,13 @@ function diwaliDeco() {
 
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body class="${THEME}"><div class="bg"></div>${THEME === "diwali" ? diwaliDeco() : `<div class="grid"></div>`}${body}${FIT}${TRIM}</body></html>`;
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
-const CTA_BAR = `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
+/* which app the slides are for: Instagram ("link in bio") or YouTube ("subscribe", the site's address; Shorts have no bio link) */
+let PLATFORM = "instagram";
+export const setPlatform = (p) => { PLATFORM = p === "youtube" ? "youtube" : "instagram"; };
+const YT = () => PLATFORM === "youtube";
+const ctaBar = () => YT()
+  ? `<div class="ctabar"><span>🔔 <b>Subscribe</b> · 🔗 valueverdict.in</span></div>`
+  : `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
@@ -362,7 +368,7 @@ export function hookSlide(r) {
     <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
     <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
-    ${CTA_BAR}
+    ${ctaBar()}
   </div>`);
 }
 
@@ -403,7 +409,7 @@ export function productSlide(r, p, rank, idx, total) {
       </div>` : ""}
       ${p.tip ? `<div class="tip"><span><b>💡 Good to know:</b> ${esc(p.tip)}</span></div>` : ""}
     </div>
-  </div>${CTA_BAR}${dots(total, idx)}`);
+  </div>${ctaBar()}${dots(total, idx)}`);
 }
 
 export function ctaSlide(r) {
@@ -412,8 +418,8 @@ export function ctaSlide(r) {
     <h2>${r.more ? esc(r.more) : `Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks`}<br>+ <em>today's price</em></h2>
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
-    <div class="bio">🔗 Link in bio</div>
-    <div class="follow">💛 ${esc(r.copy.follow_line)}</div>
+    <div class="bio">${YT() ? "🔔 Subscribe for more" : "🔗 Link in bio"}</div>
+    <div class="follow">${YT() ? "👍 Like & share with a friend" : `💛 ${esc(r.copy.follow_line)}`}</div>
     <div class="urg">⏳ ${esc(r.copy.urgency)}</div>
   </div>`);
 }
@@ -529,7 +535,8 @@ function stageArt() {
 
 function photoCover(r, bg) {
   const n = r.items.length, one = ONE[r.catName] || shortCat(r.catName).replace(/s$/, "");
-  const l1 = r.coverLine || `Top ${one} Deals`, l2 = "on Amazon";
+  /* Instagram covers carry no Amazon branding (Meta flagged it once); YouTube thumbnails keep "on Amazon" for search */
+  const l1 = r.coverLine || `Top ${one} Deals`, l2 = YT() ? "on Amazon" : THEME === "diwali" ? "This Diwali" : "Best Value";
   const size = l1.length <= 14 ? 168 : l1.length <= 18 ? 140 : 118, size2 = Math.min(size, 150);
   const pill = r.pill || (/^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`);
   const hero = r.items.find((p) => p.image);

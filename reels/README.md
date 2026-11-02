@@ -10,7 +10,12 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
 - Each pick shows the Amazon photo, name, spec chips, 👍 Best for, ✓ Pros, ✕ Cons and 💡 Good to know
   (spec chips and Good to know come from the site's own `src/lib/specs.ts` and `src/lib/tips.ts`)
 - 1–3 picks play #1 → #N; 4–5 count down #N → #1
-- `reel.mp4` (1080×1920, silent: add a trending sound in Instagram), `cover.jpg`, `slides/*.jpg`, `caption.txt` (5 hashtags)
+- Every reel comes twice, in its own folder (files named `<folder>_<date>`):
+  - `instagram/`: video ("Link in bio" on the slides), cover (no Amazon branding), single-image post, `_instagram.txt`
+    (caption whose first line is the search phrase for Instagram search, #ad disclosure, 3–5 hashtags, alt text), `slides/`
+  - `youtube/`: video ("Subscribe · valueverdict.in" instead of "link in bio"), thumbnail ("on Amazon"), `_youtube.txt`
+- Background music from `reels/audio/` (royalty-free tracks you upload; see the README there), the same track in both versions.
+  No tracks: silent videos.
 - Telegram gets one message with one ZIP of everything (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
 
 AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
@@ -38,16 +43,16 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
 
 ## YouTube Shorts (`youtube.mjs`)
 
-**Now:** uploads are paused. Every reel folder gets `<name>_youtube.txt` (title, description, tags, hashtags, researched
-the same way) so you post the Short yourself from the YouTube app with a trending sound. Tick "youtube" in Run workflow to
-upload private Shorts again.
+**Now:** uploads are paused. Every reel's `youtube/` folder has `<name>_youtube.txt` (title, description, tags, hashtags).
+Tick "youtube" in Run workflow to upload private Shorts again (it reuses that metadata, no second search).
 
 
 - Uploads the day's best 6 reels as **private** Shorts: Today's Top 10 Deals, Top 10 Amazon Finds, and 4 budget pages that take turns.
   You add a sound in YouTube Studio (Editor → Audio) and make them public. Telegram gets a list with Studio links.
-- SEO researched fresh for each Short: YouTube autocomplete for the page's main query, the most viewed Shorts of the
-  last 30 days for it (titles and tags), and our own data; Claude Haiku writes title, description, tags and hashtags
-  (saved next to the video as `youtube.json`). The cover is the first frame, since Shorts can't take a custom thumbnail by API.
+- SEO researched fresh for each Short from YouTube's own data: autocomplete for the page's main query, and the 25 most
+  viewed Shorts of the last 30 days for it. Tags may only be autocomplete phrases, those Shorts' tags, our brands and the
+  query; hashtags only ones those Shorts really use (spelt the way most of them spell it), plus #Shorts and #ValueVerdict.
+  Claude Haiku picks and writes from that; anything else it suggests is dropped. The cover is the first frame, since Shorts can't take a custom thumbnail by API.
 - Secrets: `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`. Without them the step is skipped.
 - Preview the metadata without uploading: `node youtube.mjs --dry-run` after `npm run sample`.
 

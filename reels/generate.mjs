@@ -3,11 +3,14 @@
    photo from the Amazon API), and for every budget page (e.g. refrigerators/under-35k) with 1–5 picks makes:
      slides/*.jpg   hook, one slide per product (#1…#5), call-to-action
    (every file is named <folder>_<date>, e.g. refrigerators-under-35k_2026-11-01.mp4)
-     <name>.mp4            1080×1920 silent video, cover as the first frame (add a trending sound in the app)
-     <name>_cover.jpg      reel cover / Shorts thumbnail
-     <name>_post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
-     <name>_instagram.txt  Instagram caption + 5 hashtags
-     <name>_youtube.txt    YouTube Shorts title, description, tags and hashtags (researched SEO, see youtube.mjs)
+     instagram/<name>.mp4            1080×1920 video, cover as the first frame, "link in bio" on the slides
+     instagram/<name>_cover.jpg      reel cover (no Amazon branding)
+     instagram/<name>_post.jpg       single-image post (1080×1350): all picks with photo, name and price at that time
+     instagram/<name>_instagram.txt  caption written for Instagram search, alt text, 3–5 hashtags
+     youtube/<name>.mp4              the same reel with "subscribe" and valueverdict.in instead of "link in bio"
+     youtube/<name>_thumbnail.jpg    Shorts thumbnail ("on Amazon")
+     youtube/<name>_youtube.txt      title, description, tags and hashtags from YouTube's own data (youtube.mjs)
+   Background music: a track from reels/audio/ (audio.mjs), the same one in both versions.
    Then zips everything (one ZIP per category) and sends it to Telegram.
 
    node generate.mjs              live picks, send to Telegram (needs TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
@@ -21,9 +24,10 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme } from "./template.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform } from "./template.mjs";
+import { tracksFor, audioArgs } from "./audio.mjs";
 import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
-import { SITE_URL, select, shortName, clean, brandCase } from "./shared.mjs";
+import { SITE_URL, select, shortName, clean, brandCase, mainQuery } from "./shared.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
 
@@ -145,18 +149,26 @@ function plan(r) {
   return order.map((o) => ({ ...o, dur: n >= 4 && o.rank === 1 ? 3.8 : per }));
 }
 
+/* Instagram: 3–5 hashtags work best (Instagram's own advice); two for the product, one for Amazon India shoppers,
+   one for the season, and ours. All are long-running, busy tags. */
 const HASHTAGS = {
-  "top-100": ["#dealoftheday", "#festivedeals", "#onlineshopping"], "amazon-finds": ["#amazonfinds", "#gadgets", "#techdeals"],
-  refrigerators: ["#refrigerator", "#fridge", "#homeappliances"], "washing-machines": ["#washingmachine", "#laundry", "#homeappliances"],
-  tvs: ["#smarttv", "#tv", "#techdeals"], "air-conditioners": ["#airconditioner", "#ac", "#summeressentials"],
-  laptops: ["#laptop", "#laptops", "#techdeals"], "soundbars-speakers": ["#soundbar", "#hometheatre", "#techdeals"],
-  "home-appliances": ["#homeappliances", "#kitchenappliances", "#smarthome"], geysers: ["#geyser", "#waterheater", "#winteressentials"], "fridge-accessories": ["#stabilizer", "#homeappliances", "#homeessentials"],
+  "top-100": ["#dealsoftheday", "#onlineshopping"], "amazon-finds": ["#amazonfinds", "#amazonfindsindia"],
+  refrigerators: ["#refrigerator", "#fridge"], "washing-machines": ["#washingmachine", "#laundry"],
+  tvs: ["#smarttv", "#ledtv"], "air-conditioners": ["#airconditioner", "#inverterac"],
+  laptops: ["#laptop", "#laptopdeals"], "soundbars-speakers": ["#soundbar", "#hometheater"],
+  "home-appliances": ["#homeappliances", "#kitchenappliances"], geysers: ["#geyser", "#waterheater"],
+  "fridge-accessories": ["#stabilizer", "#homeappliances"],
 };
+const SEASON_TAG = { diwali: "#diwalishopping" };
 function caption(r) {
-  const tags = [...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances", "#bestbuy"]), "#amazondeals", "#valueverdict"];
+  const season = SEASON_TAG[themeFor(DATE)] || (["laptops", "tvs", "soundbars-speakers", "amazon-finds"].includes(r.catSlug) ? "#techdeals" : "#homeappliances");
+  const tags = [...new Set([...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances"]), "#amazonindia", season, "#valueverdict"])].slice(0, 5);
   const n = r.items.length;
   const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
-  return [
+  const text = [
+    r.copy.ig_search_line, /* what Instagram search reads first */
+    "#ad · As an Amazon Associate we earn from qualifying purchases.",
+    "",
     r.copy.caption_hook,
     r.coverLine ? `${r.coverLine} (${MONTH} ${YEAR})` : `${n === 1 ? "Our pick" : `Top ${n}`}: ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")} (${MONTH} ${YEAR})`,
     "",
@@ -166,50 +178,64 @@ function caption(r) {
     `(${r.url.replace(/^https?:\/\//, "")})`,
     `⏳ ${r.copy.urgency}`,
     `💛 ${r.copy.follow_line}`,
-    `💾 Save this for later`,
+    `💾 Save this for later · 📤 Send it to someone who's buying one`,
     "",
-    "As an Amazon Associate we earn from qualifying purchases.",
-    "",
-    tags.slice(0, 5).join(" "),
+    tags.join(" "),
+  ].join("\n");
+  return [
+    "CAPTION (paste as it is)", text, "",
+    "ALT TEXT for the single-image post (Advanced settings → Accessibility → Write alt text)", r.copy.alt_text, "",
+    `(Instagram search phrase: "${mainQuery(r)}"; it's in the caption's first line and on the first slide)`,
   ].join("\n");
 }
 
-async function render(browser, r, dir) {
-  const slides = join(dir, "slides");
-  mkdirSync(slides, { recursive: true });
-  const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
-  const shot = async (html, file, type = "jpeg") => {
-    await page.setContent(html, { waitUntil: "load" });
-    await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(() => window.__ready); /* photos cropped to the product */
-    await page.screenshot({ path: file, type, ...(type === "jpeg" ? { quality: 92 } : {}) });
-  };
-  const steps = plan(r), frames = [];
-  await shot(hookSlide(r), join(slides, "01-hook.jpg"));
-  frames.push({ file: join(slides, "01-hook.jpg"), dur: 2.0 });
-  for (const [i, s] of steps.entries()) {
-    const f = join(slides, `${String(i + 2).padStart(2, "0")}-rank${s.rank}.jpg`);
-    await shot(productSlide(r, s.p, s.rank, i, steps.length), f);
-    frames.push({ file: f, dur: s.dur });
-  }
-  const cta = join(slides, `${String(steps.length + 2).padStart(2, "0")}-cta.jpg`);
-  await shot(ctaSlide(r), cta);
-  frames.push({ file: cta, dur: 2.6 });
+/* one reel, made twice: instagram/ ("link in bio", caption, single-image post) and youtube/ ("subscribe" and the
+   site's address, since Shorts have no bio link; title/description/tags come later from youtube.mjs).
+   Both share one background track (audio.mjs). */
+async function render(browser, r, dir, track) {
   const base = `${r.slug}_${DATE}`;
-  await shot(coverSlide(r), join(dir, `${base}_cover.jpg`), "jpeg");
-  /* the cover is the video's first frame, so it can be picked as the Shorts thumbnail in the YouTube app */
-  frames.unshift({ file: join(dir, `${base}_cover.jpg`), dur: 0.8 });
-  /* single-image post (4:5): all picks with photo, name and today's price */
-  await page.setViewportSize({ width: 1080, height: 1350 });
-  await shot(posterSlide(r), join(dir, `${base}_post.jpg`));
-  await page.close();
-  video(frames, join(dir, `${base}.mp4`));
-  writeFileSync(join(dir, `${base}_instagram.txt`), caption(r) + "\n");
   r.base = base;
+  for (const platform of ["instagram", "youtube"]) {
+    setPlatform(platform);
+    const out = join(dir, platform), slides = join(out, "slides");
+    mkdirSync(slides, { recursive: true });
+    const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
+    const shot = async (html, file, type = "jpeg") => {
+      await page.setContent(html, { waitUntil: "load" });
+      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => window.__ready); /* photos cropped to the product */
+      await page.screenshot({ path: file, type, ...(type === "jpeg" ? { quality: 92 } : {}) });
+    };
+    const steps = plan(r), frames = [];
+    await shot(hookSlide(r), join(slides, "01-hook.jpg"));
+    frames.push({ file: join(slides, "01-hook.jpg"), dur: 2.0 });
+    for (const [i, s] of steps.entries()) {
+      const f = join(slides, `${String(i + 2).padStart(2, "0")}-rank${s.rank}.jpg`);
+      await shot(productSlide(r, s.p, s.rank, i, steps.length), f);
+      frames.push({ file: f, dur: s.dur });
+    }
+    const cta = join(slides, `${String(steps.length + 2).padStart(2, "0")}-cta.jpg`);
+    await shot(ctaSlide(r), cta);
+    frames.push({ file: cta, dur: 2.6 });
+    const cover = join(out, platform === "youtube" ? `${base}_thumbnail.jpg` : `${base}_cover.jpg`);
+    await shot(coverSlide(r), cover);
+    /* the cover is the video's first frame, so it can be picked as the thumbnail in the app */
+    frames.unshift({ file: cover, dur: 0.8 });
+    if (platform === "instagram") {
+      /* single-image post (4:5): all picks with photo, name and today's price */
+      await page.setViewportSize({ width: 1080, height: 1350 });
+      await shot(posterSlide(r), join(out, `${base}_post.jpg`));
+      writeFileSync(join(out, `${base}_instagram.txt`), caption(r) + "\n");
+    }
+    await page.close();
+    video(frames, join(out, `${base}.mp4`), track);
+    if (platform === "youtube") rmSync(slides, { recursive: true, force: true }); /* the same slides are in instagram/slides */
+  }
+  setPlatform("instagram");
 }
 
-/* slides → MP4 with short slide/fade transitions; silent track so every app accepts it */
-function video(frames, out) {
+/* slides → MP4 with short slide/fade transitions, and the day's background track (or a silent one) */
+function video(frames, out, track) {
   const T = 0.35, inputs = [], parts = [];
   frames.forEach((f, i) => {
     inputs.push("-loop", "1", "-t", String(f.dur + T), "-i", f.file);
@@ -222,10 +248,10 @@ function video(frames, out) {
     last = `x${i}`; t += frames[i].dur;
   }
   const total = t + T;
+  const a = audioArgs(track, total, frames.length);
   execFileSync("ffmpeg", [
-    "-y", "-v", "error", ...inputs,
-    "-f", "lavfi", "-t", total.toFixed(2), "-i", "anullsrc=r=44100:cl=stereo",
-    "-filter_complex", parts.join(";"), "-map", `[${last}]`, "-map", `${frames.length}:a`,
+    "-y", "-v", "error", ...inputs, ...a.inputs,
+    "-filter_complex", [...parts, ...a.filters].join(";"), "-map", `[${last}]`, "-map", a.map,
     "-t", total.toFixed(2), "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", out,
   ]);
@@ -254,14 +280,16 @@ setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so *
 const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
 for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();
-for (const r of reels) {
-  console.log(`• ${r.slug} (${r.items.length} products)`);
-  await render(browser, r, join(root, r.slug));
+const tracks = tracksFor(reels.length, DATE, themeFor(DATE));
+for (const [i, r] of reels.entries()) {
+  r.track = tracks[i] ? tracks[i].split("/").pop() : "";
+  console.log(`• ${r.slug} (${r.items.length} products)${r.track ? ` ♪ ${r.track}` : ""}`);
+  await render(browser, r, join(root, r.slug), tracks[i]);
 }
 await browser.close();
 /* manifest for later steps (YouTube upload): what each folder holds, without the inlined photos */
 writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: DATE, dir: root, reels: reels.map((r) => ({
-  slug: r.slug, base: r.base, catSlug: r.catSlug, catName: r.catName, subName: r.subName, url: r.url, headline: r.headline || "", coverLine: r.coverLine || "",
+  slug: r.slug, base: r.base, track: r.track, catSlug: r.catSlug, catName: r.catName, subName: r.subName, url: r.url, headline: r.headline || "", coverLine: r.coverLine || "",
   more: r.more || "", copy: r.copy, items: r.items.map((p) => ({ brand: p.brand, name: p.name, bestFor: p.bestFor, specs: p.specs, price: p.price, off: p.off })),
 })) }, null, 1));
 
@@ -270,14 +298,20 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   const { useRun, seoFor, seoText } = await import("./youtube.mjs");
   const run = JSON.parse(readFileSync(join(outDir, "latest.json"), "utf8"));
   useRun(run);
+  mkdirSync(join(outDir, "meta"), { recursive: true });
   for (const r of run.reels) {
-    try { writeFileSync(join(root, r.slug, `${r.base}_youtube.txt`), seoText(await seoFor(r))); }
+    try {
+      const m = await seoFor(r);
+      writeFileSync(join(root, r.slug, "youtube", `${r.base}_youtube.txt`), seoText(m));
+      writeFileSync(join(outDir, "meta", `${r.slug}.json`), JSON.stringify(m)); /* reused by the upload step: no second search */
+    }
     catch (e) { console.warn(`  YouTube text for ${r.slug} failed: ${e.message}`); }
   }
   console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
 }
 
-/* everything in one ZIP: one folder per reel (<name>.mp4, _cover.jpg, _post.jpg, _instagram.txt, _youtube.txt, slides/) */
+/* everything in one ZIP: one folder per reel, each with instagram/ (video, cover, post, caption, slides) and
+   youtube/ (video, thumbnail, title/description/tags) */
 const zip = join(outDir, `${name}.zip`);
 rmSync(zip, { force: true });
 execFileSync("zip", ["-qr", zip, name], { cwd: outDir });
@@ -300,7 +334,7 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with the video, cover, post, Instagram caption and YouTube title/description/tags.`;
+  const text = `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST\n${reels.length} reels in one ZIP (${mb.toFixed(0)} MB): a folder per reel with instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags).`;
   if (mb < 49) await tg("sendDocument", { caption: text }, { field: "document", path: zip, name: `${name}.zip` });
   else if (process.env.GITHUB_ACTIONS) {
     const url = publishRelease();
