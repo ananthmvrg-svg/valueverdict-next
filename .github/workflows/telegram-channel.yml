@@ -1,7 +1,7 @@
 name: Telegram Channel
 
 # The menu goes out at the daily start time (reels/schedule.json, or the REELS_TIME variable; default 08:00 IST),
-# then one deal every 30 minutes from 30 minutes later until 22:00 (variables DEALS_UNTIL, DEAL_EVERY_MINUTES).
+# re-posted every 3 hours, and 50 deals spread from 30 minutes later until 22:00 (variables DEALS_UNTIL, DEALS_PER_DAY, MENU_EVERY_HOURS).
 # Needs the TELEGRAM_BOT_TOKEN secret; the bot must be an admin of the channel (post + pin messages).
 # Channel: repository variable TELEGRAM_CHANNEL (default @valueverdict).
 on:
@@ -52,7 +52,8 @@ jobs:
           MODE: ${{ github.event_name == 'schedule' && 'auto' || inputs.mode }}
           REELS_TIME: ${{ vars.REELS_TIME }}
           DEALS_UNTIL: ${{ vars.DEALS_UNTIL }}
-          DEAL_EVERY_MINUTES: ${{ vars.DEAL_EVERY_MINUTES }}
+          DEALS_PER_DAY: ${{ vars.DEALS_PER_DAY }}
+          MENU_EVERY_HOURS: ${{ vars.MENU_EVERY_HOURS }}
           DEALS_PER_RUN: ${{ inputs.count || '1' }}
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON channel.mjs --$MODE
       - uses: actions/cache/save@v4

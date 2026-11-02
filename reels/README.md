@@ -34,10 +34,10 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
 
 ## Telegram channel (`channel.mjs`, workflow "Telegram Channel")
 
-- **8:00 AM IST:** a "Today's best picks" menu with a button per category (website pages, Top 100, Amazon Finds), pinned for the day.
-- **8:30 AM – 10:00 PM IST, every 30 minutes:** one deal: Amazon photo, deal price / M.R.P. / % off, deal end, low stock,
+- **8:00 AM IST, then every 3 hours (11, 2, 5, 8):** the "Today's best picks" menu with a button per category (website pages, Top 100, Amazon Finds), the newest one pinned.
+- **8:30 AM – 10:00 PM IST, 50 deals spread evenly (about one every 16 minutes):** one deal: Amazon photo, deal price / M.R.P. / % off, deal end, low stock,
   best for, two pros, and buttons **🛒 Buy on Amazon** (direct affiliate link) and **📊 Compare top 5** (website).
-  Categories take turns; a product posted in the last 3 days is skipped (state kept in the Actions cache).
+  Categories take turns (Top 100, Amazon Finds, #1 and #2 of every budget page); a product posted in the last 2 days is skipped (state kept in the Actions cache).
 - Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
 - Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
 
@@ -61,7 +61,7 @@ Tick "youtube" in Run workflow to upload private Shorts again (it reuses that me
 - Reels + ZIP + YouTube Shorts and the Telegram menu start at the daily time; Telegram deals follow every 30 minutes until 22:00.
 - Default `08:00` IST in `reels/schedule.json`. To change it: GitHub → Settings → Secrets and variables → Actions →
   **Variables** → New variable `REELS_TIME` = `06:30` (24-hour, India time). Delete the variable to go back to 08:00.
-  Optional variables: `DEALS_UNTIL` (default `22:00`), `DEAL_EVERY_MINUTES` (default `30`).
+  Optional variables: `DEALS_UNTIL` (default `22:00`), `DEALS_PER_DAY` (default `50`), `MENU_EVERY_HOURS` (default `3`).
 - One-off date: add it to `overrides` in `reels/schedule.json` (e.g. `"2026-11-01": "06:30"`); it wins over the variable for that day.
 - GitHub checks every 15 minutes, so a run starts within about 15 minutes of the time (sometimes a little later when GitHub is busy).
 - `node reels/when.mjs show` prints today's times.

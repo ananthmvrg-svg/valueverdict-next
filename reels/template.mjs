@@ -144,6 +144,15 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .ctabar{position:absolute;left:0;right:0;bottom:286px;display:flex;justify-content:center}
 .ctabar span{font-weight:800;font-size:36px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffc04d);border-radius:999px;padding:12px 34px;box-shadow:0 10px 30px rgba(255,138,0,.45)}
 .ctabar b{font-weight:800}
+.ytsub{display:inline-flex;align-items:center;gap:.4em;font-family:Roboto,Arial,sans-serif}
+.ytsub i{font-style:normal;font-weight:700;color:#fff;background:#ff0000;border-radius:999px;padding:.32em 1em .36em;box-shadow:0 8px 26px rgba(255,0,0,.45);letter-spacing:.01em}
+.ytsub b{display:inline-grid;place-items:center;width:1.9em;height:1.9em;border-radius:50%;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.35);font-size:.8em}
+.ctabar.yt{align-items:center;gap:22px}
+.ctabar.yt .site{font-size:34px;padding:12px 28px;background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.25);box-shadow:none}
+.ctabar.yt .ytsub{font-size:40px;background:none;padding:0;box-shadow:none;color:#fff}
+.ctabar.yt .ytsub i,.ctabar.yt .ytsub b{background-clip:padding-box}
+.subwrap{margin:40px 0 46px;position:relative;display:inline-flex}
+.subwrap .tap{position:absolute;right:120px;bottom:-62px;font-size:84px;transform:rotate(-12deg);filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
 .hookline+.ctabar,.safe>.ctabar{position:static;margin-top:30px;justify-content:flex-start}
 .dots i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25)}
 .dots i.on{background:#ff8a00;width:60px;border-radius:12px}
@@ -336,8 +345,10 @@ const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE
 let PLATFORM = "instagram";
 export const setPlatform = (p) => { PLATFORM = p === "youtube" ? "youtube" : "instagram"; };
 const YT = () => PLATFORM === "youtube";
+/* YouTube's own look: red rounded button, white "Subscribe", bell beside it */
+const SUB_BTN = (px) => `<span class="ytsub" style="font-size:${px}px"><i>Subscribe</i><b>🔔</b></span>`;
 const ctaBar = () => YT()
-  ? `<div class="ctabar"><span>🔔 <b>Subscribe</b> · 🔗 valueverdict.in</span></div>`
+  ? `<div class="ctabar yt">${SUB_BTN(40)}<span class="site">🔗 valueverdict.in</span></div>`
   : `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
@@ -418,7 +429,7 @@ export function ctaSlide(r) {
     <h2>${r.more ? esc(r.more) : `Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks`}<br>+ <em>today's price</em></h2>
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
-    <div class="bio">${YT() ? "🔔 Subscribe for more" : "🔗 Link in bio"}</div>
+    ${YT() ? `<div class="subwrap">${SUB_BTN(76)}<span class="tap">👆</span></div>` : `<div class="bio">🔗 Link in bio</div>`}
     <div class="follow">${YT() ? "👍 Like & share with a friend" : `💛 ${esc(r.copy.follow_line)}`}</div>
     <div class="urg">⏳ ${esc(r.copy.urgency)}</div>
   </div>`);
