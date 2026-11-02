@@ -1,5 +1,5 @@
 /* Value Verdict Telegram channel poster.
-   node channel.mjs --menu    8 AM: "Today's picks" menu with a button per category (website pages), pinned for the day
+   node channel.mjs --menu    "Today's picks" menu with a button per category (website pages), pinned; re-posted every 3 hours
    node channel.mjs --deal    one deal post: Amazon photo, deal price / M.R.P. / % off, best for, pros,
                               [🛒 Buy on Amazon] (direct affiliate link) [📊 Compare] (website page)
    Options: --dry-run (print instead of posting), --sample (sample.json, no network), --count=N (deals per run)
@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE_URL, select, shortName, clean, brandCase } from "./shared.mjs";
-import { startTime, dealsUntil, dealEvery, minutes, nowMinutes } from "./when.mjs";
+import { startTime, dealsUntil, dealsPerDay, menuEveryHours, minutes, nowMinutes } from "./when.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -23,7 +23,7 @@ const COUNT = Math.max(1, parseInt(opt("count") || process.env.DEALS_PER_RUN || 
 const CHANNEL = process.env.TELEGRAM_CHANNEL || "@valueverdict";
 const STATE_FILE = process.env.STATE_FILE || join(here, "channel-state.json");
 const UTM = "utm_source=telegram&utm_medium=channel";
-const REPEAT_DAYS = 3;
+const REPEAT_DAYS = 2; /* ~50 posts a day: a product may come back after two days (sooner only if nothing new is left) */
 
 const ist = (d = new Date()) => new Date(d.getTime() + 5.5 * 3600e3);
 const DATE = ist().toISOString().slice(0, 10);
@@ -57,7 +57,7 @@ async function tg(method, body) {
 }
 
 /* ---------- 8 AM menu ---------- */
-async function menu({ cats, picks }) {
+async function menu({ cats, picks }, again = false) {
   const live = new Set(picks.map((p) => p.group_key.split("/")[0]));
   const list = cats.filter((c) => c.active !== false && !["amazon-finds", "top-100"].includes(c.slug) && live.has(c.slug))
     .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
@@ -68,17 +68,17 @@ async function menu({ cats, picks }) {
   if (picks.some((p) => p.group_key === "amazon-finds")) rows.push([{ text: "🛒 Amazon Finds", url: site("/amazon-finds"), style: "success" }]);
   const day = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
   const text = [
-    `🪔 <b>Today's best picks · ${esc(day)}</b>`,
+    `🪔 <b>Today's best picks · ${esc(day)}</b>${again ? `\n<i>Updated ${esc(new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit" }))}</i>` : ""}`,
     "",
     "Shopping for something specific? Tap a category 👇",
     "Top 5 at every budget, with pros, cons and today's Amazon price.",
     "",
-    "Deals keep coming here all day till 10 PM. Turn on 🔔 so you don't miss one.",
+    `Deals keep coming here all day till ${esc(dealsUntil().replace(/^(\d+):(\d+)$/, (m, h, mm) => `${((+h + 11) % 12) + 1}${mm === "00" ? "" : ":" + mm} ${+h >= 12 ? "PM" : "AM"}`))}. Turn on 🔔 so you don't miss one.`,
     "",
     "<i>As an Amazon Associate we earn from qualifying purchases.</i>",
   ].join("\n");
   const sent = await tg("sendMessage", { text, parse_mode: "HTML", link_preview_options: { is_disabled: true }, reply_markup: { inline_keyboard: rows } });
-  /* keep only today's menu pinned */
+  /* keep only the latest menu pinned */
   await tg("unpinAllChatMessages", {}).catch((e) => console.warn("unpin:", e.message));
   await tg("pinChatMessage", { message_id: sent.result.message_id, disable_notification: true }).catch((e) => console.warn("pin:", e.message));
   console.log(`✔ menu posted with ${list.length} categories`);
@@ -101,7 +101,7 @@ function queue({ cats, subs, picks }) {
     add(p.category || "top", p, p.category && catName.has(p.category) ? `/${p.category}` : "/top-deals", sectionName(p));
   for (const p of picks.filter((x) => x.group_key === "amazon-finds").sort((a, b) => a.rank - b.rank))
     add(`find:${p.section}`, p, "/amazon-finds", sectionName(p));
-  for (const p of picks.filter((x) => x.group_key.includes("/") && x.rank === 1)) {
+  for (const p of picks.filter((x) => x.group_key.includes("/") && x.rank <= 2).sort((a, b) => a.rank - b.rank)) {
     const [cat] = p.group_key.split("/");
     add(cat, p, `/${p.group_key}`, `${catName.get(cat) || ""} · ${subOf.get(p.group_key)?.name || ""}`);
   }
@@ -148,14 +148,19 @@ function saveState(s) {
   if (!DRY) writeFileSync(STATE_FILE, JSON.stringify(s, null, 1));
 }
 
-async function deals(data) {
+async function deals(data, count = COUNT) {
   const state = loadState();
   const recent = new Date(Date.now() - REPEAT_DAYS * 864e5).toISOString().slice(0, 10);
-  const fresh = queue(data).filter((x) => !(state.posted[x.p.data.asin] >= recent));
-  if (!fresh.length) { console.log("no new deal to post"); return; }
+  const all = queue(data), when = (x) => state.posted[x.p.data.asin];
+  let fresh = all.filter((x) => !(when(x) >= recent));
+  /* not enough new ones: the longest-unposted, never one already posted today */
+  if (fresh.length < count) fresh = [...fresh, ...all.filter((x) => when(x) && when(x) >= recent && when(x) < DATE).sort((a, b) => (when(a) < when(b) ? -1 : 1))];
+  if (!fresh.length) { console.log("no new deal to post"); return 0; }
   /* continue the day's rotation where the last run stopped */
   const start = state.day === DATE ? state.next || 0 : 0;
-  for (let k = 0; k < COUNT; k++) {
+  let posted = 0;
+  for (let k = 0; k < Math.min(count, fresh.length); k++) {
+    if (k) await new Promise((r) => setTimeout(r, 4000));
     const item = fresh[(start + k) % fresh.length];
     const post = dealPost(item);
     try {
@@ -166,26 +171,35 @@ async function deals(data) {
       if (!post.photo || !/photo|image|URL|wrong file/i.test(e.message)) throw e;
       await tg("sendMessage", { text: post.caption, parse_mode: "HTML", reply_markup: post.reply_markup });
     }
-    state.posted[item.p.data.asin] = DATE;
+    state.posted[item.p.data.asin] = DATE; posted++;
     console.log(`✔ posted ${item.p.data.asin} (${item.label || item.p.group_key})`);
   }
   state.day = DATE; state.next = start; /* repeats are filtered next time, so the same index is the next new item */
   saveState(state);
+  return posted;
 }
 
-/* --auto (the 15-minute schedule): today's menu once at the start time (schedule.json / REELS_TIME), then a deal
-   every DEAL_EVERY_MINUTES from 30 minutes later until DEALS_UNTIL. Every other run does nothing. */
+/* --auto (the 15-minute schedule):
+   - the category menu at the start time (schedule.json / REELS_TIME), then again every MENU_EVERY_HOURS until
+     DEALS_UNTIL, each time pinned in place of the last one;
+   - DEALS_PER_DAY deals spread evenly from 30 minutes after the start until DEALS_UNTIL. A late or skipped
+     GitHub run is made up by the next one (at most 3 at a time), so the day still ends near the target. */
 async function auto() {
-  const state = loadState(), now = nowMinutes(), start = minutes(startTime());
+  const state = loadState(), now = nowMinutes(), start = minutes(startTime()), end = minutes(dealsUntil());
   if (now < start) { console.log(`before today's start (${startTime()} IST), nothing to do`); return; }
-  if (state.menuDay !== DATE) {
-    await menu(await loadData());
-    state.menuDay = DATE; saveState(state); return;
+  const slot = Math.floor((now - start) / (menuEveryHours() * 60));
+  if (state.menuDay !== DATE || (now <= end && (state.menuSlot ?? 0) < slot)) {
+    await menu(await loadData(), state.menuDay === DATE);
+    state.menuDay = DATE; state.menuSlot = slot; saveState(state); return;
   }
-  if (now < start + 30 || now > minutes(dealsUntil())) { console.log("outside deal hours"); return; }
-  if (state.lastDealAt && Date.now() - Date.parse(state.lastDealAt) < (dealEvery() - 5) * 60e3) { console.log("last deal was recent"); return; }
-  await deals(await loadData());
+  const first = start + 30, total = dealsPerDay();
+  if (now < first || now > end + 15) { console.log("outside deal hours"); return; }
+  const due = Math.min(total, Math.floor(((Math.min(now, end) - first) / Math.max(1, end - first)) * (total - 1)) + 1);
+  const done = Object.values(state.posted || {}).filter((d) => d === DATE).length; /* posted today */
+  if (due <= done) { console.log(`on schedule (${done}/${total} today)`); return; }
+  const n = await deals(await loadData(), Math.min(3, due - done));
   const after = loadState(); after.lastDealAt = new Date().toISOString(); saveState(after);
+  console.log(`${done + n}/${total} deals today`);
 }
 
 if (flag("--auto")) await auto();

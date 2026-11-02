@@ -93,8 +93,8 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .chip{font-weight:700;font-size:34px;padding:8px 24px;border-radius:14px;background:rgba(30,144,255,.18);border:2px solid rgba(30,144,255,.5);color:#d8ecff;white-space:nowrap}
 
 /* hook */
-.collage{position:relative;height:500px;margin:0 0 26px}
-.collage .t{position:absolute;top:20px;width:380px;height:440px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.collage{position:relative;height:450px;margin:0 0 30px;flex-shrink:0}
+.collage .t{position:absolute;top:14px;width:360px;height:400px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
@@ -140,10 +140,23 @@ h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webki
 .tip span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dots{position:absolute;left:0;right:0;bottom:244px;display:flex;justify-content:center;gap:14px}
 /* "where to buy" on every slide: above Instagram's caption area */
-.safe.prod{bottom:400px}
+.safe.prod{bottom:480px}
+.more{position:absolute;left:40px;right:40px;bottom:384px;text-align:center;font-weight:600;font-size:30px;line-height:1.3;color:#ffe2b0;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.more i{display:block;font-style:normal;font-weight:800;color:#fff}
+.more b{color:#fff}
+.safe>.more{position:static;text-align:left;margin-top:18px;left:auto;right:auto}
 .ctabar{position:absolute;left:0;right:0;bottom:286px;display:flex;justify-content:center}
 .ctabar span{font-weight:800;font-size:36px;color:#1a0e00;background:linear-gradient(90deg,#ff8a00,#ffc04d);border-radius:999px;padding:12px 34px;box-shadow:0 10px 30px rgba(255,138,0,.45)}
 .ctabar b{font-weight:800}
+.ytsub{display:inline-flex;align-items:center;gap:.4em;font-family:Roboto,Arial,sans-serif}
+.ytsub i{font-style:normal;font-weight:700;color:#fff;background:#ff0000;border-radius:999px;padding:.32em 1em .36em;box-shadow:0 8px 26px rgba(255,0,0,.45);letter-spacing:.01em}
+.ytsub b{display:inline-grid;place-items:center;width:1.9em;height:1.9em;border-radius:50%;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.35);font-size:.8em}
+.ctabar.yt{align-items:center;gap:22px}
+.ctabar.yt .site{font-size:34px;padding:12px 28px;background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.25);box-shadow:none}
+.ctabar.yt .ytsub{font-size:40px;background:none;padding:0;box-shadow:none;color:#fff}
+.ctabar.yt .ytsub i,.ctabar.yt .ytsub b{background-clip:padding-box}
+.subwrap{margin:40px 0 46px;position:relative;display:inline-flex}
+.subwrap .tap{position:absolute;right:120px;bottom:-62px;font-size:84px;transform:rotate(-12deg);filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
 .hookline+.ctabar,.safe>.ctabar{position:static;margin-top:30px;justify-content:flex-start}
 .dots i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25)}
 .dots i.on{background:#ff8a00;width:60px;border-radius:12px}
@@ -332,7 +345,22 @@ function diwaliDeco() {
 
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body class="${THEME}"><div class="bg"></div>${THEME === "diwali" ? diwaliDeco() : `<div class="grid"></div>`}${body}${FIT}${TRIM}</body></html>`;
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
-const CTA_BAR = `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
+/* which app the slides are for: Instagram ("link in bio") or YouTube ("subscribe", the site's address; Shorts have no bio link) */
+let PLATFORM = "instagram";
+export const setPlatform = (p) => { PLATFORM = p === "youtube" ? "youtube" : "instagram"; };
+const YT = () => PLATFORM === "youtube";
+/* YouTube's own look: red rounded button, white "Subscribe", bell beside it */
+const SUB_BTN = (px) => `<span class="ytsub" style="font-size:${px}px"><i>Subscribe</i><b>🔔</b></span>`;
+const ctaBar = () => YT()
+  ? `<div class="ctabar yt">${SUB_BTN(40)}<span class="site">🔗 valueverdict.in</span></div>`
+  : `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
+/* the reel shows only the top picks: every slide says where the rest are */
+function moreLine(r) {
+  const where = YT() ? "at <b>valueverdict.in</b>" : "on our website: <b>link in bio</b>";
+  const n = String(r.more || "").match(/\d+/)?.[0];
+  const what = r.catSlug === "top-100" ? `All ${n || "100"} deals` : r.catSlug === "amazon-finds" ? `All ${n || "50+"} finds` : "Every budget & brand";
+  return `<div class="more"><i>🔍 Didn't find what you want?</i>${what} ${where}</div>`;
+}
 const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) => `<i class="${i === on ? "on" : ""}"></i>`).join("")}</div>`;
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
@@ -362,7 +390,8 @@ export function hookSlide(r) {
     <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
     <div class="pill">${esc(r.subName)}</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
-    ${CTA_BAR}
+    ${ctaBar()}
+    ${moreLine(r)}
   </div>`);
 }
 
@@ -403,7 +432,7 @@ export function productSlide(r, p, rank, idx, total) {
       </div>` : ""}
       ${p.tip ? `<div class="tip"><span><b>💡 Good to know:</b> ${esc(p.tip)}</span></div>` : ""}
     </div>
-  </div>${CTA_BAR}${dots(total, idx)}`);
+  </div>${moreLine(r)}${ctaBar()}${dots(total, idx)}`);
 }
 
 export function ctaSlide(r) {
@@ -412,8 +441,8 @@ export function ctaSlide(r) {
     <h2>${r.more ? esc(r.more) : `Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks`}<br>+ <em>today's price</em></h2>
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
-    <div class="bio">🔗 Link in bio</div>
-    <div class="follow">💛 ${esc(r.copy.follow_line)}</div>
+    ${YT() ? `<div class="subwrap">${SUB_BTN(76)}<span class="tap">👆</span></div>` : `<div class="bio">🔗 Link in bio</div>`}
+    <div class="follow">${YT() ? "👍 Like & share with a friend" : `💛 ${esc(r.copy.follow_line)}`}</div>
     <div class="urg">⏳ ${esc(r.copy.urgency)}</div>
   </div>`);
 }
@@ -529,7 +558,8 @@ function stageArt() {
 
 function photoCover(r, bg) {
   const n = r.items.length, one = ONE[r.catName] || shortCat(r.catName).replace(/s$/, "");
-  const l1 = r.coverLine || `Top ${one} Deals`, l2 = "on Amazon";
+  /* Instagram covers carry no Amazon branding (Meta flagged it once); YouTube thumbnails keep "on Amazon" for search */
+  const l1 = r.coverLine || `Top ${one} Deals`, l2 = YT() ? "on Amazon" : THEME === "diwali" ? "This Diwali" : "Best Value";
   const size = l1.length <= 14 ? 168 : l1.length <= 18 ? 140 : 118, size2 = Math.min(size, 150);
   const pill = r.pill || (/^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`);
   const hero = r.items.find((p) => p.image);

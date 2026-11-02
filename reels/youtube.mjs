@@ -10,7 +10,8 @@
    Which reels: Today's Top 10 Deals, Top 10 Amazon Finds, then budget pages taking turns day by day.
    SEO for each Short, researched fresh every day:
      1. YouTube search autocomplete for the page's main query (what people actually type)
-     2. the most viewed Shorts of the last 30 days for that query (their titles and tags), via the YouTube API
+     2. the 25 most viewed Shorts of the last 30 days for that query: their tags and the hashtags they really use
+      (tags and hashtags on our Shorts come only from these, autocomplete, our brands and #Shorts/#ValueVerdict)
      3. our own data: products, specs, who they suit, the season
    Claude Haiku turns that into the title, description, tags and hashtags. */
 import { execFileSync } from "node:child_process";
@@ -18,6 +19,7 @@ import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { seasonFor } from "./copy.mjs";
+import { mainQuery, ONE } from "./shared.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DRY = process.argv.includes("--dry-run");
@@ -58,18 +60,6 @@ async function yt(path, params) {
 }
 
 /* ---------- research ---------- */
-const ONE = { refrigerators: "fridge", tvs: "tv", "washing-machines": "washing machine", "air-conditioners": "ac", laptops: "laptop",
-  "soundbars-speakers": "soundbar", "home-appliances": "home appliances", "fridge-accessories": "stabilizer for fridge", geysers: "geyser" };
-function mainQuery(r) {
-  if (r.catSlug === "top-100") return "amazon deals today";
-  if (r.catSlug === "amazon-finds") return "amazon finds india";
-  const one = ONE[r.catSlug] || r.catName.toLowerCase();
-  const m = r.subName.match(/(under|above)\s*₹\s*([\d,.]+)\s*(lakh)?/i);
-  if (m) return `best ${one} ${m[1].toLowerCase()} ${m[3] ? m[2] + " lakh" : m[2].replace(/,/g, "")}`;
-  const inch = r.subName.match(/(\d+)\s*["″]/);
-  if (inch) return `best ${inch[1]} inch ${one}`;
-  return `best ${one} ${r.subName.toLowerCase()}`;
-}
 async function autocomplete(q) {
   try {
     const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=en&gl=IN&q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(10000) });
@@ -80,12 +70,40 @@ async function autocomplete(q) {
 async function topShorts(q) {
   try {
     const after = new Date(Date.now() - 30 * 864e5).toISOString();
-    const s = await yt("search", { part: "id", q, type: "video", order: "viewCount", publishedAfter: after, regionCode: "IN", videoDuration: "short", maxResults: "10" });
+    const s = await yt("search", { part: "id", q, type: "video", order: "viewCount", publishedAfter: after, regionCode: "IN", relevanceLanguage: "en", videoDuration: "short", maxResults: "25" });
     const ids = (s.items || []).map((x) => x.id.videoId).filter(Boolean);
     if (!ids.length) return [];
     const v = await yt("videos", { part: "snippet,statistics", id: ids.join(",") });
-    return (v.items || []).map((x) => ({ title: x.snippet.title, tags: (x.snippet.tags || []).slice(0, 15), views: Number(x.statistics?.viewCount || 0) }));
+    return (v.items || []).map((x) => ({ title: x.snippet.title, tags: (x.snippet.tags || []).slice(0, 20), views: Number(x.statistics?.viewCount || 0),
+      hashtags: hashtagsIn(`${x.snippet.title}\n${x.snippet.description || ""}`) }));
   } catch (e) { console.warn(`  top Shorts skipped (${e.message})`); return []; }
+}
+
+/* hashtags as they're written in a text, e.g. "#AmazonFinds" */
+const hashtagsIn = (text) => [...String(text).matchAll(/(^|\s)#([\p{L}\p{N}_]{2,40})/gu)].map((m) => m[2]);
+
+/* hashtags real top Shorts use for this search: how many of them use each one, written the way most of them write it.
+   Only these (plus #Shorts and our own #ValueVerdict) go on our Shorts, so every hashtag leads to a real, busy page. */
+function realHashtags(top) {
+  const count = new Map(), spelt = new Map();
+  for (const v of top) for (const h of new Set(v.hashtags.map((x) => x.toLowerCase()))) count.set(h, (count.get(h) || 0) + 1);
+  for (const v of top) for (const h of v.hashtags) { const k = h.toLowerCase(), m = spelt.get(k) || new Map(); m.set(h, (m.get(h) || 0) + 1); spelt.set(k, m); }
+  return [...count.entries()].filter(([k]) => k !== "shorts" && k !== "short")
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => ({ tag: "#" + [...spelt.get(k).entries()].sort((a, b) => b[1] - a[1])[0][0], used: n }));
+}
+/* tag phrases with real search behind them: YouTube autocomplete, top Shorts' own tags, our brands and the main query */
+function tagPool(r, q, suggest, top) {
+  const norm = (t) => String(t).toLowerCase().replace(/[^\p{L}\p{N} ]+/gu, " ").replace(/\s+/g, " ").trim();
+  const seen = new Map();
+  const add = (t, why) => { const k = norm(t); if (k && k.length <= 60 && !seen.has(k)) seen.set(k, why); };
+  add(q, "main query"); suggest.forEach((t) => add(t, "autocomplete"));
+  const tc = new Map();
+  for (const v of top) for (const t of new Set(v.tags.map(norm))) tc.set(t, (tc.get(t) || 0) + 1);
+  [...tc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40).forEach(([t, n]) => add(t, `used by ${n} top Shorts`));
+  for (const b of new Set(r.items.map((p) => p.brand).filter(Boolean))) { add(`${b} ${ONE[r.catSlug] || ""}`, "our brand"); add(b, "our brand"); }
+  add("value verdict", "our channel");
+  return { seen, norm };
 }
 
 /* ---------- writing ---------- */
@@ -107,24 +125,26 @@ Title: main search phrase first, then a hook (season, "Top 5", who it suits), an
 "Amazon deals"); max 90 characters; end with " #Shorts".
 Description: first two lines repeat the main search phrases naturally; then the picks as a numbered list (brand + model,
 one short "best for"); then "Full comparison, pros, cons and today's price: <url>" (plain text, links aren't clickable on
-Shorts); then "Follow Value Verdict for daily best-value picks."; then "As an Amazon Associate we earn from qualifying
+Shorts); then "Subscribe to Value Verdict for daily best-value picks."; then "As an Amazon Associate we earn from qualifying
 purchases."; then the hashtags on the last line. No prices or discounts (they change), no claims you weren't given,
 no unrelated trending words.
-Tags: 10-15 phrases, total under 450 characters, mixing the main phrase, its autocomplete variants, brands, key specs and season.
-Hashtags: 3-5, always including #Shorts.`;
+Tags: 10-15 phrases chosen ONLY from the "allowed tags" list (copy them exactly), most searched first; total under 450 characters.
+Hashtags: 3-5, always #Shorts first, then ONLY hashtags from the "hashtags real top Shorts use" list (copy the spelling exactly),
+most relevant to this page first; #ValueVerdict may be added last. Never invent a hashtag.`;
 
-function fallback(r, q) {
+function fallback(r, q, top = []) {
   const head = q.replace(/\b\w/g, (c) => c.toUpperCase());
   const title = `${head}${/amazon/i.test(q) ? "" : " on Amazon"} ${manifest.date.slice(0, 4)} 🔥 Top ${r.items.length} #Shorts`.slice(0, 100);
   const list = r.items.map((p, i) => `${i + 1}. ${p.brand} ${p.name}${p.bestFor ? ` (${p.bestFor})` : ""}`).join("\n");
   const tags = [q, `${q} ${manifest.date.slice(0, 4)}`, ...new Set(r.items.map((p) => p.brand).filter(Boolean)), "amazon deals", "value verdict"];
-  const hashtags = ["#Shorts", "#AmazonDeals", "#ValueVerdict"];
-  const description = `${q} - our top picks on Amazon.in.\n\n${list}\n\nFull comparison, pros, cons and today's price: ${r.url.replace(/^https?:\/\//, "")}\nFollow Value Verdict for daily best-value picks.\nAs an Amazon Associate we earn from qualifying purchases.\n\n${hashtags.join(" ")}`;
+  const hashtags = ["#Shorts", ...realHashtags(top).slice(0, 3).map((h) => h.tag), "#ValueVerdict"];
+  const description = `${q} - our top picks on Amazon.in.\n\n${list}\n\nFull comparison, pros, cons and today's price: ${r.url.replace(/^https?:\/\//, "")}\nSubscribe to Value Verdict for daily best-value picks.\nAs an Amazon Associate we earn from qualifying purchases.\n\n${hashtags.join(" ")}`;
   return { title, description, tags, hashtags };
 }
 
 async function write(r, q, suggest, top) {
-  const base = fallback(r, q);
+  const base = fallback(r, q, top);
+  const real = realHashtags(top), { seen: pool, norm } = tagPool(r, q, suggest, top);
   if (!process.env.ANTHROPIC_API_KEY) return base;
   const facts = [
     `Page: ${r.coverLine || `${r.catName} · ${r.subName}`} | website: ${r.url}`,
@@ -133,7 +153,9 @@ async function write(r, q, suggest, top) {
     `Reel hook already on screen: ${r.copy?.hook_title || ""} / ${r.copy?.for_whom || ""}`,
     `Main query: ${q}`,
     `YouTube autocomplete for it: ${suggest.join("; ") || "none"}`,
-    `Most viewed Shorts for it in the last 30 days: ${top.sort((a, b) => b.views - a.views).slice(0, 8).map((v) => `"${v.title}" (${v.views} views; tags: ${v.tags.join(", ") || "-"})`).join(" | ") || "none"}`,
+    `Most viewed Shorts for it in the last 30 days: ${top.sort((a, b) => b.views - a.views).slice(0, 8).map((v) => `"${v.title}" (${v.views} views)`).join(" | ") || "none"}`,
+    `Allowed tags (phrase: why): ${[...pool.entries()].map(([t, w]) => `${t}: ${w}`).join("; ")}`,
+    `Hashtags real top Shorts use (hashtag: how many of the top Shorts use it): ${real.slice(0, 25).map((h) => `${h.tag}: ${h.used}`).join(", ") || "none found"}`,
   ].join("\n");
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -148,10 +170,19 @@ async function write(r, q, suggest, top) {
     /* YouTube limits: title 100, description 5000, tags 500 characters in total */
     const title = String(o.title || "").replace(/[<>]/g, "").slice(0, 100) || base.title;
     const tags = []; let len = 0;
-    for (const t of (o.tags || []).map((x) => String(x).replace(/[<>,#]/g, "").trim()).filter(Boolean)) { if (len + t.length + 1 > 480) break; tags.push(t); len += t.length + 1; }
+    /* only tags from the pool (searched or used by top Shorts), only hashtags real Shorts use */
+    for (const t of (o.tags || []).map((x) => String(x).replace(/[<>,#]/g, "").trim()).filter((x) => pool.has(norm(x)))) { if (len + t.length + 1 > 480) break; tags.push(t); len += t.length + 1; }
+    const okTag = new Map(real.map((h) => [h.tag.toLowerCase(), h.tag]));
+    const hashtags = ["#Shorts", ...(o.hashtags || []).map((h) => okTag.get(String(h).trim().toLowerCase())).filter(Boolean)];
+    if (hashtags.length < 3) hashtags.push(...real.map((h) => h.tag).filter((h) => !hashtags.includes(h)).slice(0, 3 - hashtags.length));
+    if (!hashtags.includes("#ValueVerdict") && hashtags.length < 5) hashtags.push("#ValueVerdict");
+    const fixTags = (d) => d.replace(/(^|\s)#([\p{L}\p{N}_]+)/gu, (m, sp, h) => (/^shorts$/i.test(h) || /^valueverdict$/i.test(h) || okTag.has("#" + h.toLowerCase()) ? `${sp}${okTag.get("#" + h.toLowerCase()) || "#" + h}` : sp)).trimEnd();
     const t2 = /amazon/i.test(title) ? title : `${title.replace(/\s*#shorts\s*$/i, "").slice(0, 78)} on Amazon`;
-    return { title: /#shorts/i.test(t2) ? t2 : `${t2.slice(0, 91)} #Shorts`, description: String(o.description || base.description).replace(/[<>]/g, "").slice(0, 4900),
-      tags: tags.length ? tags : base.tags, hashtags: o.hashtags?.length ? o.hashtags : base.hashtags };
+    const uniq = [...new Set(hashtags)].slice(0, 5);
+    /* the description's own hashtags: made-up ones dropped, and the last line is exactly our checked set */
+    const desc = fixTags(String(o.description || base.description).replace(/[<>]/g, "")).split("\n").filter((l, i, a) => !(i === a.length - 1 && /^\s*#/.test(l))).join("\n").trimEnd();
+    return { title: fixTags(/#shorts/i.test(t2) ? t2 : `${t2.slice(0, 91)} #Shorts`), description: `${desc}\n\n${uniq.join(" ")}`.slice(0, 4900),
+      tags: tags.length ? tags : base.tags, hashtags: uniq };
   } catch (e) { console.warn(`  AI metadata failed (${e.message}), using plain`); return base; }
 }
 
@@ -209,7 +240,7 @@ async function upload(file, meta) {
    Shorts thumbnails can't always be set by API); the upload stays, and the cover is the first frame anyway. */
 async function setThumbnail(id, dir, base) {
   const jpg = join(dir, "thumb.jpg");
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(dir, `${base}_cover.jpg`), "-vf", "scale=720:1280", "-q:v", "3", jpg]); /* well under the 2 MB limit */
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(dir, `${base}_thumbnail.jpg`), "-vf", "scale=720:1280", "-q:v", "3", jpg]); /* well under the 2 MB limit */
   const r = await fetch(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${id}&uploadType=media`, {
     method: "POST", headers: { Authorization: `Bearer ${await accessToken()}`, "Content-Type": "image/jpeg" }, body: readFileSync(jpg),
   });
@@ -233,14 +264,18 @@ if (process.argv[1] && process.argv[1].endsWith("youtube.mjs")) {
   const canSearch = Boolean(process.env.YT_REFRESH_TOKEN);
   const done = [];
   for (const r of choose(manifest.reels)) {
-    const dir = join(manifest.dir, r.slug), file = join(dir, `${r.base}.mp4`);
+    const dir = join(manifest.dir, r.slug, "youtube"), file = join(dir, `${r.base}.mp4`);
     if (!existsSync(file)) continue;
-    const q = mainQuery(r);
+    const q = mainQuery(r), saved = join(here, "out", "meta", `${r.slug}.json`);
     console.log(`• ${r.slug}: "${q}"`);
-    const [suggest, top] = await Promise.all([autocomplete(q), canSearch ? topShorts(q) : []]);
-    const meta = await write(r, q, suggest, top);
-    meta.description = withCategories(meta.description);
-    writeFileSync(join(dir, "youtube.json"), JSON.stringify({ query: q, autocomplete: suggest, topShorts: top, ...meta }, null, 1));
+    /* the metadata generate.mjs already researched today (saves YouTube search quota for the uploads) */
+    let meta;
+    if (existsSync(saved)) meta = JSON.parse(readFileSync(saved, "utf8"));
+    else {
+      const [suggest, top] = await Promise.all([autocomplete(q), canSearch ? topShorts(q) : []]);
+      meta = await write(r, q, suggest, top);
+      meta.description = withCategories(meta.description);
+    }
     if (DRY) { console.log(`  ${meta.title}\n  tags: ${meta.tags.join(", ")}\n  ${meta.hashtags.join(" ")}`); continue; }
     try {
       const id = await upload(file, meta); /* the cover is already its first frame */

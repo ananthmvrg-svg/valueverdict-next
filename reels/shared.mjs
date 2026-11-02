@@ -38,3 +38,17 @@ export const PRICEY = /₹|%|\boff\b|price|cheap|discount|deal\b/i;
 export const clean = (xs) => (xs || []).map((s) => String(s).trim()).filter((s) => s && !PRICEY.test(s));
 export const brandCase = (b) => (b && b === b.toLowerCase() || b === b.toUpperCase() && b.length > 3 ? b.charAt(0).toUpperCase() + b.slice(1).toLowerCase() : b);
 
+
+/* the search phrase a buyer types for a reel's page, e.g. "best fridge under 30000" (YouTube and Instagram SEO) */
+export const ONE = { refrigerators: "fridge", tvs: "tv", "washing-machines": "washing machine", "air-conditioners": "ac", laptops: "laptop",
+  "soundbars-speakers": "soundbar", "home-appliances": "home appliances", "fridge-accessories": "stabilizer for fridge", geysers: "geyser" };
+export function mainQuery(r) {
+  if (r.catSlug === "top-100") return "amazon deals today";
+  if (r.catSlug === "amazon-finds") return "amazon finds india";
+  const one = ONE[r.catSlug] || r.catName.toLowerCase();
+  const m = r.subName.match(/(under|above)\s*₹\s*([\d,.]+)\s*(lakh)?/i);
+  if (m) return `best ${one} ${m[1].toLowerCase()} ${m[3] ? m[2] + " lakh" : m[2].replace(/,/g, "")}`;
+  const inch = r.subName.match(/(\d+)\s*["″]/);
+  if (inch) return `best ${inch[1]} inch ${one}`;
+  return `best ${one} ${r.subName.toLowerCase()}`;
+}

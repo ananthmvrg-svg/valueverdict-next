@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { mainQuery } from "./shared.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const MODEL = process.env.REELS_MODEL || "claude-haiku-5-5"; /* same model the site uses for its daily picks */
@@ -27,7 +28,7 @@ export function themeFor(dateISO) {
   } catch { return ""; }
 }
 
-const LIMITS = { for_whom: 32, hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
+const LIMITS = { ig_search_line: 130, alt_text: 230, for_whom: 32, hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
 const SCHEMA = {
   type: "object",
   properties: {
@@ -45,8 +46,10 @@ const SCHEMA = {
           follow_line: { type: "string", description: "why to follow Value Verdict, warm and personal, max 60 chars" },
           caption_hook: { type: "string", description: "first line of the Instagram caption, max 110 chars, may use 1 emoji" },
           post_title: { type: "string", description: "headline for the single-image post naming the product type, max 30 chars" },
+          ig_search_line: { type: "string", description: "first line of the Instagram caption for Instagram search: starts with the page's search phrase (reworded naturally, e.g. 'Best fridge under 30000 in India'), then a short hook; max 120 chars, at most 1 emoji" },
+          alt_text: { type: "string", description: "alt text for the single-image post: what the image shows (the product type, budget, number of picks, brands), plain words, max 220 chars" },
         },
-        required: ["id", "for_whom", "season_tag", "hook_title", "hook_sub", "urgency", "follow_line", "caption_hook", "post_title"],
+        required: ["id", "ig_search_line", "alt_text", "for_whom", "season_tag", "hook_title", "hook_sub", "urgency", "follow_line", "caption_hook", "post_title"],
         additionalProperties: false,
       },
     },
@@ -70,7 +73,9 @@ Goals for every budget page:
   and cons). Make following feel like joining a smart-shopper family, not a demand.
 - No rupee amounts, no percentages, no hashtags, at most one emoji per line, no ALL CAPS sentences.
 - for_whom finishes the headline "Top 5 <product> on Amazon <for_whom>": make it specific to who the picks suit.
-- Vary wording between pages; don't repeat the same hook.`;
+- Vary wording between pages; don't repeat the same hook.
+- Instagram search reads captions: ig_search_line must open with the page's search phrase (you may use its budget number
+  exactly as given, e.g. "under 30000", but no ₹ sign), written like a person would say it, not a list of keywords.`;
 
 /* a line that runs too long is dropped (plain line used), never cut mid-phrase */
 const clip = (s, n) => {
@@ -92,6 +97,8 @@ export function fallbackCopy(r, season) {
     caption_hook: r.coverLine ? `${fest ? fest + " shopping? " : ""}${r.coverLine} on Amazon, hand-picked for you 🔥`
       : `${fest ? fest + " shopping? " : ""}The ${r.catName.toLowerCase()} worth your money ${r.subName.replace(/^Under/, "under")} 🔥`,
     post_title: `Best ${r.catName}`,
+    ig_search_line: `${mainQuery(r).replace(/^./, (c) => c.toUpperCase())}${fest ? ` for ${fest}` : ""} 🔥`,
+    alt_text: `${r.items.length} ${r.catName.toLowerCase()} picks ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")}: ${[...new Set(r.items.map((p) => p.brand).filter(Boolean))].join(", ")}`.slice(0, 220),
   };
 }
 
@@ -110,7 +117,7 @@ async function writeBatch(reels, { date, season }) {
     const deals = [...new Set(r.items.map((p) => p.deal).filter(Boolean))];
     const ends = r.items.map((p) => p.dealEnds).filter(Boolean).sort()[0];
     const low = r.items.filter((p) => p.lowStock).length;
-    return [`id: ${r.slug}`, `product type: ${r.catName}`, `budget page: ${r.subName}`, `picks: ${r.items.length}`,
+    return [`id: ${r.slug}`, `product type: ${r.catName}`, `budget page: ${r.subName}`, `search phrase: ${mainQuery(r)}`, `picks: ${r.items.length}`,
       `top pick: ${r.items[0].brand} ${r.items[0].name} (best for: ${r.items[0].bestFor || "-"})`,
       `who the picks suit: ${r.items.map((p) => p.bestFor).filter(Boolean).join("; ") || "-"}`,
       `Amazon deal labels: ${deals.join(", ") || "none"}`,

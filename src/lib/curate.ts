@@ -179,6 +179,30 @@ function picksFrom(message: Anthropic.Messages.Message, byAsin: Map<string, Cand
     });
 }
 
+/* yesterday's picks per budget page, so the AI keeps them unless something is clearly better (stable pages,
+   reels and ads that still match the site next day). Amazon Finds and the Top 100 change daily on purpose. */
+async function previousPicks(): Promise<Map<string, Map<string, number>>> {
+  const out = new Map<string, Map<string, number>>();
+  try {
+    const rows = await admin<{ group_key: string; asin: string; rank: number }[]>("GET", "deal_picks?select=group_key,asin,rank&group_key=like.*%2F*&limit=3000");
+    for (const r of rows) (out.get(r.group_key) ?? out.set(r.group_key, new Map()).get(r.group_key)!).set(r.asin, r.rank);
+  } catch { /* first run, or the table can't be read: no history, plain picks */ }
+  return out;
+}
+const STICKY = " Our picks for this page yesterday are marked \"yesterday: #N\". Readers come back to these pages and to our videos, so keep yesterday's picks in the same order unless there is a clear reason: a candidate is clearly better value (e.g. a better energy rating, longer warranty or more capacity at a similar price, or a much lower price for similar specs), or yesterday's pick's deal got clearly worse. Don't reshuffle close calls, and never mention yesterday in what you write.";
+
+/* every saved list is also kept in deal_picks_history (one row per pick per day), to see how often pages change.
+   Optional: a missing table never stops the picks being saved. */
+async function keepHistory(rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  try {
+    await admin("POST", "deal_picks_history", rows.map((r) => {
+      const d = (r.data || {}) as Partial<Deal>;
+      return { cycle: r.cycle, group_key: r.group_key, rank: r.rank, asin: r.asin, brand: d.brand ?? null, title: d.title ?? null, price: d.price ?? null, score: r.score ?? null };
+    }), "return=minimal,resolution=ignore-duplicates");
+  } catch (e) { console.warn("picks history not saved:", (e as Error).message); }
+}
+
 const pickRows = (groupKey: string, cycle: string, picks: Pick[], byAsin: Map<string, Candidate>) => picks.map((p, i) => {
   const { section, category, ...data } = byAsin.get(p.asin)!;
   return { group_key: groupKey, rank: i + 1, asin: p.asin, reason: p.reason, score: p.score, best_for: p.best_for || null,
@@ -190,7 +214,8 @@ const enough = (picks: Pick[], g: Group) => picks.length >= Math.min(3, g.items.
 
 async function savePicks(groupKey: string, cycle: string, picks: Pick[], byAsin: Map<string, Candidate>) {
   await admin("DELETE", `deal_picks?group_key=eq.${encodeURIComponent(groupKey)}`);
-  if (picks.length) await admin("POST", "deal_picks", pickRows(groupKey, cycle, picks, byAsin), "return=minimal");
+  const rows = pickRows(groupKey, cycle, picks, byAsin);
+  if (rows.length) { await admin("POST", "deal_picks", rows, "return=minimal"); await keepHistory(rows); }
   return picks.length;
 }
 
@@ -217,7 +242,12 @@ export async function curate(cycle: string): Promise<string> {
   if (!groupsRun) {
     const groups = await buildGroups();
     if (!groups.length) return "no candidates yet";
-    const reqs = groups.map((g, i) => request(idOf(i), g.want, g.items.map((x) => line(x, `section: ${x.section}`)), 8000));
+    const before = await previousPicks();
+    const reqs = groups.map((g, i) => {
+      const prev = before.get(g.key), had = prev && g.items.some((x) => prev.has(x.asin));
+      return request(idOf(i), g.want + (had ? STICKY : ""),
+        g.items.map((x) => line(x, `section: ${x.section}${prev?.has(x.asin) ? ` | yesterday: #${prev.get(x.asin)}` : ""}`)), 8000);
+    });
     const batch = await client.messages.batches.create({ requests: reqs });
     await record("groups", batch.id, JSON.stringify(groups.map((g, i) => [idOf(i), g.key])));
     return `submitted ${groups.length} pick requests (${batch.id})`;
@@ -245,7 +275,7 @@ export async function curate(cycle: string): Promise<string> {
       ranks.set(saveKey, before + picks.length);
     }
     if (keys.size) await admin("DELETE", `deal_picks?group_key=in.${encodeURIComponent(`(${[...keys].map((k) => `"${k}"`).join(",")})`)}`);
-    if (rows.length) await admin("POST", "deal_picks", rows, "return=minimal");
+    if (rows.length) { await admin("POST", "deal_picks", rows, "return=minimal"); await keepHistory(rows); }
     const saved = rows.length;
     const top = await topHundred(cycle);
     if (again.length) {
@@ -274,7 +304,8 @@ export async function curate(cycle: string): Promise<string> {
       if (saveKey === g.key) saved += await savePicks(g.key, cycle, picks, byAsin);
       else {
         const last = (await admin<{ rank: number }[]>("GET", `deal_picks?group_key=eq.${encodeURIComponent(saveKey)}&select=rank&order=rank.desc&limit=1`))[0]?.rank ?? 0;
-        await admin("POST", "deal_picks", pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + last })), "return=minimal");
+        const more = pickRows(saveKey, cycle, picks, byAsin).map((r) => ({ ...r, rank: r.rank + last }));
+        await admin("POST", "deal_picks", more, "return=minimal"); await keepHistory(more);
         saved += picks.length;
       }
     }
