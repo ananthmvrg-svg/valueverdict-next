@@ -78,8 +78,15 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg zip
       - name: Install packages
         run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      # which picks each budget page had in the last ZIP (only changed pages are sent again)
+      - uses: actions/cache/restore@v4
+        with:
+          path: reels/reels-state.json
+          key: reels-state-${{ github.run_id }}
+          restore-keys: reels-state-
       - name: Generate reels and send to Telegram
         env:
+          AUTO_POST: ${{ vars.AUTO_POST || 'false' }} # true = automatic Instagram/YouTube posting (ZIP then has only Top 100 + Amazon Finds)
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # AI hooks and YouTube texts; without it plain lines
@@ -105,6 +112,11 @@ jobs:
           YT_SHORTS_PER_DAY: ${{ github.event.inputs.shorts || '6' }}
           SEASON: ${{ github.event.inputs.season }}
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON youtube.mjs
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('reels/reels-state.json') != ''
+        with:
+          path: reels/reels-state.json
+          key: reels-state-${{ github.run_id }}
       # mark today as done (scheduled runs only), so the 15-minute check doesn't make them again
       - name: Mark today done
         if: always() && github.event_name == 'schedule'
