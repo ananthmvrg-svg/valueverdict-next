@@ -19,10 +19,10 @@ on conflict (subcategory_id) do nothing;
 update amazon_deal_searches set category_id = 'CAT10', min_price = 3000, keywords = 'storage water heater geyser',
        must_include = 'geyser|water heater|!for geyser|!stand|!pipe|!valve|!element|!rod|!thermostat'
  where id = 26;
--- amazon_deal_searches.id has no default (src/lib/research.ts assigns max(id) + 1), so the same here
-insert into amazon_deal_searches (id, category_id, section, keywords, search_index, min_saving_percent, min_price, min_rating, must_include, sort_order, active, source)
-select (select coalesce(max(id), 0) + 1 from amazon_deal_searches), 'CAT10', 'Instant geyser deals', 'instant water heater geyser 3 litre', 'HomeAndKitchen', 15, 2000, 4,
-       'instant|geyser|water heater|!for geyser|!tap|!faucet|!rod|!element', 2, true, 'baseline'
+-- amazon_deal_searches.id is an identity column (generated automatically); sort_order 8 = after search 26 (7)
+insert into amazon_deal_searches (category_id, section, keywords, search_index, min_saving_percent, min_price, min_rating, must_include, sort_order, active, source)
+select 'CAT10', 'Instant geyser deals', 'instant water heater geyser 3 litre', 'HomeAndKitchen', 15, 2000, 4,
+       'instant|geyser|water heater|!for geyser|!tap|!faucet|!rod|!element', 8, true, 'baseline'
  where not exists (select 1 from amazon_deal_searches where section = 'Instant geyser deals');
 
 -- 2. Customer reviews: big appliances only from listings rated 4★ and above (was 3★)
