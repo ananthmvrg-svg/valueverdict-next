@@ -72,10 +72,9 @@ export default function TelegramPopup({ url, festival }: { url: string; festival
     <div className="tg-pop-backdrop" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div className={`tg-pop${festival ? " festive" : ""}`} role="dialog" aria-modal="false" aria-labelledby="tg-pop-title">
         <button type="button" className="tg-pop-x" ref={closeRef} onClick={close} aria-label="Close">✕</button>
+        {/* during Diwali the header shows public/diwali-popup.webp (globals.css .tg-pop.festive), text on its plain left side */}
         <div className="tg-pop-head">
-          {festival
-            ? <span className="tg-pop-diyas" aria-hidden="true">🪔 ✨ 🪔</span>
-            : <span className="tg-pop-icon" aria-hidden="true"><TelegramIcon /></span>}
+          {!festival && <span className="tg-pop-icon" aria-hidden="true"><TelegramIcon /></span>}
           <p className="tg-pop-kicker">{festival ? `Happy ${festival}!` : "Value Verdict on Telegram"}</p>
           <h2 id="tg-pop-title">Never miss a deal</h2>
         </div>

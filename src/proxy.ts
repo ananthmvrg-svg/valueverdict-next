@@ -10,7 +10,7 @@ import { SITE_URL, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
 const OWN = new Set([
   "top-deals", "about", "how-we-pick", "affiliate-disclosure", "contact", "guides",
   "robots.txt", "sitemap.xml", "favicon.png", "hero-logo.jpg", "logo-mark.jpg",
-  "favicon.ico", "icon-48.png", "icon-96.png", "icon-192.png", "apple-touch-icon.png",
+  "favicon.ico", "icon-48.png", "icon-96.png", "icon-192.png", "apple-touch-icon.png", "diwali-popup.webp",
 ]);
 const TTL = 10 * 60e3;
 
