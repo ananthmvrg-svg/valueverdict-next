@@ -98,6 +98,7 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
+.asof{margin:6px 0 20px;font-weight:600;font-size:28px;color:#cbd5e1}
 .kicker{font-weight:800;font-size:44px;letter-spacing:.2em;color:#ffb547}
 h1{font-weight:800;font-size:136px;line-height:1;letter-spacing:-.025em;margin:6px 0 30px}
 h1 em{font-style:normal;background:linear-gradient(90deg,#6cc0ff,#1e90ff);-webkit-background-clip:text;color:transparent}
@@ -389,6 +390,7 @@ export function hookSlide(r) {
     <div class="amzbig" style="font-size:96px">on <u>Amazon</u></div>
     <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
     <div class="pill">${esc(r.subName)}</div>
+    <div class="asof">📅 Our picks for ${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" })} · we re-check every day</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
     ${ctaBar()}
     ${moreLine(r)}
