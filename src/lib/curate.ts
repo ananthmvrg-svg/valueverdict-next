@@ -3,7 +3,7 @@ import { admin, select, selectJson } from "./db";
 import type { Deal } from "./amazon";
 import { isOn } from "./products";
 import { keepSupported, supported } from "./evidence";
-import { serviceOf } from "./brands";
+import { serviceOf, brandTier } from "./brands";
 
 /* AI deal picks, once a day at the 6 AM cycle (called by lib/refresh.ts once a cycle's candidates are all in).
    One request per budget page (top 5) and one for Amazon Finds (50–60 across its sections), sent through
@@ -29,20 +29,25 @@ type Pick = { asin: string; reason: string; score: number; best_for: string; str
 
 const SYSTEM = `You choose the best deals for Value Verdict, an Indian website that helps shoppers pick products by budget.
 Pick products a careful buyer would be glad they bought. A genuine product of the page's type only, never an accessory,
-spare part, cover or unrelated item. Indian buyers of big appliances weigh these, in this order; rank the same way:
-1. after-sales service: prefer "service: nationwide" (a brand with its own service network across India) when the
-   rest is close; "unknown" is not a fault, it only means we have no data;
-2. warranty: longer stated warranty on the key part (compressor for fridges and ACs, motor for washing machines,
-   panel for TVs, tank for geysers) and on the product;
-3. running cost: higher energy star rating and inverter technology for fridges, ACs, washing machines and geysers;
-4. value for money: the right size and the specs that matter for the type (capacity, panel, resolution, frost-free,
-   glass-lined tank, processor, RAM…) for the price, and a meaningful discount.
+spare part, cover or unrelated item. Indian buyers weigh these, in this order; rank the same way:
+1. brand: "brand tier: top" (a brand most Indian buyers already trust for this product type) before "known", and
+   "known" before "other";
+2. after-sales service: "service: nationwide" (the brand's own service network across India) before "unknown";
+   "unknown" is not a fault, it only means we have no data;
+3. specs that matter for the type: longer warranty on the key part (compressor for fridges and ACs, motor for
+   washing machines, panel for TVs, tank for geysers) and on the product; higher energy star rating and inverter
+   (fridges, ACs, washing machines, geysers); then the right size and features (capacity, panel, resolution,
+   frost-free, glass-lined tank, processor, RAM…);
+4. price: the best combination of 1–3 for the money, and a meaningful discount.
+Treat these as a combination, not a strict sort: a higher factor wins unless the gap there is small and a lower
+factor clearly favours the other product (e.g. two top brands: the 5-star, longer-warranty model goes first; a top
+brand doesn't beat a known brand that has clearly better specs at a much lower price).
 Every candidate already has an Amazon customer rating above the page's minimum.
 Prefer variety: never pick two colour, size or storage variants of the same model, and avoid several picks from one brand when good alternatives exist.
 You only see the listing text and the specs read from it, with no ratings, reviews or price history. Use only that data:
 - never claim reliability, durability, build quality, popularity, customer satisfaction or "lowest ever" prices;
 - "amazon rank" is Amazon.in's best-seller rank in that Amazon category today (lower = more buyers right now); you may use it as one signal of buyer demand when ranking, but never mention it or claim that a product is popular or best-selling;
-- never describe a brand's reputation ("established", "well-known", "known brand", "trusted", "track record") and never mention "service" or the service network: use it only to rank; compare products in text on their specs, warranty, price and discount;
+- never describe a brand's reputation ("established", "well-known", "known brand", "trusted", "track record") and never mention "service", the service network or the brand tier: use them only to rank; compare products in text on their specs, warranty, price and discount;
 - Amazon's "was" price is a reference price, not verified price history;
 - write numbers only if they appear in the candidate's data;
 - a spec missing from the data is unknown, not absent.
@@ -86,7 +91,7 @@ const line = (x: Candidate, extra = "") =>
     /* Amazon.in best-seller rank today: a demand signal for ranking only; claims about popularity stay blocked (lib/evidence.ts) */
     `amazon rank: ${x.salesRank ? `#${x.salesRank.rank} in ${x.salesRank.node}` : "none"}`,
     /* our own list of brands with a service network across India (lib/brands.ts): ranking only, never written about */
-    `service: ${serviceOf(x.brand)}`, extra].filter(Boolean).join(" | ");
+    `brand tier: ${brandTier(x.category, x.brand)}`, `service: ${serviceOf(x.brand)}`, extra].filter(Boolean).join(" | ");
 
 const request = (custom_id: string, task: string, lines: string[], maxTokens: number): Anthropic.Messages.BatchCreateParams.Request => ({
   custom_id,
@@ -95,7 +100,7 @@ const request = (custom_id: string, task: string, lines: string[], maxTokens: nu
     max_tokens: maxTokens,
     system: SYSTEM,
     output_config: { format: { type: "json_schema", schema: SCHEMA } },
-    messages: [{ role: "user", content: `${task}\n\nCandidates (ASIN | brand | title | price | deal | features | specs | amazon rank | section):\n${lines.join("\n")}` }],
+    messages: [{ role: "user", content: `${task}\n\nCandidates (ASIN | brand | title | price | deal | features | specs | amazon rank | brand tier | service | section):\n${lines.join("\n")}` }],
   },
 });
 
@@ -181,8 +186,11 @@ function picksFrom(message: Anthropic.Messages.Message, byAsin: Map<string, Cand
 
 /* yesterday's picks per budget page, so the AI keeps them unless something is clearly better (stable pages,
    reels and ads that still match the site next day). Amazon Finds and the Top 100 change daily on purpose. */
+/* the ranking rules changed on 3 Nov 2026 (brand first): that day's picks are ranked fresh, steady from the next day */
+const FRESH_CYCLES = new Set(["2026-11-03"]);
 async function previousPicks(): Promise<Map<string, Map<string, number>>> {
   const out = new Map<string, Map<string, number>>();
+  if (FRESH_CYCLES.has(new Date(Date.now() + 5.5 * 36e5).toISOString().slice(0, 10))) return out;
   try {
     const rows = await admin<{ group_key: string; asin: string; rank: number }[]>("GET", "deal_picks?select=group_key,asin,rank&group_key=like.*%2F*&limit=3000");
     for (const r of rows) (out.get(r.group_key) ?? out.set(r.group_key, new Map()).get(r.group_key)!).set(r.asin, r.rank);
