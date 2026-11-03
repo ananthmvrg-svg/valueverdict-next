@@ -5,7 +5,7 @@ import { cacheLife } from "next/cache";
 import { getCatalog } from "@/lib/catalog";
 import { SHOW_CATALOG, SITE_URL, SOCIAL } from "@/lib/config";
 import { festival } from "@/lib/festival";
-import { JoinBar, SocialLinks, TelegramButton } from "@/components/Social";
+import { HeaderSocial, JoinBar, SocialLinks } from "@/components/Social";
 import TelegramPopup from "@/components/TelegramPopup";
 import Nav from "@/components/Nav";
 import Tracking from "@/components/Tracking";
@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <span>Value <b>Verdict</b></span>
             </Link>
             <Nav cats={cats.map((c) => ({ name: c.name, slug: c.slug }))} />
-            <TelegramButton />
+            <HeaderSocial />
           </div>
         </header>
         <main>{children}</main>

@@ -21,8 +21,8 @@ export const STORES = SHOW_FLIPKART ? "Amazon or Flipkart" : "Amazon";
 /* Our social channels (the join bar, header button, popup and footer); an empty one is simply not shown. */
 export const SOCIAL = {
   telegram: "https://t.me/valueverdict",
-  instagram: "",
-  youtube: "",
+  instagram: "https://www.instagram.com/valueverdictstore/",
+  youtube: "https://www.youtube.com/@valueverdictin?sub_confirmation=1", // opens YouTube's "Subscribe" prompt
   x: "",
 };
 
