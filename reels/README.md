@@ -18,8 +18,12 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
   No tracks: silent videos.
 - Every slide also says where the rest are: "Didn't find what you want? Every budget & brand on our website: link in bio"
   (YouTube: "at valueverdict.in"), since a reel shows only the top picks.
-- **Telegram ZIP = only the reels you post yourself** with a trending sound (variable `MANUAL_REELS`, default
-  `top-100,amazon-finds`; they're made silent). All reels, for the automatic posting, are in the run's `reels-kit` artifact.
+- **Telegram ZIP** (repository variable `AUTO_POST`, default off):
+  - off (everything posted by hand): Top 10 Deals + Top 10 Amazon Finds (silent, add a trending sound) **plus every
+    budget page whose picks or their order changed since the last ZIP** (all of them the first time; 🔄 in the list).
+    Unchanged pages are left out, so the same reel is never posted twice.
+  - `AUTO_POST=true`: only `MANUAL_REELS` (default `top-100,amazon-finds`); the rest are for automatic posting.
+  All reels are always in the run's `reels-kit` artifact.
 - Telegram gets one message with that ZIP (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
 
 AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
