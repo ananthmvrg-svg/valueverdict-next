@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { getCatalog } from "@/lib/catalog";
-import { SHOW_CATALOG, SITE_URL, SOCIAL } from "@/lib/config";
+import { SHOW_CATALOG, SITE_URL } from "@/lib/config";
 import { festival } from "@/lib/festival";
 import { HeaderSocial, JoinBar, SocialLinks } from "@/components/Social";
 import TelegramPopup from "@/components/TelegramPopup";
@@ -125,7 +125,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </footer>
         <CompareBar />
-        {SOCIAL.telegram && <TelegramPopup url={SOCIAL.telegram} festival={fest} />}
+        <TelegramPopup festival={fest} />
         <Tracking />
         <LegacyHashRedirect />
       </body>

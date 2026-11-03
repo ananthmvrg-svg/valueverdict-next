@@ -31,7 +31,7 @@ export function YouTubeIcon({ className }: { className?: string }) {
   );
 }
 
-const LINKS: { key: keyof typeof SOCIAL; label: string; event: string; icon?: (p: { className?: string }) => React.ReactElement }[] = [
+export const LINKS: { key: keyof typeof SOCIAL; label: string; event: string; icon?: (p: { className?: string }) => React.ReactElement }[] = [
   { key: "telegram", label: "Join on Telegram", event: "telegram_join_click", icon: TelegramIcon },
   { key: "instagram", label: "Follow on Instagram", event: "instagram_follow_click", icon: InstagramIcon },
   { key: "youtube", label: "Subscribe on YouTube", event: "youtube_subscribe_click", icon: YouTubeIcon },

@@ -505,23 +505,17 @@ body:has(.cmp-bar){padding-bottom:96px}
 .tg-pop-x{position:absolute;top:10px;right:10px;z-index:1;width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.25);color:#fff;font-size:15px;cursor:pointer}
 .tg-pop-x:hover,.tg-pop-x:focus-visible{background:rgba(255,255,255,.4);outline:2px solid #fff}
 .tg-pop-head{padding:20px 20px 14px;color:#fff;background:linear-gradient(135deg,#229ed9,#1e3a8a)}
-.tg-pop-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2)}
-.tg-pop-icon svg{width:24px;height:24px}
 .tg-pop-kicker{margin:10px 0 2px;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
 .tg-pop h2{margin:0;font-size:22px;letter-spacing:-.02em;color:#fff}
 .tg-pop-text{margin:14px 20px 8px;color:#334155;font-size:14.5px}
 .tg-pop-points{margin:0 20px 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:#475569}
 .tg-pop-points li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:8px}
-.tg-pop-join{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 20px;padding:12px;border-radius:12px;background:#229ed9;color:#fff;font-weight:800;text-decoration:none}
-.tg-pop-join:hover{background:#1b8bc0}
-.tg-pop-more{margin:12px 20px 0;text-align:center}
-.tg-pop-more span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
-.tg-pop-more div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tg-pop-more a{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:12px;border:1.5px solid;font-size:13.5px;font-weight:800;text-decoration:none;background:#fff;transition:background .15s,color .15s}
-.tg-pop-more a.ig{color:#c13584;border-color:#e8a5c8}
-.tg-pop-more a.ig:hover{background:linear-gradient(45deg,#fd5949,#d6249f 55%,#285aeb);border-color:#d6249f;color:#fff}
-.tg-pop-more a.yt{color:#e00;border-color:#f5a3a3}
-.tg-pop-more a.yt:hover{background:#ff0000;border-color:#ff0000;color:#fff}
+.tg-pop-channels{display:flex;flex-direction:column;gap:8px;margin:0 20px}
+.tg-pop-channels a{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:12px;color:#fff;font-weight:800;font-size:14.5px;text-decoration:none;transition:filter .15s,transform .15s}
+.tg-pop-channels a:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.tg-pop-channels .ch-telegram{background:#229ed9}
+.tg-pop-channels .ch-instagram{background:linear-gradient(45deg,#f58529,#dd2a7b 50%,#8134af 80%,#515bd4)}
+.tg-pop-channels .ch-youtube{background:#ff0000}
 .tg-pop-later{display:block;margin:6px auto 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
 @keyframes tg-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 @keyframes tg-fade{from{opacity:0}to{opacity:1}}
@@ -548,6 +542,4 @@ body:has(.cmp-bar){padding-bottom:96px}
 .tg-pop.festive .tg-pop-kicker{margin-top:0}
 .tg-pop.festive .tg-pop-kicker,.tg-pop.festive .tg-pop-head h2{text-shadow:0 1px 8px rgba(70,15,0,.55)}
 .tg-pop.festive .tg-pop-x{background:rgba(60,15,0,.35)}
-.tg-pop.festive .tg-pop-join{background:linear-gradient(90deg,#c2410c,#b45309)}
-.tg-pop.festive .tg-pop-join:hover{background:linear-gradient(90deg,#9a3412,#92400e)}
 @media (prefers-reduced-motion:reduce){.festive-diwali header.top::after,.diya-flame,.tg-pop,.tg-pop-backdrop{animation:none}}
