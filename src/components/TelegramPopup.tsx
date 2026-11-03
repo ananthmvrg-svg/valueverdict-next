@@ -65,7 +65,7 @@ export default function TelegramPopup({ url, festival }: { url: string; festival
   });
 
   function close() { setOpen(false); remember("closed"); setCloses((n) => n + 1); track("telegram_popup_close", {}); }
-  function join() { setOpen(false); remember("joined"); track("social_click", { where: "popup", which: "telegram" }); }
+  function join() { setOpen(false); remember("joined"); track("telegram_join_click", { where: "popup", which: "telegram" }); }
 
   if (!open) return null;
   return (

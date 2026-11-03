@@ -1,7 +1,8 @@
 import { SOCIAL } from "@/lib/config";
 
 /* Our social channels: the join bar above the header, the header button and the footer links.
-   Links carry data-track, so components/Tracking.tsx counts the clicks ("social_click", with where and which). */
+   Links carry data-track, so components/Tracking.tsx counts the clicks in GA4: Telegram joins as "telegram_join_click",
+   other channels as "social_click", each with where (bar, header, popup, footer) and which. */
 
 export function TelegramIcon({ className }: { className?: string }) {
   return (
@@ -19,7 +20,7 @@ const LINKS: { key: keyof typeof SOCIAL; label: string }[] = [
 export function JoinBar({ festival }: { festival: string | null }) {
   if (!SOCIAL.telegram) return null;
   return (
-    <a className="join-bar" href={SOCIAL.telegram} target="_blank" rel="noopener" data-track="social_click" data-where="bar" data-which="telegram">
+    <a className="join-bar" href={SOCIAL.telegram} target="_blank" rel="noopener" data-track="telegram_join_click" data-where="bar" data-which="telegram">
       {festival
         ? <><span aria-hidden="true">🪔</span> Happy {festival}! Festive deals every day. <b>Join our Telegram</b> <span aria-hidden="true">→</span></>
         : <><span aria-hidden="true">📢</span> Never miss a deal. <b>Join our Telegram</b> <span aria-hidden="true">→</span></>}
@@ -31,7 +32,7 @@ export function JoinBar({ festival }: { festival: string | null }) {
 export function TelegramButton() {
   if (!SOCIAL.telegram) return null;
   return (
-    <a className="tg-btn" href={SOCIAL.telegram} target="_blank" rel="noopener" data-track="social_click" data-where="header" data-which="telegram" aria-label="Join our Telegram channel">
+    <a className="tg-btn" href={SOCIAL.telegram} target="_blank" rel="noopener" data-track="telegram_join_click" data-where="header" data-which="telegram" aria-label="Join our Telegram channel">
       <TelegramIcon /><span>Join Telegram</span>
     </a>
   );
@@ -46,7 +47,7 @@ export function SocialLinks() {
       <span className="social-title">Follow us for daily deals</span>
       <div>
         {set.map((l) => (
-          <a key={l.key} href={SOCIAL[l.key]} target="_blank" rel="noopener" data-track="social_click" data-where="footer" data-which={l.key}>
+          <a key={l.key} href={SOCIAL[l.key]} target="_blank" rel="noopener" data-track={l.key === "telegram" ? "telegram_join_click" : "social_click"} data-where="footer" data-which={l.key}>
             {l.key === "telegram" && <TelegramIcon />}{l.label}
           </a>
         ))}
