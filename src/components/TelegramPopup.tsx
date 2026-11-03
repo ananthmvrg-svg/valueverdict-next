@@ -6,7 +6,8 @@
    (India date; the count starts again the next day). Kept in this browser only (localStorage); events go to GA4. */
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/track";
-import { TelegramIcon } from "./Social";
+import { SOCIAL } from "@/lib/config";
+import { InstagramIcon, TelegramIcon, YouTubeIcon } from "./Social";
 
 const KEY = "vv-telegram-popup", DAY_KEY = "vv-telegram-popup-day";
 const DELAY_MS = 5_000, SCROLL_SHARE = 0.33, AGAIN_AFTER_MS = 30_000, PER_DAY = 3;
@@ -85,6 +86,24 @@ export default function TelegramPopup({ url, festival }: { url: string; festival
           <li>Free, and you can leave anytime</li>
         </ul>
         <a className="tg-pop-join" href={url} target="_blank" rel="noopener" onClick={join}><TelegramIcon /> Join our Telegram channel</a>
+        {/* our other channels; their clicks are counted by components/Tracking.tsx (data-track), where = popup */}
+        {(SOCIAL.instagram || SOCIAL.youtube) && (
+          <div className="tg-pop-more">
+            <span>Also follow us on</span>
+            <div>
+              {SOCIAL.instagram && (
+                <a className="ig" href={SOCIAL.instagram} target="_blank" rel="noopener" data-track="instagram_follow_click" data-where="popup" data-which="instagram">
+                  <InstagramIcon /> Instagram
+                </a>
+              )}
+              {SOCIAL.youtube && (
+                <a className="yt" href={SOCIAL.youtube} target="_blank" rel="noopener" data-track="youtube_subscribe_click" data-where="popup" data-which="youtube">
+                  <YouTubeIcon /> YouTube
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         <button type="button" className="tg-pop-later" onClick={close}>Maybe later</button>
       </div>
     </div>

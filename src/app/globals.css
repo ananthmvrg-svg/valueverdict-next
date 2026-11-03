@@ -514,6 +514,14 @@ body:has(.cmp-bar){padding-bottom:96px}
 .tg-pop-points li::before{content:"✓";color:#16a34a;font-weight:800;margin-right:8px}
 .tg-pop-join{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 20px;padding:12px;border-radius:12px;background:#229ed9;color:#fff;font-weight:800;text-decoration:none}
 .tg-pop-join:hover{background:#1b8bc0}
+.tg-pop-more{margin:12px 20px 0;text-align:center}
+.tg-pop-more span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.tg-pop-more div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tg-pop-more a{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:12px;border:1.5px solid;font-size:13.5px;font-weight:800;text-decoration:none;background:#fff;transition:background .15s,color .15s}
+.tg-pop-more a.ig{color:#c13584;border-color:#e8a5c8}
+.tg-pop-more a.ig:hover{background:linear-gradient(45deg,#fd5949,#d6249f 55%,#285aeb);border-color:#d6249f;color:#fff}
+.tg-pop-more a.yt{color:#e00;border-color:#f5a3a3}
+.tg-pop-more a.yt:hover{background:#ff0000;border-color:#ff0000;color:#fff}
 .tg-pop-later{display:block;margin:6px auto 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
 @keyframes tg-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 @keyframes tg-fade{from{opacity:0}to{opacity:1}}
