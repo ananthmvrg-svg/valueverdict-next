@@ -51,7 +51,8 @@ function Table({ list, onClose }: { list: CompareItem[]; onClose: () => void }) 
               {list.some((x) => x.bestFor) && <tr><th scope="row">Best for</th>{list.map((x) => <td key={x.asin}>{x.bestFor || <span className="cmp-na">—</span>}</td>)}</tr>}
               {list.some((x) => x.strengths?.length) && <tr><th scope="row">Strengths</th>{list.map((x) => <td key={x.asin}>{x.strengths?.length ? <ul>{x.strengths.map((s) => <li key={s}>{s}</li>)}</ul> : <span className="cmp-na">—</span>}</td>)}</tr>}
               {list.some((x) => x.limitations?.length) && <tr><th scope="row">Limitations</th>{list.map((x) => <td key={x.asin}>{x.limitations?.length ? <ul>{x.limitations.map((s) => <li key={s}>{s}</li>)}</ul> : <span className="cmp-na">—</span>}</td>)}</tr>}
-              <tr><th scope="row" />{list.map((x) => <td key={x.asin}>{safeUrl(x.url) && <a className="btn amz" href={x.url} target="_blank" rel="nofollow sponsored noopener">View on Amazon</a>}</td>)}</tr>
+              <tr><th scope="row" />{list.map((x) => <td key={x.asin}>{safeUrl(x.url) && <a className="btn amz" href={x.url} target="_blank" rel="nofollow sponsored noopener"
+                data-asin={x.asin} data-category={x.category ?? ""} data-price={x.price ?? ""} data-product={x.title.slice(0, 100)} data-where="compare">View on Amazon</a>}</td>)}</tr>
             </tbody>
           </table>
         </div>

@@ -108,7 +108,9 @@ export function DealCard({ x, now, category = "", rank, reason, bestFor, strengt
           </div>
         )}
         <div className="btns">
-          <a className="btn amz" href={url} target="_blank" rel="nofollow sponsored noopener">View deal on Amazon</a>
+          {/* data-* = what the GA4 "store_click" event records (components/Tracking.tsx) */}
+          <a className="btn amz" href={url} target="_blank" rel="nofollow sponsored noopener"
+            data-asin={x.asin} data-category={category} data-price={x.price ?? ""} data-rank={rank ?? ""} data-product={x.title.slice(0, 100)} data-where="card">View deal on Amazon</a>
           <button type="button" className={`btn cmp-toggle${chosen ? " on" : ""}`} onClick={toggle} aria-pressed={chosen}>{chosen ? "✓ Added to compare" : "+ Compare"}</button>
         </div>
       </div>

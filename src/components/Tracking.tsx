@@ -28,8 +28,13 @@ export default function Tracking() {
       const a = (e.target as Element).closest?.<HTMLAnchorElement>("a.btn.amz, a.btn.fk");
       if (!a) return;
       const store = a.classList.contains("amz") ? "Amazon" : "Flipkart";
-      const product = a.closest(".card")?.querySelector("h4")?.textContent?.trim() || "";
-      if (TRACK.ga4) window.gtag?.("event", "store_click", { store, product, link_url: a.href, transport_type: "beacon" });
+      /* the button's data-* (deal cards, compare table): product, ASIN, category, price, rank on its list, where clicked */
+      const d = a.dataset;
+      const product = d.product || a.closest(".card")?.querySelector("h4")?.textContent?.trim() || "";
+      if (TRACK.ga4) window.gtag?.("event", "store_click", {
+        store, product, item_id: d.asin || "", item_category: d.category || "", price: d.price ? Number(d.price) : undefined,
+        rank: d.rank ? Number(d.rank) : undefined, where: d.where || "card", link_url: a.href, transport_type: "beacon",
+      });
       if (TRACK.meta) window.fbq?.("trackCustom", "StoreClick", { store, product });
     };
     document.addEventListener("click", onClick, true);
