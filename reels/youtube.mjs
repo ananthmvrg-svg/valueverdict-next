@@ -322,11 +322,22 @@ export async function seoFor(r) {
     meta.vidiq = plan.keywords.slice(0, 8);
   }
   meta.description = withCategories(meta.description);
+  meta.comment = pinnedComment(r);
   return { query: q, autocomplete: suggest, ...meta };
+}
+
+/* the comment to post and pin under the Short: links in comments are clickable (not in a Short's description),
+   and a question gets replies, which helps the Short get shown */
+function pinnedComment(r) {
+  const n = r.items.length, url = `${r.url}${r.url.includes("?") ? "&" : "?"}utm_source=youtube&utm_medium=comment`;
+  const ask = n > 1 ? `Which one would you pick? Comment ${n > 5 ? "the number" : `1 to ${n}`} 👇` : "Would you buy this one? Tell us 👇";
+  return [ask, "", `🔗 Full list with pros, cons & today's price: ${url}`, "📢 50+ deals a day on Telegram: https://t.me/valueverdict",
+    "🔔 Subscribe for a new best-value pick every day!"].join("\n");
 }
 /* the same, as a text file to copy from on the phone */
 export function seoText(m) {
-  return [`TITLE`, m.title, "", `DESCRIPTION`, m.description, "", `TAGS (YouTube Studio → Show more → Tags)`, m.tags.join(", "), "",
+  return [`TITLE`, m.title, "", `DESCRIPTION`, m.description, "",
+    ...(m.comment ? [`PINNED COMMENT (post it under the Short, then ⋮ → Pin)`, m.comment, ""] : []), `TAGS (YouTube Studio → Show more → Tags)`, m.tags.join(", "), "",
     `HASHTAGS`, m.hashtags.join(" "), "",
     ...(m.vidiq?.length ? [`vidIQ keywords used (score · monthly searches · competition):`, ...m.vidiq.map((x) => `  ${x.k}: ${x.score} · ${x.searches.toLocaleString("en-IN")} · ${x.competition}`), ""] : []),
     `(main search phrase: "${m.query}"; YouTube autocomplete: ${m.autocomplete.join(" · ") || "-"})`, ""].join("\n");

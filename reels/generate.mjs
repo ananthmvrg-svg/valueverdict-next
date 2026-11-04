@@ -185,6 +185,8 @@ function caption(r) {
   return [
     "CAPTION (paste as it is)", text, "",
     "ALT TEXT for the single-image post (Advanced settings → Accessibility → Write alt text)", r.copy.alt_text, "",
+    "FIRST COMMENT (post it right after the reel goes live, then pin it)",
+    `${r.items.length > 1 ? `Which one would you pick? Comment 1 to ${Math.min(r.items.length, 10)} 👇` : "Would you buy this one? Tell us 👇"}\n🔗 Full list with today's prices: link in bio\n📢 Daily deals on Telegram: t.me/valueverdict`, "",
     `(Instagram search phrase: "${mainQuery(r)}"; it's in the caption's first line and on the first slide)`,
   ].join("\n");
 }
