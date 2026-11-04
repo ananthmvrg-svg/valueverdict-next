@@ -18,7 +18,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { seasonFor } from "./copy.mjs";
+import { seasonFor, themeFor } from "./copy.mjs";
 import { mainQuery, ONE } from "./shared.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +27,8 @@ const PER_DAY = Math.max(1, parseInt(process.env.YT_SHORTS_PER_DAY || "6", 10) |
 const MODEL = process.env.REELS_MODEL || "claude-haiku-5-5";
 /* the run being worked on: out/latest.json when run on its own, or handed over by generate.mjs */
 let manifest = null, season = "";
+/* the last YouTube research failure (e.g. an expired login), so generate.mjs can warn on Telegram */
+export let researchError = "";
 export function useRun(run) { manifest = run; season = seasonFor(run.date); }
 
 /* ---------- which reels ---------- */
@@ -76,7 +78,7 @@ async function topShorts(q) {
     const v = await yt("videos", { part: "snippet,statistics", id: ids.join(",") });
     return (v.items || []).map((x) => ({ title: x.snippet.title, tags: (x.snippet.tags || []).slice(0, 20), views: Number(x.statistics?.viewCount || 0),
       hashtags: hashtagsIn(`${x.snippet.title}\n${x.snippet.description || ""}`) }));
-  } catch (e) { console.warn(`  top Shorts skipped (${e.message})`); return []; }
+  } catch (e) { console.warn(`  top Shorts skipped (${e.message})`); researchError = e.message; return []; }
 }
 
 /* hashtags as they're written in a text, e.g. "#AmazonFinds" */
@@ -97,25 +99,47 @@ function tagPool(r, q, suggest, top) {
   const norm = (t) => String(t).toLowerCase().replace(/[^\p{L}\p{N} ]+/gu, " ").replace(/\s+/g, " ").trim();
   const seen = new Map();
   const add = (t, why) => { const k = norm(t); if (k && k.length <= 60 && !seen.has(k)) seen.set(k, why); };
-  add(q, "main query"); suggest.forEach((t) => add(t, "autocomplete"));
+  add(q, "main query"); suggest.filter((t) => !OFF_TAG.test(t)).forEach((t) => add(t, "autocomplete"));
   const tc = new Map();
   for (const v of top) for (const t of new Set(v.tags.map(norm))) tc.set(t, (tc.get(t) || 0) + 1);
-  [...tc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40).forEach(([t, n]) => add(t, `used by ${n} top Shorts`));
+  [...tc.entries()].filter(([t]) => !OFF_TAG.test(t)).sort((a, b) => b[1] - a[1]).slice(0, 40).forEach(([t, n]) => add(t, `used by ${n} top Shorts`));
+  const one = ONE[r.catSlug] || r.catName.toLowerCase();
+  if (!["top-100", "amazon-finds"].includes(r.catSlug)) for (const t of [`best ${one} in india`, `which ${one} to buy`, `${one} buying guide`, `best ${one} ${new Date().getFullYear()}`]) add(t, "evergreen search");
   for (const b of new Set(r.items.map((p) => p.brand).filter(Boolean))) { add(`${b} ${ONE[r.catSlug] || ""}`, "our brand"); add(b, "our brand"); }
   add("value verdict", "our channel");
   return { seen, norm };
 }
+
+/* Hashtags that always fit each page: long-running tags with lots of Shorts behind them (the first three show above
+   the title, so the strongest go first). Hashtags the top Shorts for the search really use are added to the choice. */
+const CAT_HASHTAGS = {
+  refrigerators: ["#BestFridge", "#Refrigerator", "#Fridge", "#DoubleDoorFridge"],
+  "washing-machines": ["#BestWashingMachine", "#WashingMachine", "#FrontLoad", "#TopLoad"],
+  tvs: ["#BestSmartTV", "#SmartTV", "#4KTV", "#LEDTV"],
+  "air-conditioners": ["#BestAC", "#InverterAC", "#SplitAC", "#AC"],
+  laptops: ["#BestLaptop", "#Laptop", "#LaptopForStudents", "#LaptopDeals"],
+  "soundbars-speakers": ["#BestSoundbar", "#Soundbar", "#HomeTheatre", "#Speaker"],
+  "home-appliances": ["#HomeAppliances", "#KitchenAppliances", "#SmartHome", "#HomeGadgets"],
+  geysers: ["#BestGeyser", "#Geyser", "#WaterHeater", "#InstantGeyser"],
+  "fridge-accessories": ["#Stabilizer", "#VoltageStabilizer", "#HomeAppliances"],
+  "top-100": ["#AmazonDeals", "#DealsOfTheDay", "#AmazonSale", "#OnlineShopping"],
+  "amazon-finds": ["#AmazonFinds", "#AmazonFindsIndia", "#Gadgets", "#UsefulGadgets"],
+};
+const SEASON_HASHTAG = { diwali: "#DiwaliSale" };
+/* search phrases that would bring the wrong viewers: another language's videos, or an old year */
+const OLD_YEARS = Array.from({ length: new Date().getFullYear() - 2015 }, (_, i) => 2015 + i).join("|");
+const OFF_TAG = new RegExp(`\\b(tamil|telugu|hindi|kannada|malayalam|marathi|bengali|gujarati|punjabi|urdu)\\b|\\b(${OLD_YEARS})\\b`, "i");
 
 /* ---------- writing ---------- */
 const SCHEMA = {
   type: "object",
   properties: {
     title: { type: "string", description: "max 90 chars, main search phrase first, ends with #Shorts" },
-    description: { type: "string", description: "Shorts description, see rules" },
+    intro: { type: "string", description: "two short lines for the top of the description, see rules" },
     tags: { type: "array", items: { type: "string" }, description: "10-15 search phrases people type, no # signs" },
     hashtags: { type: "array", items: { type: "string" }, description: "3-5 hashtags without spaces, starting with #" },
   },
-  required: ["title", "description", "tags", "hashtags"],
+  required: ["title", "intro", "tags", "hashtags"],
   additionalProperties: false,
 };
 const SYSTEM = `You write YouTube Shorts metadata for Value Verdict, an Indian buying-guide channel that compares Amazon.in products by budget.
@@ -123,28 +147,55 @@ Goal: be found in YouTube search and make Indian shoppers tap and watch. Use the
 top Shorts you are given to choose keywords; prefer phrases people actually type ("best fridge under 30000").
 Title: main search phrase first, then a hook (season, "Top 5", who it suits), and always the word "Amazon" (e.g. "on Amazon",
 "Amazon deals"); max 90 characters; end with " #Shorts".
-Description: first two lines repeat the main search phrases naturally; then the picks as a numbered list (brand + model,
-one short "best for"); then "Full comparison, pros, cons and today's price: <url>" (plain text, links aren't clickable on
-Shorts); then "Subscribe to Value Verdict for daily best-value picks."; then "As an Amazon Associate we earn from qualifying
-purchases."; then the hashtags on the last line. No prices or discounts (they change), no claims you weren't given,
-no unrelated trending words.
+Intro: the first two lines of the description (the rest, with the picks and links, is added for you). Line 1 uses the
+main search phrase naturally, line 2 a second popular phrase and who the picks suit. No hashtags, no prices or
+discounts (they change), no claims you weren't given, no unrelated trending words.
 Tags: 10-15 phrases chosen ONLY from the "allowed tags" list (copy them exactly), most searched first; total under 450 characters.
-Hashtags: 3-5, always #Shorts first, then ONLY hashtags from the "hashtags real top Shorts use" list (copy the spelling exactly),
-most relevant to this page first; #ValueVerdict may be added last. Never invent a hashtag.`;
+Hashtags: the 3 most relevant from the "allowed hashtags" list (copy them exactly), strongest first. Never invent one.`;
 
-function fallback(r, q, top = []) {
+/* hashtags to choose from: the page's own, the season's, and those the top Shorts for this search really use */
+function allowedHashtags(r, top) {
+  const own = CAT_HASHTAGS[r.catSlug] || ["#HomeAppliances"], seasonal = SEASON_HASHTAG[themeFor(manifest.date)];
+  const real = realHashtags(top).filter((h) => h.used >= 2).map((h) => h.tag);
+  const seen = new Set(), out = [];
+  for (const h of [...own, ...(seasonal ? [seasonal] : []), ...real, "#AmazonIndia"]) if (!seen.has(h.toLowerCase())) { seen.add(h.toLowerCase()); out.push(h); }
+  return out;
+}
+/* final hashtag line: three strong ones (shown above the title), then #Shorts and ours */
+function hashtagLine(chosen, allowed, seasonal) {
+  const ok = new Map(allowed.map((h) => [h.toLowerCase(), h]));
+  const pick = [...new Set([...chosen.map((h) => ok.get(String(h).trim().toLowerCase())).filter(Boolean), ...allowed])].slice(0, 3);
+  /* during a festival its hashtag is always one of the three shown above the title */
+  if (seasonal && !pick.includes(seasonal)) pick[2] = seasonal;
+  return [...pick, "#Shorts", "#ValueVerdict"];
+}
+
+/* the description, laid out the same way every time: intro, numbered picks, links, disclosure, categories, hashtags */
+const NUM = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+function compose(r, intro, hashtags) {
+  const month = new Date(manifest.date).toLocaleString("en-IN", { month: "long", year: "numeric" });
+  const head = r.coverLine || `Top ${r.items.length} ${r.catName} ${r.subName.replace(/^Under/, "under").replace(/^Above/, "above")}`;
+  const picks = r.items.map((p, i) => `${NUM[i]} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n      👍 Best for: ${p.bestFor}` : ""}`);
+  return [intro.trim(), "", `🏆 ${head} (${month}):`, "", ...picks, "",
+    "🔗 Full comparison, pros & cons and today's price:", r.url.replace(/^https?:\/\//, ""), "",
+    "🔔 Subscribe to Value Verdict for daily best-value picks.", "Affiliate links: as an Amazon Associate we earn from qualifying purchases.", "",
+    hashtags.join(" ")].join("\n");
+}
+
+const seasonTag = () => SEASON_HASHTAG[themeFor(manifest.date)];
+function fallback(r, q, top = [], suggest = []) {
   const head = q.replace(/\b\w/g, (c) => c.toUpperCase());
   const title = `${head}${/amazon/i.test(q) ? "" : " on Amazon"} ${manifest.date.slice(0, 4)} 🔥 Top ${r.items.length} #Shorts`.slice(0, 100);
-  const list = r.items.map((p, i) => `${i + 1}. ${p.brand} ${p.name}${p.bestFor ? ` (${p.bestFor})` : ""}`).join("\n");
-  const tags = [q, `${q} ${manifest.date.slice(0, 4)}`, ...new Set(r.items.map((p) => p.brand).filter(Boolean)), "amazon deals", "value verdict"];
-  const hashtags = ["#Shorts", ...realHashtags(top).slice(0, 3).map((h) => h.tag), "#ValueVerdict"];
-  const description = `${q} - our top picks on Amazon.in.\n\n${list}\n\nFull comparison, pros, cons and today's price: ${r.url.replace(/^https?:\/\//, "")}\nSubscribe to Value Verdict for daily best-value picks.\nAs an Amazon Associate we earn from qualifying purchases.\n\n${hashtags.join(" ")}`;
-  return { title, description, tags, hashtags };
+  const tags = []; let len = 0;
+  for (const t of tagPool(r, q, suggest, top).seen.keys()) { if (tags.length >= 15 || len + t.length + 1 > 480) break; tags.push(t); len += t.length + 1; }
+  const hashtags = hashtagLine([], allowedHashtags(r, top), seasonTag());
+  const intro = `${head}: our top picks on Amazon.in, compared on brand, service, specs and price.`;
+  return { title, description: compose(r, intro, hashtags), tags, hashtags };
 }
 
 async function write(r, q, suggest, top) {
-  const base = fallback(r, q, top);
-  const real = realHashtags(top), { seen: pool, norm } = tagPool(r, q, suggest, top);
+  const base = fallback(r, q, top, suggest);
+  const allowed = allowedHashtags(r, top), { seen: pool, norm } = tagPool(r, q, suggest, top);
   if (!process.env.ANTHROPIC_API_KEY) return base;
   const facts = [
     `Page: ${r.coverLine || `${r.catName} · ${r.subName}`} | website: ${r.url}`,
@@ -155,7 +206,7 @@ async function write(r, q, suggest, top) {
     `YouTube autocomplete for it: ${suggest.join("; ") || "none"}`,
     `Most viewed Shorts for it in the last 30 days: ${top.sort((a, b) => b.views - a.views).slice(0, 8).map((v) => `"${v.title}" (${v.views} views)`).join(" | ") || "none"}`,
     `Allowed tags (phrase: why): ${[...pool.entries()].map(([t, w]) => `${t}: ${w}`).join("; ")}`,
-    `Hashtags real top Shorts use (hashtag: how many of the top Shorts use it): ${real.slice(0, 25).map((h) => `${h.tag}: ${h.used}`).join(", ") || "none found"}`,
+    `Allowed hashtags: ${allowed.join(" ")}`,
   ].join("\n");
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -172,17 +223,13 @@ async function write(r, q, suggest, top) {
     const tags = []; let len = 0;
     /* only tags from the pool (searched or used by top Shorts), only hashtags real Shorts use */
     for (const t of (o.tags || []).map((x) => String(x).replace(/[<>,#]/g, "").trim()).filter((x) => pool.has(norm(x)))) { if (len + t.length + 1 > 480) break; tags.push(t); len += t.length + 1; }
-    const okTag = new Map(real.map((h) => [h.tag.toLowerCase(), h.tag]));
-    const hashtags = ["#Shorts", ...(o.hashtags || []).map((h) => okTag.get(String(h).trim().toLowerCase())).filter(Boolean)];
-    if (hashtags.length < 3) hashtags.push(...real.map((h) => h.tag).filter((h) => !hashtags.includes(h)).slice(0, 3 - hashtags.length));
-    if (!hashtags.includes("#ValueVerdict") && hashtags.length < 5) hashtags.push("#ValueVerdict");
-    const fixTags = (d) => d.replace(/(^|\s)#([\p{L}\p{N}_]+)/gu, (m, sp, h) => (/^shorts$/i.test(h) || /^valueverdict$/i.test(h) || okTag.has("#" + h.toLowerCase()) ? `${sp}${okTag.get("#" + h.toLowerCase()) || "#" + h}` : sp)).trimEnd();
+    const hashtags = hashtagLine(o.hashtags || [], allowed, seasonTag());
+    /* no stray hashtags in the title except #Shorts */
+    const clean = (t) => t.replace(/(^|\s)#(?!shorts\b)[\p{L}\p{N}_]+/giu, "$1").replace(/\s{2,}/g, " ").trim();
     const t2 = /amazon/i.test(title) ? title : `${title.replace(/\s*#shorts\s*$/i, "").slice(0, 78)} on Amazon`;
-    const uniq = [...new Set(hashtags)].slice(0, 5);
-    /* the description's own hashtags: made-up ones dropped, and the last line is exactly our checked set */
-    const desc = fixTags(String(o.description || base.description).replace(/[<>]/g, "")).split("\n").filter((l, i, a) => !(i === a.length - 1 && /^\s*#/.test(l))).join("\n").trimEnd();
-    return { title: fixTags(/#shorts/i.test(t2) ? t2 : `${t2.slice(0, 91)} #Shorts`), description: `${desc}\n\n${uniq.join(" ")}`.slice(0, 4900),
-      tags: tags.length ? tags : base.tags, hashtags: uniq };
+    const intro = String(o.intro || "").replace(/[<>]/g, "").replace(/(^|\s)#[\p{L}\p{N}_]+/gu, "$1").trim().split("\n").slice(0, 3).join("\n");
+    return { title: clean(/#shorts/i.test(t2) ? t2 : `${t2.slice(0, 91)} #Shorts`), description: compose(r, intro || base.description.split("\n")[0], hashtags).slice(0, 4900),
+      tags: tags.length >= 5 ? tags : [...new Set([...tags, ...base.tags])], hashtags };
   } catch (e) { console.warn(`  AI metadata failed (${e.message}), using plain`); return base; }
 }
 
@@ -194,7 +241,7 @@ function categoryBlock() {
     else if (r.catSlug === "amazon-finds") seen.set("amazon-finds", ["🛒 Amazon Finds", "valueverdict.in/amazon-finds"]);
     else if (!seen.has(r.catSlug)) seen.set(r.catSlug, [`${r.catName}`, `valueverdict.in/${r.catSlug}`]);
   }
-  return ["Best picks by category:", ...[...seen.values()].map(([n, u]) => `▸ ${n}: ${u}`)].join("\n");
+  return ["📂 Best picks by category:", ...[...seen.values()].map(([n, u]) => `▸ ${n}: ${u}`)].join("\n");
 }
 function withCategories(description) {
   const lines = description.trimEnd().split("\n"), last = lines[lines.length - 1] || "";

@@ -300,7 +300,7 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
 
 /* YouTube title / description / tags for every reel, researched fresh (youtube.mjs), as <name>_youtube.txt */
 {
-  const { useRun, seoFor, seoText } = await import("./youtube.mjs");
+  const yt = await import("./youtube.mjs"), { useRun, seoFor, seoText } = yt;
   const run = JSON.parse(readFileSync(join(outDir, "latest.json"), "utf8"));
   useRun(run);
   mkdirSync(join(outDir, "meta"), { recursive: true });
@@ -313,6 +313,9 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
     catch (e) { console.warn(`  YouTube text for ${r.slug} failed: ${e.message}`); }
   }
   console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
+  /* without the YouTube login the SEO has no top-Shorts data: say so instead of failing quietly */
+  if (yt.researchError && SEND && process.env.TELEGRAM_BOT_TOKEN) await tg("sendMessage", { text:
+    `⚠️ YouTube research didn't work today (${yt.researchError.slice(0, 150)}). The YouTube texts used autocomplete and our hashtag list only. If it says the token expired, the YouTube login (YT_REFRESH_TOKEN secret) needs renewing.` }).catch(() => {});
 }
 
 /* What goes in the Telegram ZIP:
