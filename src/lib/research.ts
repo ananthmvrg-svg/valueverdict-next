@@ -4,11 +4,13 @@ import { search } from "./amazon";
 import type { Deal } from "./amazon";
 import { isOn, type Row } from "./products";
 import { searchConsole, type GscData } from "./gsc";
+import { addUsage, logCost, overBudget, type Usage } from "./costs";
+import { momentum, type KeywordRow } from "./keywords";
 
 /* Pipeline B: weekly market research (Sunday 4 AM IST, GitHub Actions: .github/workflows/research.yml).
    1. inputs: our categories and searches, today's candidates with their Amazon.in best-seller rank (a same-day
       snapshot, never stored as history), searches that found little, the date and season;
-      later also Search Console queries (not connected yet);
+      Search Console queries, and imported keyword data (Keyword Planner volumes, Google Trends);
    2. research: Claude Sonnet 5.5 with web search, on what Indian shoppers will buy in the next two weeks;
    3. plan: extra Amazon searches and content ideas, each with its sources (structured output);
    4. checks: known category, generic words (no brands), sources, no duplicates, plan searches ≤ 30% of the
@@ -33,6 +35,8 @@ export type Inputs = {
   topSellers: Record<string, { title: string; price: number | null; node: string; rank: number }[]>;
   thinSearches: { category: string; section: string; keywords: string; items: number }[];
   searchConsole: GscData | null; searchConsoleError: string;
+  /* imported Keyword Planner / Google Trends rows (scripts/keywords.ts); empty until something is imported */
+  keywords?: KeywordRow[];
 };
 
 const istDate = (d = new Date()) => new Date(d.getTime() + 5.5 * 36e5).toISOString().slice(0, 10);
@@ -74,7 +78,9 @@ export async function gatherInputs(): Promise<Inputs> {
   /* Search Console is helpful, not required: a problem with it is recorded and the research goes on */
   let gsc: GscData | null = null, gscError = "";
   try { gsc = await searchConsole(); } catch (e) { gscError = (e as Error).message; }
-  return { date: istDate(), cats: out, brands, baselineJobs: out.reduce((n, c) => n + jobsFor(c) * Math.max(1, c.keywords.length), 0), topSellers, thinSearches, searchConsole: gsc, searchConsoleError: gscError };
+  /* keyword data is optional too (none imported yet, or the table missing) */
+  const keywords = await admin<KeywordRow[]>("GET", "keywords?select=keyword,category,source,searches_low,searches_high,competition,change_3m,change_yoy,trend,period&order=searches_high.desc.nullslast&limit=2000").catch(() => []);
+  return { date: istDate(), cats: out, brands, baselineJobs: out.reduce((n, c) => n + jobsFor(c) * Math.max(1, c.keywords.length), 0), topSellers, thinSearches, searchConsole: gsc, searchConsoleError: gscError, keywords };
 }
 
 /* 2 + 3. research with web search, then a structured plan */
@@ -117,7 +123,27 @@ function describe(inputs: Inputs) {
     ...Object.entries(inputs.topSellers).filter(([, v]) => v.length).map(([k, v]) => `- ${k}: ${v.slice(0, 5).map((x) => `#${x.rank} in ${x.node}: ${x.title} (₹${x.price ?? "?"})`).join("; ")}`),
     inputs.thinSearches.length ? `Searches that found fewer than ${MIN_ITEMS} usable products today: ${inputs.thinSearches.slice(0, 15).map((t) => `${t.category} "${t.keywords}" (${t.items})`).join("; ")}` : "No thin searches today.",
     ...gscLines(inputs),
+    ...keywordLines(inputs.keywords ?? []),
   ].join("\n");
+}
+
+/* imported keyword data in a few lines per category: the most searched (Keyword Planner, India, monthly) and
+   what is rising (the last 4 weeks or months against the 4 before) */
+export function keywordLines(rows: KeywordRow[]): string[] {
+  if (!rows.length) return ["Keyword data (Keyword Planner / Google Trends): none imported yet."];
+  const n = (v: number | null) => (v == null ? "?" : v >= 1000 ? `${Math.round(v / 100) / 10}K` : String(v));
+  const vol = (r: KeywordRow) => (r.searches_low === r.searches_high ? n(r.searches_high) : `${n(r.searches_low)}–${n(r.searches_high)}`);
+  const out = ["Keyword data imported from Google (Keyword Planner: average monthly searches in India; Trends: relative interest). Use it to compare demand, not as exact counts:"];
+  for (const c of [...new Set(rows.map((r) => r.category ?? "other"))]) {
+    const own = rows.filter((r) => (r.category ?? "other") === c);
+    const top = own.filter((r) => r.source === "keyword_planner" && r.searches_high)
+      .sort((a, b) => (b.searches_high! - a.searches_high!) || (b.searches_low ?? 0) - (a.searches_low ?? 0)).slice(0, 10);
+    const rising = own.map((r) => ({ r, m: momentum(r.trend) })).filter((x) => x.m != null && x.m >= 25).sort((a, b) => b.m! - a.m!).slice(0, 5);
+    if (!top.length && !rising.length) continue;
+    out.push(`- ${c}: ${top.map((r) => `"${r.keyword}" ${vol(r)}/month${r.change_3m != null ? ` (3-month ${r.change_3m > 0 ? "+" : ""}${r.change_3m}%)` : ""}`).join("; ") || "no volumes"}`
+      + (rising.length ? ` | rising: ${rising.map((x) => `"${x.r.keyword}" +${x.m}% (${x.r.source === "google_trends" ? "Trends" : "Planner"})`).join("; ")}` : ""));
+  }
+  return out;
 }
 
 /* Search Console in a few lines: totals, the searches we're shown for most, and those close to page 1 */
@@ -135,7 +161,7 @@ function gscLines(inputs: Inputs): string[] {
   ];
 }
 
-async function researchNotes(client: Anthropic, inputs: Inputs): Promise<{ text: string; sources: string[] }> {
+async function researchNotes(client: Anthropic, inputs: Inputs, usage: Usage[]): Promise<{ text: string; sources: string[] }> {
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: `${describe(inputs)}\n\nResearch the next 14 days of Indian shopping demand for these categories (and anything clearly trending that would fit "amazon-finds"). End with a list of the sources you used.` }];
   const sources = new Set<string>();
   let text = "";
@@ -150,6 +176,7 @@ async function researchNotes(client: Anthropic, inputs: Inputs): Promise<{ text:
       output_config: { effort: "high" },
       tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 10, user_location: { type: "approximate", country: "IN", timezone: "Asia/Kolkata" } }],
     }).finalMessage();
+    usage.push(msg.usage);
     if (msg.stop_reason === "refusal") throw new Error("research declined by the model");
     for (const b of msg.content) {
       if (b.type === "text") {
@@ -167,13 +194,22 @@ async function researchNotes(client: Anthropic, inputs: Inputs): Promise<{ text:
 
 export async function makePlan(inputs: Inputs): Promise<{ plan: Plan; notes: string; sources: string[] }> {
   const client = new Anthropic();
-  const { text, sources } = await researchNotes(client, inputs);
+  const usage: Usage[] = [];
+  /* the run's cost is logged even when a step fails */
+  try { return await planWith(client, inputs, usage); } finally {
+    if (usage.length) await logCost("research", MODEL, addUsage(...usage), { detail: `${usage.length} calls` });
+  }
+}
+
+async function planWith(client: Anthropic, inputs: Inputs, usage: Usage[]): Promise<{ plan: Plan; notes: string; sources: string[] }> {
+  const { text, sources } = await researchNotes(client, inputs, usage);
   const msg = await client.beta.messages.stream({
     model: MODEL, max_tokens: 8000, system: PLAN_SYSTEM,
     betas: ["server-side-fallback-2026-07-01"], fallbacks: "default",
     output_config: { effort: "high", format: { type: "json_schema", schema: PLAN_SCHEMA } },
     messages: [{ role: "user", content: `${describe(inputs)}\n\nResearch notes:\n${text}\n\nSources found (use these URLs exactly):\n${sources.join("\n")}` }],
   }).finalMessage();
+  usage.push(msg.usage);
   if (msg.stop_reason === "refusal") throw new Error("plan declined by the model");
   const out = msg.content.find((b) => b.type === "text");
   if (!out || out.type !== "text") throw new Error("plan returned no text");
@@ -251,6 +287,9 @@ async function amazonCheck(s: PlanSearch, base: Row): Promise<number> {
 /* 5. the whole weekly run; returns what happened (also saved in research_plans) */
 export async function runResearch(opts: { dryRun?: boolean } = {}): Promise<string> {
   const week = istDate();
+  /* optional job: skipped near the monthly AI budget (lib/costs.ts); last week's plan keeps running */
+  const over = await overBudget();
+  if (over) return `research skipped: ${over}; last week's plan stays active`;
   /* a plan nobody replaced for 4 weeks is switched off, so stale searches don't run forever */
   const old = new Date(Date.now() - MAX_PLAN_AGE_DAYS * 864e5).toISOString();
   if (!opts.dryRun) await admin("PATCH", `amazon_deal_searches?source=eq.plan&active=eq.true&created_at=lt.${encodeURIComponent(old)}`, { active: false }, "return=minimal");

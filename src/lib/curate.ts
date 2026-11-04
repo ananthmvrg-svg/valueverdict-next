@@ -4,6 +4,7 @@ import type { Deal } from "./amazon";
 import { isOn } from "./products";
 import { keepSupported, supported } from "./evidence";
 import { serviceOf, brandTier } from "./brands";
+import { addUsage, logCost } from "./costs";
 
 /* AI deal picks, once a day at the 6 AM cycle (called by lib/refresh.ts once a cycle's candidates are all in).
    One request per budget page (top 5) and one for Amazon Finds (50–60 across its sections), sent through
@@ -247,6 +248,8 @@ async function results(client: Anthropic, batchId: string) {
   for await (const r of await client.messages.batches.results(batchId)) {
     if (r.result.type === "succeeded") out.set(r.custom_id, r.result.message);
   }
+  /* the batch's tokens, for the monthly budget (lib/costs.ts) */
+  await logCost("picks", MODEL, addUsage(...[...out.values()].map((m) => m.usage)), { batch: true, detail: `batch ${batchId}, ${out.size} answers` });
   return out;
 }
 

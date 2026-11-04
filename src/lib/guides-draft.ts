@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { admin } from "./db";
 import { getCatalog, subsOf } from "./catalog";
 import { type GUIDE_CATEGORIES, guideSlug, type Guide } from "./guides";
+import { logCost, overBudget } from "./costs";
 
 /* AI drafts of buying guides (Claude Sonnet 5.5). A draft is only ever saved with status "draft":
    a person reads it in preview and publishes it (Supabase → guides → status = published).
@@ -100,6 +101,8 @@ export function reviewNotes(d: Draft, brands: string[], budgets: string[]): stri
 
 /* drafts a guide for a category page and saves it as the next version, status "draft" */
 export async function draftGuide(category: string): Promise<{ slug: string; version: number; notes: string[] }> {
+  const over = await overBudget();
+  if (over) throw new Error(`Guide not drafted: ${over}`);
   const topics = TOPICS[category as keyof typeof TOPICS];
   if (!topics) throw new Error(`No guide topics for "${category}"`);
   const db = await getCatalog();
@@ -117,6 +120,7 @@ export async function draftGuide(category: string): Promise<{ slug: string; vers
     system: SYSTEM,
     messages: [{ role: "user", content: `Write the buying guide for our "${cat.name}" page.\nCover: ${topics}.\nThe page's budget ranges: ${budgets.join(", ") || "none"}.` }],
   }).finalMessage();
+  await logCost("guide", message.model, message.usage, { detail: category });
   if (message.stop_reason === "refusal") throw new Error("The model declined to write this guide");
   if (message.stop_reason === "max_tokens") throw new Error("The guide was cut off (max_tokens)");
   const text = message.content.find((b) => b.type === "text")?.text;
