@@ -526,18 +526,18 @@ const COVER_CSS = `
 .pc-top img{width:150px;height:150px;border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.15),0 0 50px rgba(30,144,255,.6)}
 .pc-top .wm{font-weight:800;font-size:64px;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,.6)}
 .pc-top .wm small{display:block;font-weight:600;font-size:32px;color:#ffc94a;margin-top:10px}
-.pc-head{position:absolute;top:290px;left:30px;right:30px;text-align:center}
+.pc-head{position:absolute;top:250px;left:30px;right:30px;text-align:center}
 .g3d{position:relative;display:block;font-weight:800;text-transform:uppercase;line-height:.98;letter-spacing:-.01em}
 .g3d .b{position:absolute;inset:0;color:#7c2d12;-webkit-text-stroke:14px #5a1a05;
   text-shadow:0 2px 0 #92400e,0 4px 0 #92400e,0 6px 0 #7c2d12,0 8px 0 #7c2d12,0 10px 0 #6b2108,0 12px 0 #5a1a05,0 22px 40px rgba(0,0,0,.6)}
 .g3d .f{position:relative;background:linear-gradient(180deg,#fff7d1 0%,#ffd75a 38%,#ffa41b 62%,#e8700a 100%);-webkit-background-clip:text;color:transparent;-webkit-text-stroke:2px #fff3c4}
 .g3d.w .f{background:linear-gradient(180deg,#ffffff 0%,#fff6e6 55%,#ffd9a8 100%);-webkit-background-clip:text}
 .g3d.w .b{color:#c2410c;-webkit-text-stroke:14px #9a3412}
-.pc-pill{display:inline-flex;align-items:center;gap:22px;margin-top:30px;font-weight:800;font-size:54px;color:#1a0e00;background:linear-gradient(180deg,#ffe08a,#ffb22e);border:4px solid #fff1c1;border-radius:999px;padding:14px 44px;box-shadow:0 0 40px rgba(255,190,60,.55),0 12px 30px rgba(0,0,0,.4)}
+.pc-pill{display:inline-flex;align-items:center;gap:22px;margin-top:26px;font-weight:800;font-size:46px;color:#1a0e00;background:linear-gradient(180deg,#ffe08a,#ffb22e);border:4px solid #fff1c1;border-radius:999px;padding:14px 44px;box-shadow:0 0 40px rgba(255,190,60,.55),0 12px 30px rgba(0,0,0,.4)}
 .pc-pill:before,.pc-pill:after{content:"✦";color:#7c2d12;font-size:36px}
-.pc-from{display:inline-block;margin-top:22px;font-weight:800;font-size:70px;color:#1a0e00;background:#ffd23f;border-radius:24px;padding:8px 34px 12px;box-shadow:0 0 40px rgba(255,210,63,.5),0 12px 30px rgba(0,0,0,.45)}
+.pc-from{display:inline-block;margin-top:20px;font-weight:800;font-size:62px;color:#1a0e00;background:#ffd23f;border-radius:24px;padding:8px 34px 12px;box-shadow:0 0 40px rgba(255,210,63,.5),0 12px 30px rgba(0,0,0,.45)}
 .pc-from b{color:#b91c1c}
-.pc-prod{position:absolute;left:70px;right:70px;bottom:230px;top:1030px;display:flex;align-items:flex-end;justify-content:center}
+.pc-prod{position:absolute;left:90px;right:90px;bottom:240px;top:1000px;display:flex;align-items:flex-end;justify-content:center}
 .pc-prod:before{content:"";position:absolute;left:50%;bottom:-30px;width:760px;height:140px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:0}
 .pc-prod:after{content:"";position:absolute;left:50%;top:10%;width:900px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,200,90,.45),transparent);z-index:0}
 .pc-prod img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.55))}
@@ -585,7 +585,7 @@ function photoCover(r, bg) {
   const w = warnLine(r), mixed = ["top-100", "amazon-finds"].includes(r.catSlug);
   const l1 = mixed ? r.coverLine || `Top ${one} Deals` : w.big;
   const l2 = mixed ? (YT() ? "on Amazon" : THEME === "diwali" ? "This Diwali" : "Best Value") : YT() ? `Best ${one} on Amazon` : w.small;
-  const size = l1.length <= 14 ? 168 : l1.length <= 18 ? 140 : 118, size2 = l2.length <= 12 ? Math.min(size, 150) : l2.length <= 18 ? 108 : 92;
+  const size = l1.length <= 14 ? 150 : l1.length <= 18 ? 124 : 108, size2 = l2.length <= 12 ? Math.min(size, 130) : l2.length <= 15 ? 96 : 82;
   const pill = r.pill || (/^(under|above)/i.test(r.subName) ? `Top picks ${r.subName}` : `Top ${n} picks · ${r.subName}`);
   const hero = r.items.find((p) => p.image);
   const word = (txt, cls, px) => `<span class="g3d ${cls}" style="font-size:${px}px"><span class="b">${esc(txt)}</span><span class="f">${esc(txt)}</span></span>`;
