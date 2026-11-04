@@ -41,10 +41,10 @@ const SCHEMA = {
           season_tag: { type: "string", description: "2-3 word label for the top of the hook slide, e.g. 'Diwali picks' (max 22 chars)" },
           for_whom: { type: "string", description: "who these picks suit, starting with 'for', max 30 chars, e.g. 'for growing families', 'for movie-night families', 'for first homes'" },
           hook_title: { type: "string", description: "big hook headline naming the product type, max 30 chars, a complete phrase" },
-          hook_sub: { type: "string", description: "one emotional line under the headline, max 70 chars" },
+          hook_sub: { type: "string", description: "one line under the headline that warns against a costly mistake, max 70 chars, e.g. 'Don't waste your Diwali money on the wrong fridge'" },
           urgency: { type: "string", description: "one honest urgency line built only from the given facts, max 60 chars" },
           follow_line: { type: "string", description: "why to follow Value Verdict, warm and personal, max 60 chars" },
-          caption_hook: { type: "string", description: "first line of the Instagram caption, max 110 chars, may use 1 emoji" },
+          caption_hook: { type: "string", description: "scroll-stopping line for the Instagram caption, max 110 chars, may use 1 emoji: a money-saving warning or a 'cheapest/best for the money' angle" },
           post_title: { type: "string", description: "headline for the single-image post naming the product type, max 30 chars" },
           ig_search_line: { type: "string", description: "first line of the Instagram caption for Instagram search: starts with the page's search phrase (reworded naturally, e.g. 'Best fridge under 30000 in India'), then a short hook; max 120 chars, at most 1 emoji" },
           alt_text: { type: "string", description: "alt text for the single-image post: what the image shows (the product type, budget, number of picks, brands), plain words, max 220 chars" },
@@ -73,6 +73,9 @@ Goals for every budget page:
   and cons). Make following feel like joining a smart-shopper family, not a demand.
 - No rupee amounts, no percentages, no hashtags, at most one emoji per line, no ALL CAPS sentences.
 - for_whom finishes the headline "Top 5 <product> on Amazon <for_whom>": make it specific to who the picks suit.
+- What makes Indian deal reels go viral: a warning against wasting money ("Don't waste your hard-earned money on the
+  wrong fridge this Diwali"), "best for the money", "before you buy, watch this". Use that energy in hook_sub and
+  caption_hook. Never invent prices.
 - Vary wording between pages; don't repeat the same hook.
 - Instagram search reads captions: ig_search_line must open with the page's search phrase (you may use its budget number
   exactly as given, e.g. "under 30000", but no ₹ sign), written like a person would say it, not a list of keywords.`;
@@ -91,7 +94,7 @@ export function fallbackCopy(r, season) {
     season_tag: fest ? `${fest} picks` : "Today's best",
     for_whom: "for every home",
     hook_title: r.catName,
-    hook_sub: "We compared them so you don't have to",
+    hook_sub: `Don't waste money on the wrong ${String(r.catName).toLowerCase().replace(/s$/, "")}`,
     urgency: fest ? `${fest} offers are live: prices change daily` : "Offers change daily: check today's price",
     follow_line: "Follow Value Verdict: smart picks every day",
     caption_hook: r.coverLine ? `${fest ? fest + " shopping? " : ""}${r.coverLine} on Amazon, hand-picked for you 🔥`

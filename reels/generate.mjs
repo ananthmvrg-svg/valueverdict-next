@@ -24,7 +24,7 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform } from "./template.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform, setCommentWord } from "./template.mjs";
 import { tracksFor, audioArgs } from "./audio.mjs";
 import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
 import { SITE_URL, select, shortName, clean, brandCase, mainQuery } from "./shared.mjs";
@@ -174,7 +174,8 @@ function caption(r) {
     "",
     list,
     "",
-    r.more ? `👉 ${r.more} on our site: link in bio` : `👉 Pros, cons & today's price for each: link in bio`,
+    commentWord(r) ? `💬 Comment "${commentWord(r)}" and we'll DM you the links (or tap the link in bio)`
+      : r.more ? `👉 ${r.more} on our site: link in bio` : `👉 Pros, cons & today's price for each: link in bio`,
     `(${r.url.replace(/^https?:\/\//, "")})`,
     `⏳ ${r.copy.urgency}`,
     `💛 ${r.copy.follow_line}`,
@@ -185,6 +186,8 @@ function caption(r) {
   return [
     "CAPTION (paste as it is)", text, "",
     "ALT TEXT for the single-image post (Advanced settings → Accessibility → Write alt text)", r.copy.alt_text, "",
+    "FIRST COMMENT (post it right after the reel goes live, then pin it)",
+    `${r.items.length > 1 ? `Which one would you pick? Comment 1 to ${Math.min(r.items.length, 10)} 👇` : "Would you buy this one? Tell us 👇"}\n${commentWord(r) ? `💬 Comment "${commentWord(r)}" for the links in your DMs` : "🔗 Full list with today's prices: link in bio"}\n📢 Daily deals on Telegram: t.me/valueverdict`, "",
     `(Instagram search phrase: "${mainQuery(r)}"; it's in the caption's first line and on the first slide)`,
   ].join("\n");
 }
@@ -197,6 +200,7 @@ async function render(browser, r, dir, track) {
   r.base = base;
   for (const platform of ["instagram", "youtube"]) {
     setPlatform(platform);
+    setCommentWord(platform === "instagram" ? commentWord(r) : "");
     const out = join(dir, platform), slides = join(out, "slides");
     mkdirSync(slides, { recursive: true });
     const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
@@ -277,6 +281,12 @@ const name = `ValueVerdict_${STAMP}`, outDir = join(here, "out"), root = join(ou
 rmSync(root, { recursive: true, force: true });
 for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
 setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so */
+/* Instagram comment-to-DM (ManyChat): repository variable MANYCHAT_KEYWORD = a word such as LINK (one rule for every
+   reel), or "category" for one word per category (set the same words up in ManyChat). Empty: "link in bio". */
+const MANYCHAT = String(process.env.MANYCHAT_KEYWORD || "").trim();
+const WORDS = { refrigerators: "FRIDGE", "washing-machines": "WASHING", tvs: "TV", "air-conditioners": "AC", laptops: "LAPTOP",
+  "soundbars-speakers": "SOUNDBAR", "home-appliances": "KITCHEN", geysers: "GEYSER", "fridge-accessories": "STABILIZER", "top-100": "DEALS", "amazon-finds": "FINDS" };
+const commentWord = (r) => (!MANYCHAT ? "" : /^category$/i.test(MANYCHAT) ? WORDS[r.catSlug] || "LINK" : MANYCHAT.toUpperCase());
 const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
 for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();
@@ -298,21 +308,26 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   more: r.more || "", copy: r.copy, items: r.items.map((p) => ({ brand: p.brand, name: p.name, bestFor: p.bestFor, specs: p.specs, price: p.price, off: p.off })),
 })) }, null, 1));
 
+const OPP = {}; /* vidIQ opportunity per reel (monthly searches x ease of its main keyword): what to post first */
 /* YouTube title / description / tags for every reel, researched fresh (youtube.mjs), as <name>_youtube.txt */
 {
-  const { useRun, seoFor, seoText } = await import("./youtube.mjs");
+  const yt = await import("./youtube.mjs"), { useRun, seoFor, seoText } = yt;
   const run = JSON.parse(readFileSync(join(outDir, "latest.json"), "utf8"));
   useRun(run);
   mkdirSync(join(outDir, "meta"), { recursive: true });
   for (const r of run.reels) {
     try {
       const m = await seoFor(r);
+      OPP[r.slug] = m.opportunity || 0;
       writeFileSync(join(root, r.slug, "youtube", `${r.base}_youtube.txt`), seoText(m));
       writeFileSync(join(outDir, "meta", `${r.slug}.json`), JSON.stringify(m)); /* reused by the upload step: no second search */
     }
     catch (e) { console.warn(`  YouTube text for ${r.slug} failed: ${e.message}`); }
   }
   console.log(`✔ YouTube titles/descriptions for ${run.reels.length} reels`);
+  /* without the YouTube login the SEO has no top-Shorts data: say so instead of failing quietly */
+  if (yt.researchError && SEND && process.env.TELEGRAM_BOT_TOKEN) await tg("sendMessage", { text:
+    `⚠️ YouTube research didn't work today (${yt.researchError.slice(0, 150)}). The YouTube texts used autocomplete and our hashtag list only. If it says the token expired, the YouTube login (YT_REFRESH_TOKEN secret) needs renewing.` }).catch(() => {});
 }
 
 /* What goes in the Telegram ZIP:
@@ -355,9 +370,16 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const list = (manual.length ? manual : reels).map((r) => `• ${r.coverLine || `${r.catName} · ${r.subName}`}${!isManual(r) && sent[r.slug] ? " 🔄" : ""}`);
-  const text = [`🎬 Value Verdict reels to post · ${STAMP.replace("_", " ")} IST`, `${manual.length} reels (🔄 = picks changed since the last ZIP):`,
-    ...list, unchanged.length ? `\nNot included (same picks as before): ${unchanged.length} pages.` : "",
+  /* 3 a day: Today's Top Deals, Amazon Finds and the budget page with the biggest search opportunity (vidIQ);
+     the rest are extras, best first */
+  const label = (r) => `${r.coverLine || `${r.catName} · ${r.subName}`}${!isManual(r) && sent[r.slug] ? " 🔄" : ""}`;
+  const pages = (manual.length ? manual : reels).filter((r) => !MANUAL.includes(r.catSlug)).sort((a, b) => (OPP[b.slug] || 0) - (OPP[a.slug] || 0));
+  const today = [...(manual.length ? manual : reels).filter((r) => MANUAL.includes(r.catSlug)), ...pages.slice(0, 1)];
+  const extras = pages.slice(1);
+  const text = [`🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST`, "",
+    "⭐ Post these 3 today (YouTube + Instagram):", ...today.map((r, i) => `${i + 1}. ${label(r)}${OPP[r.slug] ? ` (~${OPP[r.slug].toLocaleString("en-IN")} searches/mo)` : ""}`),
+    ...(extras.length ? ["", `Extras, best first (post one more if you have time; 🔄 = picks changed):`, ...extras.map((r) => `• ${label(r)}`)] : []),
+    unchanged.length ? `\nNot included (same picks as before): ${unchanged.length} pages.` : "",
     "Each folder: instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags)."].filter(Boolean).join("\n").slice(0, 4000);
   /* a file caption holds at most 1024 characters: a long list follows as its own message */
   if (mb < 49) {
