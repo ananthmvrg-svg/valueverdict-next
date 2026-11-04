@@ -223,8 +223,9 @@ async function render(browser, r, dir, track) {
     frames.push({ file: cta, dur: 2.6 });
     const cover = join(out, platform === "youtube" ? `${base}_thumbnail.jpg` : `${base}_cover.jpg`);
     await shot(coverSlide(r), cover);
-    /* the cover is the video's first frame, so it can be picked as the thumbnail in the app */
-    frames.unshift({ file: cover, dur: 0.8 });
+    /* the cover is the video's LAST frame: it can still be picked as the thumbnail in the app, but the video opens on
+       the hook (a still title card first made 94% of Shorts viewers swipe away: 30 engaged of 478 feed views, 4 Nov) */
+    frames.push({ file: cover, dur: 0.6 });
     if (platform === "instagram") {
       /* single-image post (4:5): all picks with photo, name and today's price */
       await page.setViewportSize({ width: 1080, height: 1350 });
@@ -247,7 +248,7 @@ function video(frames, out, track) {
   });
   let last = "v0", t = frames[0].dur;
   for (let i = 1; i < frames.length; i++) {
-    const tr = i === 1 ? "fade" : i === frames.length - 1 ? "fadeblack" : "slideleft";
+    const tr = i === frames.length - 1 ? "fade" : "slideleft";
     parts.push(`[${last}][v${i}]xfade=transition=${tr}:duration=${T}:offset=${t.toFixed(2)}[x${i}]`);
     last = `x${i}`; t += frames[i].dur;
   }
