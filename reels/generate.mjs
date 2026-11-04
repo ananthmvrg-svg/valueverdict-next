@@ -298,6 +298,7 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   more: r.more || "", copy: r.copy, items: r.items.map((p) => ({ brand: p.brand, name: p.name, bestFor: p.bestFor, specs: p.specs, price: p.price, off: p.off })),
 })) }, null, 1));
 
+const OPP = {}; /* vidIQ opportunity per reel (monthly searches x ease of its main keyword): what to post first */
 /* YouTube title / description / tags for every reel, researched fresh (youtube.mjs), as <name>_youtube.txt */
 {
   const yt = await import("./youtube.mjs"), { useRun, seoFor, seoText } = yt;
@@ -307,6 +308,7 @@ writeFileSync(join(outDir, "latest.json"), JSON.stringify({ stamp: STAMP, date: 
   for (const r of run.reels) {
     try {
       const m = await seoFor(r);
+      OPP[r.slug] = m.opportunity || 0;
       writeFileSync(join(root, r.slug, "youtube", `${r.base}_youtube.txt`), seoText(m));
       writeFileSync(join(outDir, "meta", `${r.slug}.json`), JSON.stringify(m)); /* reused by the upload step: no second search */
     }
@@ -358,9 +360,16 @@ function publishRelease() {
 
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
-  const list = (manual.length ? manual : reels).map((r) => `• ${r.coverLine || `${r.catName} · ${r.subName}`}${!isManual(r) && sent[r.slug] ? " 🔄" : ""}`);
-  const text = [`🎬 Value Verdict reels to post · ${STAMP.replace("_", " ")} IST`, `${manual.length} reels (🔄 = picks changed since the last ZIP):`,
-    ...list, unchanged.length ? `\nNot included (same picks as before): ${unchanged.length} pages.` : "",
+  /* 3 a day: Today's Top Deals, Amazon Finds and the budget page with the biggest search opportunity (vidIQ);
+     the rest are extras, best first */
+  const label = (r) => `${r.coverLine || `${r.catName} · ${r.subName}`}${!isManual(r) && sent[r.slug] ? " 🔄" : ""}`;
+  const pages = (manual.length ? manual : reels).filter((r) => !MANUAL.includes(r.catSlug)).sort((a, b) => (OPP[b.slug] || 0) - (OPP[a.slug] || 0));
+  const today = [...(manual.length ? manual : reels).filter((r) => MANUAL.includes(r.catSlug)), ...pages.slice(0, 1)];
+  const extras = pages.slice(1);
+  const text = [`🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST`, "",
+    "⭐ Post these 3 today (YouTube + Instagram):", ...today.map((r, i) => `${i + 1}. ${label(r)}${OPP[r.slug] ? ` (~${OPP[r.slug].toLocaleString("en-IN")} searches/mo)` : ""}`),
+    ...(extras.length ? ["", `Extras, best first (post one more if you have time; 🔄 = picks changed):`, ...extras.map((r) => `• ${label(r)}`)] : []),
+    unchanged.length ? `\nNot included (same picks as before): ${unchanged.length} pages.` : "",
     "Each folder: instagram/ (video, cover, post, caption) and youtube/ (video, thumbnail, title, description, tags)."].filter(Boolean).join("\n").slice(0, 4000);
   /* a file caption holds at most 1024 characters: a long list follows as its own message */
   if (mb < 49) {

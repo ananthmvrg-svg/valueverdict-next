@@ -130,6 +130,55 @@ const SEASON_HASHTAG = { diwali: "#DiwaliSale" };
 const OLD_YEARS = Array.from({ length: new Date().getFullYear() - 2015 }, (_, i) => 2015 + i).join("|");
 const OFF_TAG = new RegExp(`\\b(tamil|telugu|hindi|kannada|malayalam|marathi|bengali|gujarati|punjabi|urdu)\\b|\\b(${OLD_YEARS})\\b`, "i");
 
+/* ---------- vidIQ library (reels/seo/vidiq.json, refreshed every few days from vidIQ) ---------- */
+const LIB = (() => { try { return JSON.parse(readFileSync(join(here, "seo", "vidiq.json"), "utf8")); } catch { return null; } })();
+const BRANDS = ["lg", "samsung", "whirlpool", "godrej", "haier", "bosch", "panasonic", "ifb", "voltas", "daikin", "blue star", "carrier", "lloyd",
+  "sony", "tcl", "xiaomi", "mi", "hisense", "oneplus", "vw", "philips", "jbl", "boat", "zebronics", "sonos", "hp", "dell", "lenovo", "asus", "acer",
+  "apple", "macbook", "msi", "havells", "v guard", "ao smith", "racold", "bajaj", "crompton", "liebherr", "ninja", "speed queen", "mitsubishi"];
+const fmtK = (n) => (n >= 100000 ? `${+(n / 100000).toFixed(1)} lakh` : n >= 1000 && n % 1000 === 0 ? `${n / 1000}k` : String(n));
+/* the page's budget as people type it: "under 35000" (+ "under 35k"), "43 inch", "above 1 lakh" */
+function budgetOf(r) {
+  const m = r.subName.match(/(under|above)\s*₹\s*([\d,.]+)\s*(lakh)?/i);
+  if (m) {
+    const n = m[3] ? Math.round(parseFloat(m[2]) * 100000) : parseInt(m[2].replace(/,/g, ""), 10);
+    const word = m[1].toLowerCase(), plain = m[3] ? `${m[2]} lakh` : String(n);
+    return { text: `${word[0].toUpperCase() + word.slice(1)} ${plain}`, forms: [`${word} ${plain}`, `${word} ${fmtK(n)}`], n };
+  }
+  const inch = r.subName.match(/(\d+)\s*(?:["″]|inch)/i);
+  if (inch) return { text: `${inch[1]} Inch`, forms: [`${inch[1]} inch`], inch: inch[1] };
+  return null;
+}
+/* title, keywords, hashtags and an "opportunity" (searches x ease) for one reel, from the vidIQ data */
+export function libPlan(r) {
+  const c = LIB?.categories?.[r.catSlug];
+  if (!c) return null;
+  const year = manifest.date.slice(0, 4), season = LIB.season?.[themeFor(manifest.date)];
+  const b = budgetOf(r), [n1, n2] = c.nouns, top = r.items.length > 1 ? `Top ${r.items.length}` : "#1";
+  const parts = r.catSlug === "top-100"
+    ? [`Today's Top ${r.items.length} Amazon Deals`, `Amazon Sale Today ${new Date(manifest.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`, season ? `Diwali Sale ${year}` : `Best Amazon Deals India`]
+    : r.catSlug === "amazon-finds"
+      ? [`Top ${r.items.length} Amazon Finds India`, `Useful Gadgets on Amazon`, `Amazon Must Haves ${year}`]
+      : b?.inch
+        ? [`${top} Best ${b.inch} Inch ${n1} in ${year}`, `Best ${b.inch} Inch ${n2} on Amazon`, season ? "Diwali Sale" : ""]
+        : b
+          ? [`${top} Best ${n1} ${b.text} in ${year}`, `Best ${n2} ${b.text} on Amazon`, season ? "Diwali Sale" : ""]
+          : [`${top} Best ${n1} in ${year}`, `Best ${n2} on Amazon`, season ? "Diwali Sale" : ""];
+  let title = "";
+  for (const [i, p] of parts.filter(Boolean).entries()) { const next = title + (i ? (i === 1 ? "🔥" : "⚡") : "") + p; if (next.length > 100) break; title = next; }
+  /* keywords for this page: its budget/size, the plain ones, and the brands in the picks */
+  const brands = r.items.map((p) => String(p.brand || "").toLowerCase().replace(/-/g, " ")).filter(Boolean);
+  /* a brand keyword only when that brand is in the picks */
+  const otherBrand = (k) => BRANDS.some((x) => (k === x || k.startsWith(x + " ")) && !brands.some((y) => y.startsWith(x)));
+  const fits = (k) => !otherBrand(k) && ( (b ? b.forms.some((f) => k.includes(f)) || (b.inch && k.includes(`${b.inch} inch`)) : false)
+    || (!/\d/.test(k) && !/\b(under|above)\b/.test(k)) || brands.some((x) => k.includes(x)));
+  const kws = c.keywords.filter((x) => fits(x.k));
+  const own = b ? [...new Set(b.forms.flatMap((f) => [`best ${n1.toLowerCase()} ${f}`, `${n1.toLowerCase()} ${f}`, `best ${n2.toLowerCase()} ${f}`]))] : [];
+  const exact = c.keywords.filter((x) => b && b.forms.some((f) => x.k.includes(f)));
+  const head = exact[0] || c.keywords[0];
+  const opportunity = head ? Math.round((head.searches * (100 - head.competition)) / 100) : 0;
+  return { title, keywords: kws, own, hashtags: [...c.hashtags, ...(season ? [season.hashtag] : [])], opportunity, head };
+}
+
 /* ---------- writing ---------- */
 const SCHEMA = {
   type: "object",
@@ -155,7 +204,7 @@ Hashtags: the 3 most relevant from the "allowed hashtags" list (copy them exactl
 
 /* hashtags to choose from: the page's own, the season's, and those the top Shorts for this search really use */
 function allowedHashtags(r, top) {
-  const own = CAT_HASHTAGS[r.catSlug] || ["#HomeAppliances"], seasonal = SEASON_HASHTAG[themeFor(manifest.date)];
+  const own = LIB?.categories?.[r.catSlug]?.hashtags || CAT_HASHTAGS[r.catSlug] || ["#HomeAppliances"], seasonal = SEASON_HASHTAG[themeFor(manifest.date)];
   const real = realHashtags(top).filter((h) => h.used >= 2).map((h) => h.tag);
   const seen = new Set(), out = [];
   for (const h of [...own, ...(seasonal ? [seasonal] : []), ...real, "#AmazonIndia"]) if (!seen.has(h.toLowerCase())) { seen.add(h.toLowerCase()); out.push(h); }
@@ -207,6 +256,7 @@ async function write(r, q, suggest, top) {
     `Most viewed Shorts for it in the last 30 days: ${top.sort((a, b) => b.views - a.views).slice(0, 8).map((v) => `"${v.title}" (${v.views} views)`).join(" | ") || "none"}`,
     `Allowed tags (phrase: why): ${[...pool.entries()].map(([t, w]) => `${t}: ${w}`).join("; ")}`,
     `Allowed hashtags: ${allowed.join(" ")}`,
+    `vidIQ keywords for this page (keyword: vidIQ score, monthly searches, competition; use the best ones in the intro): ${(libPlan(r)?.keywords || []).slice(0, 10).map((x) => `${x.k}: ${x.score}, ${x.searches}, ${x.competition}`).join("; ") || "none"}`,
   ].join("\n");
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -256,13 +306,30 @@ export async function seoFor(r) {
   const q = mainQuery(r);
   const [suggest, top] = await Promise.all([autocomplete(q), process.env.YT_REFRESH_TOKEN ? topShorts(q) : []]);
   const meta = await write(r, q, suggest, top);
+  /* vidIQ library: the title follows the pattern of breakout Shorts, and its keywords lead the tags */
+  const plan = libPlan(r);
+  if (plan) {
+    meta.title = plan.title;
+    const tags = []; let len = 0;
+    for (const t of [...plan.own, ...plan.keywords.map((x) => x.k), ...meta.tags]) {
+      const k = String(t).toLowerCase().trim();
+      if (!k || tags.includes(k) || OFF_TAG.test(k)) continue;
+      if (len + k.length + 1 > 480) break;
+      tags.push(k); len += k.length + 1;
+    }
+    meta.tags = tags;
+    meta.opportunity = plan.opportunity;
+    meta.vidiq = plan.keywords.slice(0, 8);
+  }
   meta.description = withCategories(meta.description);
   return { query: q, autocomplete: suggest, ...meta };
 }
 /* the same, as a text file to copy from on the phone */
 export function seoText(m) {
   return [`TITLE`, m.title, "", `DESCRIPTION`, m.description, "", `TAGS (YouTube Studio → Show more → Tags)`, m.tags.join(", "), "",
-    `HASHTAGS`, m.hashtags.join(" "), "", `(main search phrase: "${m.query}"; YouTube autocomplete: ${m.autocomplete.join(" · ") || "-"})`, ""].join("\n");
+    `HASHTAGS`, m.hashtags.join(" "), "",
+    ...(m.vidiq?.length ? [`vidIQ keywords used (score · monthly searches · competition):`, ...m.vidiq.map((x) => `  ${x.k}: ${x.score} · ${x.searches.toLocaleString("en-IN")} · ${x.competition}`), ""] : []),
+    `(main search phrase: "${m.query}"; YouTube autocomplete: ${m.autocomplete.join(" · ") || "-"})`, ""].join("\n");
 }
 
 async function upload(file, meta) {

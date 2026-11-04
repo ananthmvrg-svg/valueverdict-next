@@ -76,3 +76,13 @@ Tick "youtube" in Run workflow to upload private Shorts again (it reuses that me
 - One-off date: add it to `overrides` in `reels/schedule.json` (e.g. `"2026-11-01": "06:30"`); it wins over the variable for that day.
 - GitHub checks every 15 minutes, so a run starts within about 15 minutes of the time (sometimes a little later when GitHub is busy).
 - `node reels/when.mjs show` prints today's times.
+
+## vidIQ SEO library (`seo/vidiq.json`)
+
+Keyword data from vidIQ (India): monthly YouTube searches, competition and vidIQ score for each category's searches,
+budget phrases ("best fridge under 20000") and hashtags. Claude refreshes it every few days with the vidIQ connection.
+`youtube.mjs` uses it for every Short: the title follows the pattern of breakout Indian "top 5 under budget" Shorts
+("Top 5 Best Fridge Under 35000 in 2026🔥Best Refrigerator Under 35000 on Amazon⚡Diwali Sale"), the page's keywords
+lead the tags, the category's hashtags lead the hashtag line, and each reel gets an "opportunity" (searches × ease).
+The Telegram message then says which 3 to post today: Top Deals, Amazon Finds and the budget page with the biggest
+opportunity; the rest are listed as extras, best first.
