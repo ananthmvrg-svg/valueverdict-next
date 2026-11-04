@@ -86,3 +86,9 @@ budget phrases ("best fridge under 20000") and hashtags. Claude refreshes it eve
 lead the tags, the category's hashtags lead the hashtag line, and each reel gets an "opportunity" (searches × ease).
 The Telegram message then says which 3 to post today: Top Deals, Amazon Finds and the budget page with the biggest
 opportunity; the rest are listed as extras, best first.
+
+## Instagram comment-to-DM (ManyChat)
+
+Repository variable `MANYCHAT_KEYWORD`: empty = "Link in bio" (as before). A word such as `LINK` = every Instagram reel
+says "Comment LINK for the link" (slides, caption, first comment). `category` = one word per category: FRIDGE, WASHING,
+TV, AC, LAPTOP, SOUNDBAR, KITCHEN, GEYSER, STABILIZER, DEALS, FINDS. Set up the same word(s) in ManyChat first.

@@ -24,7 +24,7 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } 
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform } from "./template.mjs";
+import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform, setCommentWord } from "./template.mjs";
 import { tracksFor, audioArgs } from "./audio.mjs";
 import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
 import { SITE_URL, select, shortName, clean, brandCase, mainQuery } from "./shared.mjs";
@@ -174,7 +174,8 @@ function caption(r) {
     "",
     list,
     "",
-    r.more ? `👉 ${r.more} on our site: link in bio` : `👉 Pros, cons & today's price for each: link in bio`,
+    commentWord(r) ? `💬 Comment "${commentWord(r)}" and we'll DM you the links (or tap the link in bio)`
+      : r.more ? `👉 ${r.more} on our site: link in bio` : `👉 Pros, cons & today's price for each: link in bio`,
     `(${r.url.replace(/^https?:\/\//, "")})`,
     `⏳ ${r.copy.urgency}`,
     `💛 ${r.copy.follow_line}`,
@@ -186,7 +187,7 @@ function caption(r) {
     "CAPTION (paste as it is)", text, "",
     "ALT TEXT for the single-image post (Advanced settings → Accessibility → Write alt text)", r.copy.alt_text, "",
     "FIRST COMMENT (post it right after the reel goes live, then pin it)",
-    `${r.items.length > 1 ? `Which one would you pick? Comment 1 to ${Math.min(r.items.length, 10)} 👇` : "Would you buy this one? Tell us 👇"}\n🔗 Full list with today's prices: link in bio\n📢 Daily deals on Telegram: t.me/valueverdict`, "",
+    `${r.items.length > 1 ? `Which one would you pick? Comment 1 to ${Math.min(r.items.length, 10)} 👇` : "Would you buy this one? Tell us 👇"}\n${commentWord(r) ? `💬 Comment "${commentWord(r)}" for the links in your DMs` : "🔗 Full list with today's prices: link in bio"}\n📢 Daily deals on Telegram: t.me/valueverdict`, "",
     `(Instagram search phrase: "${mainQuery(r)}"; it's in the caption's first line and on the first slide)`,
   ].join("\n");
 }
@@ -199,6 +200,7 @@ async function render(browser, r, dir, track) {
   r.base = base;
   for (const platform of ["instagram", "youtube"]) {
     setPlatform(platform);
+    setCommentWord(platform === "instagram" ? commentWord(r) : "");
     const out = join(dir, platform), slides = join(out, "slides");
     mkdirSync(slides, { recursive: true });
     const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
@@ -279,6 +281,12 @@ const name = `ValueVerdict_${STAMP}`, outDir = join(here, "out"), root = join(ou
 rmSync(root, { recursive: true, force: true });
 for (const r of reels) for (const p of r.items) p.image = await loadImage(p.imageUrl);
 setTheme(themeFor(DATE)); /* e.g. Diwali backgrounds while season.json says so */
+/* Instagram comment-to-DM (ManyChat): repository variable MANYCHAT_KEYWORD = a word such as LINK (one rule for every
+   reel), or "category" for one word per category (set the same words up in ManyChat). Empty: "link in bio". */
+const MANYCHAT = String(process.env.MANYCHAT_KEYWORD || "").trim();
+const WORDS = { refrigerators: "FRIDGE", "washing-machines": "WASHING", tvs: "TV", "air-conditioners": "AC", laptops: "LAPTOP",
+  "soundbars-speakers": "SOUNDBAR", "home-appliances": "KITCHEN", geysers: "GEYSER", "fridge-accessories": "STABILIZER", "top-100": "DEALS", "amazon-finds": "FINDS" };
+const commentWord = (r) => (!MANYCHAT ? "" : /^category$/i.test(MANYCHAT) ? WORDS[r.catSlug] || "LINK" : MANYCHAT.toUpperCase());
 const copy = await writeCopy(reels, { date: DATE, season: seasonFor(DATE) });
 for (const r of reels) r.copy = copy.get(r.slug);
 const browser = await chromium.launch();

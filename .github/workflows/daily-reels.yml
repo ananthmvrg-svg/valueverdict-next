@@ -86,6 +86,7 @@ jobs:
           restore-keys: reels-state-
       - name: Generate reels and send to Telegram
         env:
+          MANYCHAT_KEYWORD: ${{ vars.MANYCHAT_KEYWORD }} # Instagram "Comment KEYWORD" CTA once ManyChat is set up (a word, or "category")
           AUTO_POST: ${{ vars.AUTO_POST || 'false' }} # true = automatic Instagram/YouTube posting (ZIP then has only Top 100 + Amazon Finds)
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

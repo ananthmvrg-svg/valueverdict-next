@@ -93,11 +93,13 @@ body{font-family:Poppins,"Noto Sans",sans-serif;color:#fff;background:#070d1f;po
 .chip{font-weight:700;font-size:34px;padding:8px 24px;border-radius:14px;background:rgba(30,144,255,.18);border:2px solid rgba(30,144,255,.5);color:#d8ecff;white-space:nowrap}
 
 /* hook */
-.collage{position:relative;height:450px;margin:0 0 30px;flex-shrink:0}
-.collage .t{position:absolute;top:14px;width:360px;height:400px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.collage{position:relative;height:380px;margin:0 0 26px;flex-shrink:0}
+.collage .t{position:absolute;top:10px;width:330px;height:350px;background:#fff;border-radius:40px;display:flex;align-items:center;justify-content:center;padding:44px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
 .collage .t img{max-width:100%;max-height:100%;object-fit:contain}
 .collage .t b{position:absolute;left:-16px;top:-26px;font-weight:800;font-size:56px;padding:4px 22px 8px;border-radius:20px;background:linear-gradient(180deg,#ffb547,#ff8a00);color:#1a0e00}
 .collage .ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7cc4ff;filter:drop-shadow(0 0 50px rgba(30,144,255,.6))}
+.from{margin:18px 0 0;font-weight:800;font-size:46px;color:#fff}
+.from b{color:#ffd23f}
 .asof{margin:6px 0 20px;font-weight:600;font-size:28px;color:#cbd5e1}
 .kicker{font-weight:800;font-size:44px;letter-spacing:.2em;color:#ffb547}
 h1{font-weight:800;font-size:136px;line-height:1;letter-spacing:-.025em;margin:6px 0 30px}
@@ -348,12 +350,16 @@ const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><style>
 const top = (step) => `<div class="top"><img src="${LOGO}"><div class="wm">VALUE VERDICT<small>Compare smart. Buy better.</small></div>${step ? `<div class="step">${esc(step)}</div>` : ""}</div>`;
 /* which app the slides are for: Instagram ("link in bio") or YouTube ("subscribe", the site's address; Shorts have no bio link) */
 let PLATFORM = "instagram";
+/* Instagram "comment KEYWORD, get the link in DMs" (ManyChat); empty = "link in bio" */
+let COMMENT_WORD = "";
+export const setCommentWord = (w) => { COMMENT_WORD = String(w || "").toUpperCase(); };
 export const setPlatform = (p) => { PLATFORM = p === "youtube" ? "youtube" : "instagram"; };
 const YT = () => PLATFORM === "youtube";
 /* YouTube's own look: red rounded button, white "Subscribe", bell beside it */
 const SUB_BTN = (px) => `<span class="ytsub" style="font-size:${px}px"><i>Subscribe</i><b>🔔</b></span>`;
 const ctaBar = () => YT()
   ? `<div class="ctabar yt">${SUB_BTN(40)}<span class="site">🔗 valueverdict.in</span></div>`
+  : COMMENT_WORD ? `<div class="ctabar"><span>💬 Comment <b>${COMMENT_WORD}</b> for the link</span></div>`
   : `<div class="ctabar"><span>🛒 Buy on <b>Amazon.in</b> · 🔗 Link in bio</span></div>`;
 /* the reel shows only the top picks: every slide says where the rest are */
 function moreLine(r) {
@@ -366,6 +372,8 @@ const dots = (n, on) => `<div class="dots">${Array.from({ length: n }, (_, i) =>
 const li = (xs) => xs.map((x) => `<li>${esc(x)}</li>`).join("");
 
 const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+/* the cheapest pick's price, said first (viral Indian deal reels open with the price) */
+const fromPrice = (r) => { const ps = r.items.map((p) => p.price).filter((x) => x != null); return ps.length ? inr(Math.min(...ps)) : ""; };
 const shortCat = (n) => n.replace(/^Refrigerators$/, "Fridges").replace(/^Air Conditioners$/, "ACs").replace(/^Soundbars & Speakers$/, "Soundbars");
 const titleCase = (s) => String(s || "").replace(/\b([a-z])([a-z]*)/g, (m, a, b) => (/^(for|and|of|the|a|an|to|with|on|in)$/.test(m) ? m : a.toUpperCase() + b));
 const topLine = (r) => r.headline || (r.items.length > 1 ? `Top ${r.items.length} ${shortCat(r.catName)}` : `Best ${shortCat(r.catName)}`);
@@ -383,13 +391,14 @@ export function hookSlide(r) {
     [[20, -8], [580, 8], [300, 0]],
   ][pics.length - 1] || [];
   const tiles = pics.map((p, i) => `<div class="t" style="left:${pos[i][0] - 20}px;transform:rotate(${pos[i][1]}deg);z-index:${i === 2 ? 3 : 1}"><img class="trim" src="${p.image}"></div>`).join("");
-  return page(`${top()}<div class="safe">
+  return page(`<style>.diyas{opacity:.28}</style>${top()}<div class="safe">
     <div class="collage">${tiles || `<div class="ico">${svg(r.icon, 420)}</div>`}</div>
     <div class="kicker">${esc(c.season_tag).toUpperCase()}</div>
     <h1 style="font-size:${topLine(r).length <= 13 ? 124 : 104}px;margin-bottom:4px"><em>${esc(topLine(r))}</em></h1>
     <div class="amzbig" style="font-size:96px">on <u>Amazon</u></div>
     <div class="whom" style="font-size:54px;margin:14px 0 28px">${esc(titleCase(c.for_whom))}</div>
     <div class="pill">${esc(r.subName)}</div>
+    ${fromPrice(r) ? `<div class="from">🔥 Starting <b>${fromPrice(r)}</b> only</div>` : ""}
     <div class="asof">📅 Our picks for ${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" })} · we re-check every day</div>
     <div class="hookline">${esc(c.hook_sub)}<small>⏳ ${esc(c.urgency)}</small><small>${line}</small></div>
     ${ctaBar()}
@@ -443,7 +452,7 @@ export function ctaSlide(r) {
     <h2>${r.more ? esc(r.more) : `Compare all ${r.items.length > 1 ? r.items.length + " " : ""}picks`}<br>+ <em>today's price</em></h2>
     <div class="ticks"><span class="chip">✓ Pros & cons</span><span class="chip">✓ Specs</span><span class="chip">✓ Bank offers</span></div>
     <div class="url">${esc(r.url.replace(/^https?:\/\//, "")).split("/").join("/<wbr>")}</div>
-    ${YT() ? `<div class="subwrap">${SUB_BTN(76)}<span class="tap">👆</span></div>` : `<div class="bio">🔗 Link in bio</div>`}
+    ${YT() ? `<div class="subwrap">${SUB_BTN(76)}<span class="tap">👆</span></div>` : COMMENT_WORD ? `<div class="bio">💬 Comment "${COMMENT_WORD}"</div>` : `<div class="bio">🔗 Link in bio</div>`}
     <div class="follow">${YT() ? "👍 Like & share with a friend" : `💛 ${esc(r.copy.follow_line)}`}</div>
     <div class="urg">⏳ ${esc(r.copy.urgency)}</div>
   </div>`);
@@ -517,7 +526,9 @@ const COVER_CSS = `
 .g3d.w .b{color:#c2410c;-webkit-text-stroke:14px #9a3412}
 .pc-pill{display:inline-flex;align-items:center;gap:22px;margin-top:30px;font-weight:800;font-size:54px;color:#1a0e00;background:linear-gradient(180deg,#ffe08a,#ffb22e);border:4px solid #fff1c1;border-radius:999px;padding:14px 44px;box-shadow:0 0 40px rgba(255,190,60,.55),0 12px 30px rgba(0,0,0,.4)}
 .pc-pill:before,.pc-pill:after{content:"✦";color:#7c2d12;font-size:36px}
-.pc-prod{position:absolute;left:70px;right:70px;bottom:230px;top:930px;display:flex;align-items:flex-end;justify-content:center}
+.pc-from{margin-top:22px;font-weight:800;font-size:64px;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.7)}
+.pc-from b{color:#ffd23f}
+.pc-prod{position:absolute;left:70px;right:70px;bottom:230px;top:1030px;display:flex;align-items:flex-end;justify-content:center}
 .pc-prod:before{content:"";position:absolute;left:50%;bottom:-30px;width:760px;height:140px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:0}
 .pc-prod:after{content:"";position:absolute;left:50%;top:10%;width:900px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(255,200,90,.45),transparent);z-index:0}
 .pc-prod img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 24px 30px rgba(0,0,0,.55))}
@@ -569,7 +580,7 @@ function photoCover(r, bg) {
   return page(`<style>${COVER_CSS}.toran,.diyas,.deco{display:none}</style>
     ${bg ? `<div class="pc-bg" style="background-image:url(data:image/jpeg;base64,${readFileSync(bg).toString("base64")})"></div>` : `<div class="pc-bg" style="background:radial-gradient(1100px 900px at 50% 45%,#22305e,#0b1230 60%,#060a1c)"></div>${stageArt()}`}<div class="pc-shade"></div>
     <div class="pc-top"><img src="${LOGO}"><div class="wm">Value Verdict<small>Compare smart. Buy better.</small></div></div>
-    <div class="pc-head">${word(l1, "", size)}${word(l2, "w", size2)}<div class="pc-pill">${esc(pill.toUpperCase())}</div></div>
+    <div class="pc-head">${word(l1, "", size)}${word(l2, "w", size2)}<div class="pc-pill">${esc(pill.toUpperCase())}</div>${fromPrice(r) ? `<div class="pc-from">FROM <b>${fromPrice(r)}</b></div>` : ""}</div>
     <div class="pc-prod">${hero ? `<img class="trim cutout" src="${hero.image}">` : `<div class="ico" style="color:#ffd36b">${svg(r.icon, 520)}</div>`}</div>`);
 }
 
