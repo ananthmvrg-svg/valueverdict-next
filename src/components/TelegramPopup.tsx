@@ -6,6 +6,7 @@
    after closing, it returns 30 seconds later, on the same page or the next one, at most 3 times a day
    (India date; the count starts again the next day). Kept in this browser only (localStorage); events go to GA4. */
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { track } from "@/lib/track";
 import { SOCIAL } from "@/lib/config";
 import { LINKS } from "./Social";
@@ -39,12 +40,13 @@ function waitMs(): number | null {
 const remember = (state: "joined" | "closed") => { try { localStorage.setItem(KEY, JSON.stringify({ state, at: Date.now() })); } catch { /* private mode */ } };
 
 export default function TelegramPopup({ festival }: { festival: string | null }) {
+  const onJoinPage = usePathname() === "/join"; /* that page is the invitation itself */
   const [open, setOpen] = useState(false);
   const [closes, setCloses] = useState(0); /* each close schedules the next showing */
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const ms = CHANNELS.length ? waitMs() : null;
+    const ms = CHANNELS.length && !onJoinPage ? waitMs() : null;
     if (ms == null) return;
     let shown = false;
     const show = () => {
@@ -59,7 +61,7 @@ export default function TelegramPopup({ festival }: { festival: string | null })
     addEventListener("scroll", onScroll, { passive: true });
     const cleanup = () => { clearTimeout(timer); removeEventListener("scroll", onScroll); };
     return cleanup;
-  }, [festival, closes]);
+  }, [festival, closes, onJoinPage]);
 
   useEffect(() => {
     if (!open) return;
