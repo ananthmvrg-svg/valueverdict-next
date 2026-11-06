@@ -5,7 +5,7 @@ import { getPicks, pickedAt, picksIn } from "@/lib/picks";
 import { festival } from "@/lib/festival";
 import { pageMeta } from "@/lib/seo";
 import { JoinButtons, LINKS } from "@/components/Social";
-import { safeUrl } from "@/lib/products";
+import CompactDeals from "@/components/CompactDeals";
 import { getGuides } from "@/lib/guides";
 import { AMAZON_GUIDE } from "@/lib/amazon-guide";
 
@@ -15,8 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
     "Free Amazon.in deal alerts and regular updates on Telegram, Instagram or YouTube, plus guides on when and how to buy. Pick the app you already use; leave anytime.",
     "/join");
 }
-
-const inr = (n: number | null) => (n == null ? "" : "₹" + Math.round(n).toLocaleString("en-IN"));
 
 /* what each channel gives; the buttons, events and icons come from components/Social.tsx (LINKS) */
 const PITCH: Record<string, { tag: string; points: string[]; cls: string }> = {
@@ -86,26 +84,7 @@ export default async function JoinPage() {
             <p>Picked from Amazon.in every morning and ranked on specs for the price.{at ? ` Updated ${pickedAt(at)} IST.` : ""}</p>
           </div></div>
           {/* compact cards: this page is for joining, the full cards (pros, cons, tips) are on the Top 100 */}
-          {top.length ? (
-            <div className="join-grid">
-              {top.map((x) => {
-                const url = safeUrl(x.url), img = safeUrl(x.image);
-                return (
-                  <div key={x.asin} className="join-deal">
-                    {x.off ? <span className="join-off">-{Math.round(x.off)}%</span> : null}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {img && <img src={img} alt="" loading="lazy" />}
-                    <span className="join-brand">{x.brand}</span>
-                    <h3>{x.title}</h3>
-                    {x.bestFor && <p className="join-for">Best for: {x.bestFor}</p>}
-                    <p className="join-price"><b>{inr(x.price)}</b>{x.was && x.price && x.was > x.price ? <s>{inr(x.was)}</s> : null}</p>
-                    {url && <a className="btn amz" href={url} target="_blank" rel="nofollow sponsored noopener"
-                      data-asin={x.asin} data-category={x.category} data-price={x.price ?? ""} data-rank={x.rank} data-product={x.title.slice(0, 100)} data-where="join">View deal</a>}
-                  </div>
-                );
-              })}
-            </div>
-          ) : <div className="empty">Today&apos;s deals are being prepared. Please check back after 6 AM.</div>}
+          <CompactDeals items={top} where="join" />
           <div className="more-row"><Link className="more-btn" href="/top-deals">See all of today&apos;s Top 100 →</Link></div>
         </div>
       </section>
