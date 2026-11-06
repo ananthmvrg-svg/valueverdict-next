@@ -1,7 +1,7 @@
 "use client";
 /* Google Analytics 4, Meta Pixel and X Pixel (each only if its ID is set in config),
    page views on every client-side navigation, and an event for every Amazon/Flipkart button click
-   and every Telegram / Instagram / YouTube join click (GA4, plus X's "Join click" conversion). */
+   and every Telegram / Instagram / YouTube join click (GA4, X's "Join click" conversion, Meta "Lead"); store clicks are Meta "ViewContent". */
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -9,6 +9,7 @@ import { TRACK } from "@/lib/config";
 
 type Fn = (...args: unknown[]) => void;
 const JOIN_EVENTS = new Set(["telegram_join_click", "instagram_follow_click", "youtube_subscribe_click"]);
+const JOIN_CHANNEL: Record<string, string> = { telegram_join_click: "Telegram", instagram_follow_click: "Instagram", youtube_subscribe_click: "YouTube" };
 declare global { interface Window { gtag?: Fn; fbq?: Fn; twq?: Fn } }
 
 export default function Tracking() {
@@ -30,6 +31,10 @@ export default function Tracking() {
         if (TRACK.ga4) window.gtag?.("event", s.dataset.track!, { where: s.dataset.where, which: s.dataset.which, transport_type: "beacon" });
         /* X Ads: one "Join click" conversion for all three channels (the channel split is in GA4) */
         if (TRACK.x && TRACK.xJoin && JOIN_EVENTS.has(s.dataset.track!)) window.twq?.("event", TRACK.xJoin, {});
+        /* Meta: standard "Lead" for every join click (optimise ads on it); the channel goes in content_name */
+        if (TRACK.meta && JOIN_EVENTS.has(s.dataset.track!)) window.fbq?.("track", "Lead", {
+          content_name: JOIN_CHANNEL[s.dataset.track!], content_category: "join", where: s.dataset.where || "",
+        });
         return;
       }
       const a = (e.target as Element).closest?.<HTMLAnchorElement>("a.btn.amz, a.btn.fk");
@@ -42,7 +47,15 @@ export default function Tracking() {
         store, product, item_id: d.asin || "", item_category: d.category || "", price: d.price ? Number(d.price) : undefined,
         rank: d.rank ? Number(d.rank) : undefined, where: d.where || "card", link_url: a.href, transport_type: "beacon",
       });
-      if (TRACK.meta) window.fbq?.("trackCustom", "StoreClick", { store, product });
+      /* Meta: standard "ViewContent" for every "View deal on Amazon/Flipkart" click (ads can optimise on it),
+         plus the custom "StoreClick" kept for older reports */
+      if (TRACK.meta) {
+        window.fbq?.("track", "ViewContent", {
+          content_ids: d.asin ? [d.asin] : [], content_type: "product", content_name: product, content_category: d.category || "",
+          value: d.price ? Number(d.price) : undefined, currency: "INR", store, where: d.where || "card",
+        });
+        window.fbq?.("trackCustom", "StoreClick", { store, product });
+      }
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);

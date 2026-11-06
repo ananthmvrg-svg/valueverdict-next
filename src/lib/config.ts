@@ -33,7 +33,7 @@ export const FESTIVAL = { name: "Diwali", from: "2026-10-20", until: "2026-11-12
 /* Tracking IDs; an empty one is simply not loaded. */
 export const TRACK = {
   ga4: "G-F3PS67TXM8", // Google Analytics 4
-  meta: "", // Meta (Facebook) Pixel ID
+  meta: "3676915082585300", // Meta (Facebook) Pixel ID; join clicks = "Lead", Amazon/Flipkart clicks = "ViewContent"
   x: "rgwrd", // X (Twitter) Pixel ID
   xJoin: "tw-rgwrd-rikxa", // X event "Join click": any Telegram / Instagram / YouTube join button (X Ads → Events Manager)
 };
