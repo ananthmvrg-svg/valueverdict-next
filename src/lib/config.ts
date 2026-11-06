@@ -35,6 +35,7 @@ export const TRACK = {
   ga4: "G-F3PS67TXM8", // Google Analytics 4
   meta: "", // Meta (Facebook) Pixel ID
   x: "rgwrd", // X (Twitter) Pixel ID
+  xJoin: "tw-rgwrd-rikxa", // X event "Join click": any Telegram / Instagram / YouTube join button (X Ads → Events Manager)
 };
 
 /* "why trust these picks" box on every category page; {n} = number of products, {cat} = category name.

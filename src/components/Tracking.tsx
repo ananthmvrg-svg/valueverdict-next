@@ -1,12 +1,14 @@
 "use client";
 /* Google Analytics 4, Meta Pixel and X Pixel (each only if its ID is set in config),
-   page views on every client-side navigation, and an event for every Amazon/Flipkart button click. */
+   page views on every client-side navigation, and an event for every Amazon/Flipkart button click
+   and every Telegram / Instagram / YouTube join click (GA4, plus X's "Join click" conversion). */
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { TRACK } from "@/lib/config";
 
 type Fn = (...args: unknown[]) => void;
+const JOIN_EVENTS = new Set(["telegram_join_click", "instagram_follow_click", "youtube_subscribe_click"]);
 declare global { interface Window { gtag?: Fn; fbq?: Fn; twq?: Fn } }
 
 export default function Tracking() {
@@ -24,7 +26,12 @@ export default function Tracking() {
     const onClick = (e: MouseEvent) => {
       /* our social links (components/Social.tsx): data-track = the event (telegram_join_click, instagram_follow_click, youtube_subscribe_click, social_click), where = bar / header / footer */
       const s = (e.target as Element).closest?.<HTMLAnchorElement>("a[data-track]");
-      if (s) { if (TRACK.ga4) window.gtag?.("event", s.dataset.track!, { where: s.dataset.where, which: s.dataset.which, transport_type: "beacon" }); return; }
+      if (s) {
+        if (TRACK.ga4) window.gtag?.("event", s.dataset.track!, { where: s.dataset.where, which: s.dataset.which, transport_type: "beacon" });
+        /* X Ads: one "Join click" conversion for all three channels (the channel split is in GA4) */
+        if (TRACK.x && TRACK.xJoin && JOIN_EVENTS.has(s.dataset.track!)) window.twq?.("event", TRACK.xJoin, {});
+        return;
+      }
       const a = (e.target as Element).closest?.<HTMLAnchorElement>("a.btn.amz, a.btn.fk");
       if (!a) return;
       const store = a.classList.contains("amz") ? "Amazon" : "Flipkart";
