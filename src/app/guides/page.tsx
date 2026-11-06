@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AMAZON_GUIDE } from "@/lib/amazon-guide";
 import { getGuides, GUIDE_CATEGORIES, readMinutes, splitTitle } from "@/lib/guides";
 import { breadcrumbs, JsonLd, pageMeta } from "@/lib/seo";
 import { PreviewBanner } from "@/components/Guide";
@@ -27,6 +28,13 @@ export default async function GuidesPage() {
         <JsonLd data={breadcrumbs([["Home", "/"], ["Buying guides", "/guides"]])} />
         <div className="crumbs"><Link href="/">Home</Link> / Buying guides</div>
         <div className="sec-head"><div><h1>Buying guides</h1><p>What the specifications mean and how to choose, before you look at today&apos;s deals.</p></div></div>
+        {/* the general guide first: how and when to buy on Amazon (app/amazon-buying-guide) */}
+        <Link className="join-guide guides-featured" href="/amazon-buying-guide">
+          <span className="join-guide-label">Start here · {AMAZON_GUIDE.sections.length - 1} steps</span>
+          <h2>How to buy on Amazon with the right discount, at the right time</h2>
+          <p>Is the discount real? When are the big sales? How do bank offers, coupons and no-cost EMI work?</p>
+          <b>Read the guide →</b>
+        </Link>
         {sorted.length === 0
           ? <div className="empty">Our first buying guides are being written. Check back soon.</div>
           : (

@@ -78,12 +78,12 @@ export const faqPage = (faqs: { q: string; a: string }[]) => ({
 });
 
 /* a buying guide; "Value Verdict" as author and publisher, with its published and created dates */
-export const article = (g: { title: string; description: string; slug: string; published_at: string | null; created_at: string }) => ({
+export const article = (g: { title: string; description: string; slug: string; published_at: string | null; created_at: string }, path = `/guides/${g.slug}`) => ({
   "@context": "https://schema.org",
   "@type": "Article",
   headline: g.title,
   description: g.description,
-  url: `${SITE_URL}/guides/${g.slug}`,
+  url: `${SITE_URL}${path}`,
   ...(g.published_at ? { datePublished: g.published_at } : {}),
   dateModified: g.published_at ?? g.created_at,
   author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },

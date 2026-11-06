@@ -4,13 +4,15 @@ import { SOCIAL } from "@/lib/config";
 import { getPicks, pickedAt, picksIn } from "@/lib/picks";
 import { festival } from "@/lib/festival";
 import { pageMeta } from "@/lib/seo";
-import { LINKS } from "@/components/Social";
+import { JoinButtons, LINKS } from "@/components/Social";
 import { safeUrl } from "@/lib/products";
+import { getGuides } from "@/lib/guides";
+import { AMAZON_GUIDE } from "@/lib/amazon-guide";
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMeta(
-    "Join Value Verdict: Amazon.in Deals on Telegram, Instagram & YouTube",
-    "Get the day's best Amazon.in deals and price drops for free on Telegram, Instagram or YouTube. Pick the app you already use; leave anytime.",
+    "Buy on Amazon at the Right Discount, at the Right Time: Join Value Verdict",
+    "Free Amazon.in deal alerts and regular updates on Telegram, Instagram or YouTube, plus guides on when and how to buy. Pick the app you already use; leave anytime.",
     "/join");
 }
 
@@ -24,28 +26,20 @@ const PITCH: Record<string, { tag: string; points: string[]; cls: string }> = {
 };
 
 /* /join: one page for the Instagram bio, Telegram posts and shares; three equal ways to follow us,
-   then today's top deals as a sample of what followers get. Clicks are counted by components/Tracking.tsx
-   (data-track: telegram_join_click / instagram_follow_click / youtube_subscribe_click, where = join-top / join-bottom). */
+   the guides on how and when to buy, then today's top deals as a sample of what followers get. Clicks are counted
+   by components/Tracking.tsx (data-track: telegram_join_click / instagram_follow_click / youtube_subscribe_click,
+   where = join-top / join-bottom). */
 export default async function JoinPage() {
-  const [{ picks, at }, fest] = await Promise.all([getPicks(), festival()]);
+  const [{ picks, at }, fest, { guides }] = await Promise.all([getPicks(), festival(), getGuides()]);
   const top = picksIn(picks, "top-100").slice(0, 6);
   const channels = LINKS.filter((l) => l.icon && SOCIAL[l.key] && PITCH[l.key]);
-  const buttons = (where: string, compact = false) => channels.map((l) => {
-    const Icon = l.icon!;
-    return (
-      <a key={l.key} className={`join-btn ${PITCH[l.key].cls}${compact ? " compact" : ""}`} href={SOCIAL[l.key]} target="_blank" rel="noopener"
-        data-track={l.event} data-where={where} data-which={l.key}>
-        <Icon />{l.label}
-      </a>
-    );
-  });
   return (
     <>
       <section className={`join-hero${fest ? " festive" : ""}`}>
         <div className="wrap">
-          <p className="join-kicker">{fest ? `🪔 ${fest} deals are live` : "Free · Every day"}</p>
-          <h1>Never miss a deal again</h1>
-          <p className="join-sub">Instant price-drop alerts and the day&apos;s best Amazon.in deals, free. Join on the app you already use.</p>
+          <p className="join-kicker">{fest ? `🪔 ${fest} deals are live` : "Free deal alerts"}</p>
+          <h1>Buy on Amazon at the right discount, at the right time</h1>
+          <p className="join-sub">We check Amazon.in deals every day and tell you when a price is worth it. Join for instant alerts and regular updates, free, on the app you already use.</p>
           <div className="join-cards">
             {channels.map((l) => {
               const Icon = l.icon!, p = PITCH[l.key];
@@ -64,6 +58,24 @@ export default async function JoinPage() {
           <ul className="join-trust">
             <li>✓ Free</li><li>✓ No spam</li><li>✓ Leave anytime</li><li>✓ Only Amazon.in deals rated 3★+</li>
           </ul>
+        </div>
+      </section>
+
+      {/* how and when to buy: the Amazon guide first, then the product guides */}
+      <section className="join-learn">
+        <div className="wrap">
+          <Link className="join-guide" href="/amazon-buying-guide">
+            <span className="join-guide-label">Free guide · {AMAZON_GUIDE.sections.length - 1} steps</span>
+            <h2>How to buy on Amazon with the right discount, at the right time</h2>
+            <p>Is the discount real? When are the big sales? How do bank offers, coupons and no-cost EMI work?</p>
+            <b>Read the guide →</b>
+          </Link>
+          {guides.length > 0 && (
+            <div className="join-guides">
+              <h3>Choosing a product? Read its buying guide</h3>
+              <ul>{guides.map((x) => <li key={x.slug}><Link href={`/guides/${x.slug}`}>{x.title.split(":")[0]}</Link></li>)}</ul>
+            </div>
+          )}
         </div>
       </section>
 
@@ -102,7 +114,7 @@ export default async function JoinPage() {
         <div className="wrap">
           <h2>Want deals like these every day?</h2>
           <p>Follow us once and they come to you. No sign-up, no email.</p>
-          <div className="join-again-btns">{buttons("join-bottom", true)}</div>
+          <JoinButtons where="join-bottom" />
         </div>
       </section>
     </>

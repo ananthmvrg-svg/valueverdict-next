@@ -90,3 +90,22 @@ export function SocialLinks() {
     </div>
   );
 }
+
+/* the three channels as equal coloured buttons (join page, Amazon buying guide); compact = smaller, stacked */
+export function JoinButtons({ where, compact = false }: { where: string; compact?: boolean }) {
+  const set = LINKS.filter((l) => l.icon && SOCIAL[l.key]);
+  if (!set.length) return null;
+  const cls: Record<string, string> = { telegram: "tg", instagram: "ig", youtube: "yt" };
+  return (
+    <div className={`join-btns${compact ? " compact" : ""}`}>
+      {set.map((l) => {
+        const Icon = l.icon!;
+        return (
+          <a key={l.key} className={`join-btn ${cls[l.key] ?? ""}`} href={SOCIAL[l.key]} target="_blank" rel="noopener" data-track={l.event} data-where={where} data-which={l.key}>
+            <Icon />{l.label}
+          </a>
+        );
+      })}
+    </div>
+  );
+}

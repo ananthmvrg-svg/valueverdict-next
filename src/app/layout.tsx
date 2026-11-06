@@ -108,6 +108,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <nav className="footer-col" aria-label="Buying guides">
                 <h5>Buying guides</h5>
                 <Link href="/guides">All guides</Link>
+                <Link href="/amazon-buying-guide">How to buy on Amazon</Link>
                 <Link href="/top-deals">🔥 Today&apos;s Top 100</Link>
                 <Link href="/how-we-pick">How we pick deals</Link>
               </nav>

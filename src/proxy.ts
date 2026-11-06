@@ -8,7 +8,7 @@ import { SITE_URL, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
    the request goes through unchanged. */
 
 const OWN = new Set([
-  "top-deals", "join", "about", "how-we-pick", "affiliate-disclosure", "contact", "guides",
+  "top-deals", "join", "amazon-buying-guide", "about", "how-we-pick", "affiliate-disclosure", "contact", "guides",
   "robots.txt", "sitemap.xml", "favicon.png", "hero-logo.jpg", "logo-mark.jpg",
   "favicon.ico", "icon-48.png", "icon-96.png", "icon-192.png", "apple-touch-icon.png", "diwali-popup.webp",
 ]);

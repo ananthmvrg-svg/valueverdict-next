@@ -585,14 +585,36 @@ body:has(.cmp-bar){padding-bottom:96px}
 .join-again{padding:30px 0 40px;text-align:center}
 .join-again h2{margin:0 0 4px;font-size:22px}
 .join-again p{margin:0 0 16px;color:var(--muted)}
-.join-again-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-.join-btn.compact{padding:11px 18px;font-size:14.5px}
+.join-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.join-btns .join-btn{padding:11px 18px;font-size:14.5px}
+.join-btns.compact{flex-direction:column}
+.join-btns.compact .join-btn{padding:10px 12px;font-size:14px}
+/* join page: the Amazon guide card and the product guides */
+.join-learn{padding:28px 0 0}
+.join-guide{display:block;padding:20px 22px;border-radius:18px;color:#fff;text-decoration:none;background:radial-gradient(circle at 90% 10%,rgba(255,255,255,.22),transparent 45%),linear-gradient(135deg,#c2410c,#f59e0b);box-shadow:0 12px 28px rgba(194,65,12,.25);transition:transform .15s}
+.join-guide:hover{transform:translateY(-2px)}
+.join-guide-label{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px}
+.join-guide h2{margin:10px 0 6px;color:#fff;font-size:clamp(19px,3.4vw,24px);line-height:1.25}
+.join-guide p{margin:0 0 10px;color:#ffedd5;font-size:14.5px}
+.join-guide b{font-size:14.5px}
+.join-guides{margin-top:16px}
+.guides-featured{margin-bottom:20px}
+.join-guides h3{margin:0 0 8px;font-size:15px}
+.join-guides ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.join-guides a{display:inline-block;font-size:13.5px;font-weight:600;color:#334155;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none}
+.join-guides a:hover{border-color:var(--brand-2);color:var(--brand-2)}
+/* Amazon buying guide: the join box inside the article, and in the side panel */
+.guide-join{margin:26px 0;padding:18px;border-radius:16px;background:#f8fafc;border:1px solid var(--line);text-align:center}
+.guide-join h2{margin:0 0 4px}
+.prose .join-btn,.prose .join-btn:hover{color:#fff;text-decoration:none}
+.guide-join p{margin:0 0 12px;color:var(--muted)}
+.info-join-text{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
 @media (max-width:760px){
   .join-hero{padding:26px 0 26px}
   .join-cards{grid-template-columns:1fr;gap:10px}
   .join-card{padding:14px 14px 14px;gap:8px}
   .join-card ul{font-size:13.5px}
-  .join-again-btns{flex-direction:column}
+  .join-btns{flex-direction:column}
   .join-grid{grid-template-columns:1fr 1fr;gap:10px}
   .join-deal{padding:10px}
   .join-deal img{height:110px}
