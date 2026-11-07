@@ -1,12 +1,17 @@
 {
  "_help": "YouTube SEO library from vidIQ (country IN). Refreshed every few days by Claude with the vidIQ connection; youtube.mjs reads it for titles, tags and hashtags. searches = estimated monthly YouTube searches; competition 0-100 (lower is easier); score = vidIQ overall 0-100 (higher is better); growth = % change in search demand.",
- "updated": "2026-11-04",
+ "updated": "2026-11-07",
  "season": {
   "diwali": {
    "hashtag": "#DiwaliSale",
    "keyword": "diwali sale",
    "searches": 76392,
-   "growth": 870.3
+   "growth": 870.3,
+   "until": "2026-11-08"
+  },
+  "winter": {
+   "note": "from 9 Nov: no sale keyword in titles; geysers keep their own winter demand (water heater +98%). Room heaters are a growing winter search (best room heater 14,602/mo, competition 25, +36%) but the site has no heater category yet.",
+   "hashtag": null
   }
  },
  "titlePattern": "Top N Best <Noun> <Budget> in <Year>🔥Best <Noun 2> <Budget> on Amazon⚡<Season>. Breakout Indian 'top 5 under budget' Shorts (up to 27x their channel average, 1.9M views) stack 2-3 search variants in the title with 🔥/⚡ between them.",
@@ -24,24 +29,24 @@
    "keywords": [
     {
      "k": "whirlpool refrigerator",
-     "searches": 13333,
+     "searches": 13272,
      "competition": 25,
      "score": 67,
-     "growth": 181.5
+     "growth": null
     },
     {
      "k": "bosch refrigerator",
-     "searches": 5046,
-     "competition": 20,
-     "score": 65,
-     "growth": -47.8
+     "searches": 5023,
+     "competition": 23,
+     "score": 64,
+     "growth": null
     },
     {
      "k": "best refrigerator",
-     "searches": 14376,
+     "searches": 14311,
      "competition": 34,
      "score": 64,
-     "growth": 1.3
+     "growth": null
     },
     {
      "k": "best fridge under 20000",
@@ -58,17 +63,31 @@
      "growth": null
     },
     {
+     "k": "best 4 door refrigerator",
+     "searches": 4923,
+     "competition": 24,
+     "score": 64,
+     "growth": null
+    },
+    {
      "k": "best fridge",
-     "searches": 16766,
-     "competition": 39,
+     "searches": 16689,
+     "competition": 40,
      "score": 62,
      "growth": null
     },
     {
      "k": "refrigerator reviews",
-     "searches": 4080,
-     "competition": 27,
+     "searches": 4061,
+     "competition": 25,
      "score": 62,
+     "growth": null
+    },
+    {
+     "k": "best refrigerator brands",
+     "searches": 5089,
+     "competition": 30,
+     "score": 61,
      "growth": null
     },
     {
@@ -79,18 +98,18 @@
      "growth": null
     },
     {
-     "k": "lg refrigerator",
-     "searches": 6428,
-     "competition": 37,
-     "score": 59,
-     "growth": -3.1
+     "k": "refrigerator",
+     "searches": 43480,
+     "competition": 54,
+     "score": 60,
+     "growth": null
     },
     {
-     "k": "refrigerator",
-     "searches": 43492,
-     "competition": 56,
+     "k": "lg refrigerator",
+     "searches": 6398,
+     "competition": 37,
      "score": 59,
-     "growth": 78.1
+     "growth": 97.6
     },
     {
      "k": "5 star double door fridge under 25000rs",
@@ -114,6 +133,13 @@
      "growth": null
     },
     {
+     "k": "best refrigerator for home",
+     "searches": 4656,
+     "competition": 37,
+     "score": 58,
+     "growth": null
+    },
+    {
      "k": "best fridge under 30000",
      "searches": 9707,
      "competition": 47,
@@ -122,7 +148,7 @@
     },
     {
      "k": "best double door fridge",
-     "searches": 3227,
+     "searches": 3212,
      "competition": 41,
      "score": 55,
      "growth": null
@@ -150,10 +176,10 @@
     },
     {
      "k": "best refrigerators",
-     "searches": 11372,
+     "searches": 9017,
      "competition": 65,
-     "score": 50,
-     "growth": 249.2
+     "score": 49,
+     "growth": 32.4
     }
    ]
   },
@@ -170,59 +196,45 @@
    "keywords": [
     {
      "k": "best washing machine",
-     "searches": 62144,
+     "searches": 46491,
      "competition": 25,
-     "score": 73,
-     "growth": 76.9
+     "score": 72,
+     "growth": -82.7
     },
     {
      "k": "best washing machines",
-     "searches": 19415,
+     "searches": 15992,
      "competition": 25,
      "score": 68,
-     "growth": 53.1
+     "growth": null
     },
     {
      "k": "whirlpool washing machine",
-     "searches": 14511,
+     "searches": 11522,
      "competition": 23,
-     "score": 68,
-     "growth": 90.7
+     "score": 67,
+     "growth": null
     },
     {
      "k": "top load vs front load washing machine",
-     "searches": 7591,
+     "searches": 7556,
      "competition": 19,
      "score": 67,
-     "growth": 112.4
+     "growth": null
     },
     {
      "k": "best top load washing machine",
-     "searches": 8493,
-     "competition": 24,
+     "searches": 8454,
+     "competition": 26,
      "score": 65,
      "growth": null
     },
     {
-     "k": "front load washing machine",
-     "searches": 9273,
-     "competition": 26,
-     "score": 65,
-     "growth": 82
-    },
-    {
      "k": "samsung washing machine",
-     "searches": 16497,
-     "competition": 35,
+     "searches": 13022,
+     "competition": 33,
      "score": 64,
-     "growth": 30.7
-    },
-    {
-     "k": "lg washing machine",
-     "searches": 32042,
-     "competition": 42,
-     "score": 64,
-     "growth": 10.5
+     "growth": null
     },
     {
      "k": "under 25000 washing machine",
@@ -239,6 +251,20 @@
      "growth": null
     },
     {
+     "k": "front load washing machine",
+     "searches": 5229,
+     "competition": 26,
+     "score": 63,
+     "growth": null
+    },
+    {
+     "k": "lg washing machine",
+     "searches": 28540,
+     "competition": 42,
+     "score": 63,
+     "growth": null
+    },
+    {
      "k": "best washing machine to buy",
      "searches": 5348,
      "competition": 26,
@@ -247,17 +273,17 @@
     },
     {
      "k": "top load washing machine",
-     "searches": 11815,
-     "competition": 34,
-     "score": 63,
-     "growth": 34.7
+     "searches": 4485,
+     "competition": 31,
+     "score": 61,
+     "growth": null
     },
     {
      "k": "washing machine buying guide",
-     "searches": 8925,
+     "searches": 8884,
      "competition": 37,
-     "score": 61,
-     "growth": 80.7
+     "score": 60,
+     "growth": null
     },
     {
      "k": "best front load washing machine",
@@ -267,25 +293,25 @@
      "growth": null
     },
     {
-     "k": "panasonic washing machine",
-     "searches": 9417,
-     "competition": 38,
-     "score": 60,
-     "growth": 75.8
-    },
-    {
-     "k": "haier washing machine",
-     "searches": 6966,
-     "competition": 35,
-     "score": 60,
-     "growth": -3.6
-    },
-    {
      "k": "best washing machine under 10000",
      "searches": 9357,
      "competition": 38,
      "score": 60,
      "growth": -4.7
+    },
+    {
+     "k": "panasonic washing machine",
+     "searches": 5126,
+     "competition": 38,
+     "score": 58,
+     "growth": null
+    },
+    {
+     "k": "haier washing machine",
+     "searches": 3874,
+     "competition": 35,
+     "score": 58,
+     "growth": null
     },
     {
      "k": "best washing machine under 20000",
@@ -351,10 +377,10 @@
    "keywords": [
     {
      "k": "best tv for ps5",
-     "searches": 24052,
-     "competition": 22,
-     "score": 70,
-     "growth": 58.1
+     "searches": 23942,
+     "competition": 26,
+     "score": 69,
+     "growth": null
     },
     {
      "k": "43 inch tv",
@@ -414,10 +440,10 @@
     },
     {
      "k": "best 65 inch tv",
-     "searches": 26244,
+     "searches": 26125,
      "competition": 40,
      "score": 63,
-     "growth": 47.3
+     "growth": -71.1
     },
     {
      "k": "55 inch smart tv",
@@ -435,31 +461,31 @@
     },
     {
      "k": "best samsung tv",
-     "searches": 9157,
+     "searches": 9115,
      "competition": 34,
      "score": 62,
      "growth": null
     },
     {
      "k": "best gaming tv",
-     "searches": 11546,
+     "searches": 11493,
      "competition": 39,
      "score": 61,
-     "growth": 174.3
+     "growth": null
     },
     {
      "k": "best smart tv",
-     "searches": 13309,
+     "searches": 17087,
      "competition": 43,
-     "score": 60,
-     "growth": 39.6
+     "score": 61,
+     "growth": null
     },
     {
      "k": "best 43 inch tv",
-     "searches": 13494,
+     "searches": 11102,
      "competition": 43,
-     "score": 60,
-     "growth": -17.4
+     "score": 59,
+     "growth": 91.5
     },
     {
      "k": "best 50 inch tv",
@@ -483,18 +509,25 @@
      "growth": 105.3
     },
     {
-     "k": "best 55 inch tv",
-     "searches": 19483,
-     "competition": 54,
-     "score": 57,
-     "growth": 115.3
-    },
-    {
      "k": "qled tv",
      "searches": 9167,
      "competition": 45,
      "score": 57,
      "growth": 80.1
+    },
+    {
+     "k": "best 55 inch tv",
+     "searches": 17135,
+     "competition": 54,
+     "score": 56,
+     "growth": -47.4
+    },
+    {
+     "k": "best tv 43 inch",
+     "searches": 4413,
+     "competition": 43,
+     "score": 56,
+     "growth": null
     },
     {
      "k": "best tv under 30000",
@@ -532,10 +565,10 @@
    "keywords": [
     {
      "k": "best ac",
-     "searches": 21418,
-     "competition": 40,
-     "score": 63,
-     "growth": -40.6
+     "searches": 17754,
+     "competition": 36,
+     "score": 64,
+     "growth": null
     },
     {
      "k": "inverter vs non inverter ac",
@@ -552,8 +585,15 @@
      "growth": null
     },
     {
+     "k": "godrej ac",
+     "searches": 4963,
+     "competition": 38,
+     "score": 58,
+     "growth": null
+    },
+    {
      "k": "inverter ac",
-     "searches": 5287,
+     "searches": 5263,
      "competition": 41,
      "score": 57,
      "growth": null
@@ -566,6 +606,13 @@
      "growth": 83.4
     },
     {
+     "k": "blue star ac",
+     "searches": 3439,
+     "competition": 38,
+     "score": 56,
+     "growth": null
+    },
+    {
      "k": "voltas ac",
      "searches": 3986,
      "competition": 42,
@@ -574,10 +621,10 @@
     },
     {
      "k": "best 1 ton ac",
-     "searches": 6133,
-     "competition": 50,
-     "score": 54,
-     "growth": null
+     "searches": 6105,
+     "competition": 49,
+     "score": 55,
+     "growth": 92.3
     },
     {
      "k": "ac under 40000",
@@ -629,17 +676,17 @@
    "keywords": [
     {
      "k": "best laptop for video editing",
-     "searches": 58549,
+     "searches": 58538,
      "competition": 32,
      "score": 70,
-     "growth": 10.2
+     "growth": null
     },
     {
      "k": "best laptop",
-     "searches": 81687,
+     "searches": 78998,
      "competition": 57,
      "score": 61,
-     "growth": 22.4
+     "growth": null
     },
     {
      "k": "best gaming laptop",
@@ -656,32 +703,32 @@
      "growth": -24.9
     },
     {
-     "k": "best laptop under 60000",
-     "searches": 61039,
-     "competition": 60,
-     "score": 59,
-     "growth": 28.3
-    },
-    {
      "k": "best laptop under 70000",
-     "searches": 44944,
+     "searches": 44739,
      "competition": 57,
      "score": 59,
-     "growth": 38.2
-    },
-    {
-     "k": "best laptop under 50000",
-     "searches": 87879,
-     "competition": 68,
-     "score": 57,
-     "growth": 9.9
+     "growth": -38.7
     },
     {
      "k": "best budget laptop",
-     "searches": 23604,
-     "competition": 55,
+     "searches": 23497,
+     "competition": 51,
+     "score": 59,
+     "growth": null
+    },
+    {
+     "k": "best laptop under 60000",
+     "searches": 55840,
+     "competition": 60,
+     "score": 58,
+     "growth": -34.2
+    },
+    {
+     "k": "best laptop under 50000",
+     "searches": 78119,
+     "competition": 68,
      "score": 57,
-     "growth": 71.7
+     "growth": -51.9
     },
     {
      "k": "best laptop deals",
@@ -699,10 +746,17 @@
     },
     {
      "k": "best laptop under 40000",
-     "searches": 43913,
+     "searches": 44042,
      "competition": 66,
      "score": 55,
-     "growth": -28.4
+     "growth": null
+    },
+    {
+     "k": "best laptop for students",
+     "searches": 13541,
+     "competition": 54,
+     "score": 55,
+     "growth": -34.3
     },
     {
      "k": "best windows laptop",
@@ -710,13 +764,6 @@
      "competition": 60,
      "score": 54,
      "growth": 250.9
-    },
-    {
-     "k": "best laptop for students",
-     "searches": 10586,
-     "competition": 54,
-     "score": 54,
-     "growth": -57.7
     },
     {
      "k": "best laptop for work",
@@ -747,24 +794,24 @@
    "keywords": [
     {
      "k": "best soundbar",
-     "searches": 55887,
+     "searches": 45299,
      "competition": 40,
-     "score": 67,
-     "growth": 263.5
+     "score": 66,
+     "growth": -53.7
     },
     {
      "k": "best soundbar for tv",
-     "searches": 19664,
+     "searches": 16976,
      "competition": 31,
      "score": 66,
-     "growth": 408.2
+     "growth": null
     },
     {
      "k": "best soundbars",
-     "searches": 24741,
-     "competition": 37,
-     "score": 65,
-     "growth": 86.1
+     "searches": 24628,
+     "competition": 34,
+     "score": 66,
+     "growth": null
     },
     {
      "k": "soundbar for tv",
@@ -781,18 +828,32 @@
      "growth": null
     },
     {
+     "k": "best soundbar for lg tv",
+     "searches": 4185,
+     "competition": 18,
+     "score": 65,
+     "growth": null
+    },
+    {
      "k": "dolby atmos soundbar",
-     "searches": 9183,
-     "competition": 29,
-     "score": 64,
-     "growth": 37.1
+     "searches": 6434,
+     "competition": 27,
+     "score": 63,
+     "growth": null
+    },
+    {
+     "k": "best soundbar under 1000",
+     "searches": 9934,
+     "competition": 31,
+     "score": 63,
+     "growth": null
     },
     {
      "k": "soundbar",
-     "searches": 76450,
+     "searches": 69117,
      "competition": 53,
-     "score": 63,
-     "growth": 124.5
+     "score": 62,
+     "growth": -40
     },
     {
      "k": "best soundbar for home theater",
@@ -803,10 +864,10 @@
     },
     {
      "k": "lg soundbar",
-     "searches": 8245,
+     "searches": 8207,
      "competition": 33,
      "score": 62,
-     "growth": 77.9
+     "growth": 99.3
     },
     {
      "k": "best soundbar with subwoofer",
@@ -865,6 +926,13 @@
      "growth": null
     },
     {
+     "k": "soundbar comparison",
+     "searches": 9776,
+     "competition": 46,
+     "score": 57,
+     "growth": 84.8
+    },
+    {
      "k": "top 5 soundbar under 10000",
      "searches": 5658,
      "competition": 43,
@@ -877,6 +945,13 @@
      "competition": 40,
      "score": 55,
      "growth": null
+    },
+    {
+     "k": "best dolby atmos soundbars",
+     "searches": 6753,
+     "competition": 48,
+     "score": 55,
+     "growth": 99.2
     },
     {
      "k": "soundbar under 15000",
@@ -961,6 +1036,13 @@
      "growth": null
     },
     {
+     "k": "havells geyser",
+     "searches": 9426,
+     "competition": 19,
+     "score": 68,
+     "growth": null
+    },
+    {
      "k": "ao smith 6 litre geyser",
      "searches": 4482,
      "competition": 14,
@@ -968,25 +1050,25 @@
      "growth": null
     },
     {
-     "k": "havells geyser",
-     "searches": 9469,
-     "competition": 24,
+     "k": "instant geyser",
+     "searches": 11240,
+     "competition": 25,
      "score": 66,
-     "growth": null
+     "growth": -33.8
     },
     {
      "k": "best geyser for 4 member family",
-     "searches": 5050,
-     "competition": 22,
-     "score": 65,
+     "searches": 5027,
+     "competition": 24,
+     "score": 64,
      "growth": null
     },
     {
      "k": "geyser",
-     "searches": 57964,
+     "searches": 52605,
      "competition": 46,
      "score": 64,
-     "growth": 22.3
+     "growth": null
     },
     {
      "k": "ao smith geyser",
@@ -997,7 +1079,7 @@
     },
     {
      "k": "best instant geyser",
-     "searches": 11313,
+     "searches": 11261,
      "competition": 39,
      "score": 61,
      "growth": null
@@ -1017,17 +1099,10 @@
      "growth": null
     },
     {
-     "k": "instant geyser",
-     "searches": 11292,
-     "competition": 47,
-     "score": 58,
-     "growth": null
-    },
-    {
      "k": "best geyser for home",
-     "searches": 6746,
-     "competition": 43,
-     "score": 57,
+     "searches": 6716,
+     "competition": 42,
+     "score": 58,
      "growth": null
     },
     {
@@ -1038,6 +1113,13 @@
      "growth": null
     },
     {
+     "k": "water heater",
+     "searches": 23236,
+     "competition": 56,
+     "score": 57,
+     "growth": 98.1
+    },
+    {
      "k": "geyser buying guide",
      "searches": 7480,
      "competition": 46,
@@ -1046,17 +1128,10 @@
     },
     {
      "k": "best geyser",
-     "searches": 19246,
-     "competition": 59,
-     "score": 55,
-     "growth": 211.6
-    },
-    {
-     "k": "water heater",
-     "searches": 16331,
-     "competition": 56,
-     "score": 55,
-     "growth": -31
+     "searches": 16949,
+     "competition": 60,
+     "score": 54,
+     "growth": null
     },
     {
      "k": "best instant geyser under 5000",
@@ -1121,24 +1196,10 @@
    "keywords": [
     {
      "k": "amazon must haves",
-     "searches": 83089,
-     "competition": 44,
-     "score": 67,
-     "growth": 65
-    },
-    {
-     "k": "amazon sale",
-     "searches": 51691,
-     "competition": 54,
-     "score": 61,
-     "growth": 144.4
-    },
-    {
-     "k": "amazon deals today",
-     "searches": 21725,
-     "competition": 47,
-     "score": 60,
-     "growth": 525.4
+     "searches": 85351,
+     "competition": 46,
+     "score": 66,
+     "growth": null
     },
     {
      "k": "best amazon products",
@@ -1148,18 +1209,25 @@
      "growth": 43.6
     },
     {
-     "k": "amazon deals",
-     "searches": 76412,
-     "competition": 70,
-     "score": 56,
-     "growth": 60.6
+     "k": "amazon sale",
+     "searches": 29898,
+     "competition": 54,
+     "score": 58,
+     "growth": -80.6
     },
     {
-     "k": "diwali sale",
-     "searches": 76392,
-     "competition": 69,
+     "k": "amazon deals today",
+     "searches": 19385,
+     "competition": 50,
+     "score": 58,
+     "growth": null
+    },
+    {
+     "k": "amazon deals",
+     "searches": 68674,
+     "competition": 70,
      "score": 56,
-     "growth": 870.3
+     "growth": -90.7
     }
    ]
   },
@@ -1176,52 +1244,38 @@
    "keywords": [
     {
      "k": "amazon finds",
-     "searches": 272766,
+     "searches": 265781,
      "competition": 40,
      "score": 73,
-     "growth": 30.6
+     "growth": null
     },
     {
      "k": "amazon gadgets",
-     "searches": 153845,
+     "searches": 165320,
      "competition": 49,
      "score": 67,
-     "growth": 30.2
+     "growth": 52.8
     },
     {
      "k": "amazon must haves",
-     "searches": 83089,
-     "competition": 44,
-     "score": 67,
-     "growth": 65
+     "searches": 85351,
+     "competition": 46,
+     "score": 66,
+     "growth": null
     },
     {
      "k": "amazon home finds",
-     "searches": 36493,
-     "competition": 41,
-     "score": 65,
-     "growth": 16.6
-    },
-    {
-     "k": "useful gadgets",
-     "searches": 45881,
-     "competition": 48,
+     "searches": 42880,
+     "competition": 46,
      "score": 63,
-     "growth": 59.1
+     "growth": null
     },
     {
      "k": "amazon tech finds",
-     "searches": 28862,
+     "searches": 26075,
      "competition": 48,
      "score": 61,
-     "growth": 37
-    },
-    {
-     "k": "best amazon finds",
-     "searches": 26071,
-     "competition": 49,
-     "score": 60,
-     "growth": 89.6
+     "growth": -69.7
     },
     {
      "k": "amazon shorts",
@@ -1232,10 +1286,24 @@
     },
     {
      "k": "amazon kitchen finds",
-     "searches": 19173,
+     "searches": 26147,
+     "competition": 49,
+     "score": 60,
+     "growth": null
+    },
+    {
+     "k": "useful gadgets",
+     "searches": 45856,
+     "competition": 56,
+     "score": 59,
+     "growth": null
+    },
+    {
+     "k": "best amazon finds",
+     "searches": 23338,
      "competition": 49,
      "score": 59,
-     "growth": 63.5
+     "growth": null
     },
     {
      "k": "cool gadgets",

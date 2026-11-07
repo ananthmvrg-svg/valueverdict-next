@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform, setCommentWord } from "./template.mjs";
 import { tracksFor, audioArgs } from "./audio.mjs";
-import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
+import { writeCopy, seasonFor, themeFor, saleFor } from "./copy.mjs";
 import { SITE_URL, select, shortName, clean, brandCase, mainQuery } from "./shared.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
@@ -161,7 +161,7 @@ const HASHTAGS = {
 };
 const SEASON_TAG = { diwali: "#diwalishopping" };
 function caption(r) {
-  const season = SEASON_TAG[themeFor(DATE)] || (["laptops", "tvs", "soundbars-speakers", "amazon-finds"].includes(r.catSlug) ? "#techdeals" : "#homeappliances");
+  const season = SEASON_TAG[saleFor(DATE)] || (["laptops", "tvs", "soundbars-speakers", "amazon-finds"].includes(r.catSlug) ? "#techdeals" : "#homeappliances");
   const tags = [...new Set([...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances"]), "#amazonindia", season, "#valueverdict"])].slice(0, 5);
   const n = r.items.length;
   const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
