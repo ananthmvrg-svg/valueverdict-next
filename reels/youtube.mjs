@@ -18,7 +18,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { seasonFor, themeFor } from "./copy.mjs";
+import { seasonFor, themeFor, saleFor } from "./copy.mjs";
 import { mainQuery, ONE } from "./shared.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -152,7 +152,7 @@ function budgetOf(r) {
 export function libPlan(r) {
   const c = LIB?.categories?.[r.catSlug];
   if (!c) return null;
-  const year = manifest.date.slice(0, 4), season = LIB.season?.[themeFor(manifest.date)];
+  const year = manifest.date.slice(0, 4), season = LIB.season?.[saleFor(manifest.date)];
   const b = budgetOf(r), [n1, n2] = c.nouns, top = r.items.length > 1 ? `Top ${r.items.length}` : "#1";
   const parts = r.catSlug === "top-100"
     ? [`Today's Top ${r.items.length} Amazon Deals`, `Amazon Sale Today ${new Date(manifest.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`, season ? `Diwali Sale ${year}` : `Best Amazon Deals India`]
@@ -204,7 +204,7 @@ Hashtags: the 3 most relevant from the "allowed hashtags" list (copy them exactl
 
 /* hashtags to choose from: the page's own, the season's, and those the top Shorts for this search really use */
 function allowedHashtags(r, top) {
-  const own = LIB?.categories?.[r.catSlug]?.hashtags || CAT_HASHTAGS[r.catSlug] || ["#HomeAppliances"], seasonal = SEASON_HASHTAG[themeFor(manifest.date)];
+  const own = LIB?.categories?.[r.catSlug]?.hashtags || CAT_HASHTAGS[r.catSlug] || ["#HomeAppliances"], seasonal = SEASON_HASHTAG[saleFor(manifest.date)];
   const real = realHashtags(top).filter((h) => h.used >= 2).map((h) => h.tag);
   const seen = new Set(), out = [];
   for (const h of [...own, ...(seasonal ? [seasonal] : []), ...real, "#AmazonIndia"]) if (!seen.has(h.toLowerCase())) { seen.add(h.toLowerCase()); out.push(h); }
@@ -231,7 +231,7 @@ function compose(r, intro, hashtags) {
     hashtags.join(" ")].join("\n");
 }
 
-const seasonTag = () => SEASON_HASHTAG[themeFor(manifest.date)];
+const seasonTag = () => SEASON_HASHTAG[saleFor(manifest.date)];
 function fallback(r, q, top = [], suggest = []) {
   const head = q.replace(/\b\w/g, (c) => c.toUpperCase());
   const title = `${head}${/amazon/i.test(q) ? "" : " on Amazon"} ${manifest.date.slice(0, 4)} 🔥 Top ${r.items.length} #Shorts`.slice(0, 100);

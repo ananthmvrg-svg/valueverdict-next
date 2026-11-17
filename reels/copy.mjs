@@ -28,6 +28,17 @@ export function themeFor(dateISO) {
   } catch { return ""; }
 }
 
+/* the festival sale while it runs (season.json "sale_until"): "Diwali Sale" in titles and #DiwaliSale hashtags stop
+   the day after it ends, while the festive look (theme) may stay a few days longer */
+export function saleFor(dateISO) {
+  if (process.env.SALE) return process.env.SALE;
+  try {
+    const rows = JSON.parse(readFileSync(join(here, "season.json"), "utf8"));
+    const row = rows.find((s) => dateISO >= s.from && dateISO <= s.to);
+    return row?.sale_until && dateISO <= row.sale_until ? row.theme || "" : "";
+  } catch { return ""; }
+}
+
 const LIMITS = { ig_search_line: 130, alt_text: 230, for_whom: 32, hook_title: 36, hook_sub: 80, urgency: 64, follow_line: 64, caption_hook: 130, post_title: 32, season_tag: 24 };
 const SCHEMA = {
   type: "object",

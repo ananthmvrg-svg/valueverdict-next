@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hookSlide, productSlide, ctaSlide, posterSlide, coverSlide, iconKey, setTheme, setPlatform, setCommentWord } from "./template.mjs";
 import { tracksFor, audioArgs } from "./audio.mjs";
-import { writeCopy, seasonFor, themeFor } from "./copy.mjs";
+import { writeCopy, seasonFor, themeFor, saleFor } from "./copy.mjs";
 import { SITE_URL, select, shortName, clean, brandCase, mainQuery } from "./shared.mjs";
 import { tipsFor } from "../src/lib/tips.ts"; /* the website's own "Good to know" texts */
 import { specChips } from "../src/lib/specs.ts"; /* and its spec chips */
@@ -161,7 +161,7 @@ const HASHTAGS = {
 };
 const SEASON_TAG = { diwali: "#diwalishopping" };
 function caption(r) {
-  const season = SEASON_TAG[themeFor(DATE)] || (["laptops", "tvs", "soundbars-speakers", "amazon-finds"].includes(r.catSlug) ? "#techdeals" : "#homeappliances");
+  const season = SEASON_TAG[saleFor(DATE)] || (["laptops", "tvs", "soundbars-speakers", "amazon-finds"].includes(r.catSlug) ? "#techdeals" : "#homeappliances");
   const tags = [...new Set([...(HASHTAGS[r.catSlug] || [`#${r.catSlug.replace(/[^a-z0-9]/gi, "")}`, "#homeappliances"]), "#amazonindia", season, "#valueverdict"])].slice(0, 5);
   const n = r.items.length;
   const list = r.items.map((p, i) => `#${i + 1} ${p.brand ? p.brand + " " : ""}${p.name}${p.bestFor ? `\n   👍 ${p.bestFor}` : ""}`).join("\n");
@@ -223,8 +223,9 @@ async function render(browser, r, dir, track) {
     frames.push({ file: cta, dur: 2.6 });
     const cover = join(out, platform === "youtube" ? `${base}_thumbnail.jpg` : `${base}_cover.jpg`);
     await shot(coverSlide(r), cover);
-    /* the cover is the video's first frame, so it can be picked as the thumbnail in the app */
-    frames.unshift({ file: cover, dur: 0.8 });
+    /* the cover is the video's LAST frame: it can still be picked as the thumbnail in the app, but the video opens on
+       the hook (a still title card first made 94% of Shorts viewers swipe away: 30 engaged of 478 feed views, 4 Nov) */
+    frames.push({ file: cover, dur: 0.6 });
     if (platform === "instagram") {
       /* single-image post (4:5): all picks with photo, name and today's price */
       await page.setViewportSize({ width: 1080, height: 1350 });
@@ -247,7 +248,7 @@ function video(frames, out, track) {
   });
   let last = "v0", t = frames[0].dur;
   for (let i = 1; i < frames.length; i++) {
-    const tr = i === 1 ? "fade" : i === frames.length - 1 ? "fadeblack" : "slideleft";
+    const tr = i === frames.length - 1 ? "fade" : "slideleft";
     parts.push(`[${last}][v${i}]xfade=transition=${tr}:duration=${T}:offset=${t.toFixed(2)}[x${i}]`);
     last = `x${i}`; t += frames[i].dur;
   }
