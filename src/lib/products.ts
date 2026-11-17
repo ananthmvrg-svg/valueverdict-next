@@ -1,5 +1,5 @@
 /* Catalog types and pure helpers, safe to use in both server and browser code. */
-/* One row of the sheet. Every column is optional text; helpers below interpret it. */
+/* One database row, as text (see lib/db.ts). Every column is optional; helpers below interpret it. */
 export type Row = Record<string, string>;
 export type Category = Row & { category_id: string; name: string; slug: string };
 export type Subcategory = Row & { subcategory_id: string; category_id: string; name: string; slug: string };

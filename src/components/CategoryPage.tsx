@@ -2,10 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCatalog, isYes, prodsOfCat, prodsOfSub, subsOf } from "@/lib/catalog";
-import { OFFERS_BANNER } from "@/lib/config";
+import { OFFERS_BANNER, SHOW_CATALOG } from "@/lib/config";
 import PromiseBox from "./PromiseBox";
 import CategoryListing from "./CategoryListing";
-import LiveDeals from "./LiveDeals";
+import LiveDeals, { PickGrid, SeeAllDeals } from "./LiveDeals";
+import { getPicks, pickedAt, picksIn, type DealPick } from "@/lib/picks";
+import { breadcrumbs, dealList, JsonLd, monthYear, pageMeta } from "@/lib/seo";
+import { getGuides, guideFor, readMinutes } from "@/lib/guides";
+import { Faqs, GuideTeaser, PreviewBanner, sectionId } from "./Guide";
+import Glance from "./Glance";
+import ScrollToHash from "./ScrollToHash";
+import JourneyBar from "./JourneyBar";
+import { themeFor } from "./GuideArt";
 
 async function find(catSlug: string, subSlug?: string) {
   const db = await getCatalog();
@@ -17,43 +25,213 @@ async function find(catSlug: string, subSlug?: string) {
   return { db, cat, subs, sub };
 }
 
+/* a budget page's name: "Refrigerators Under ₹25,000", but "55″ TVs" (not "TVs 55″ TVs") when the budget already names the category */
+const pageName = (cat: string, sub: string) => (sub.toLowerCase().includes(cat.toLowerCase()) ? sub : `${cat} ${sub}`);
+
+/* how the page is searched for: "43″ TVs" → "43 Inch Smart TVs" (people type "inch", not ″) */
+const searchName = (catSlug: string, cat: string, sub?: string) => {
+  const name = sub ? pageName(cat, sub) : cat;
+  return catSlug === "tvs" ? name.replace(/(\d+)\s*[″"]\s*/g, "$1 Inch ").replace(/\bTVs\b/, "Smart TVs") : name;
+};
+
+/* per category: what the page compares and how the H1 reads; anything else uses the fallback */
+const INTENT: Record<string, { h1: string; compares: string }> = {
+  tvs: { h1: "Best Smart TV Deals in India Today", compares: "panel, 4K, refresh rate and smart platform" },
+  refrigerators: { h1: "Best Refrigerator Deals in India Today", compares: "capacity, star rating, inverter and door type" },
+  "washing-machines": { h1: "Best Washing Machine Deals in India Today", compares: "capacity, load type, star rating and motor" },
+  "air-conditioners": { h1: "Best AC Deals in India Today", compares: "tonnage, inverter and BEE star rating" },
+  laptops: { h1: "Best Laptop Deals in India Today", compares: "processor, RAM, SSD and graphics" },
+  "soundbars-speakers": { h1: "Best Soundbar & Speaker Deals in India Today", compares: "channels, subwoofer and Dolby Atmos" },
+  "amazon-finds": { h1: "Amazon Finds: Today's Best Deals in India", compares: "key specs, price and discount" },
+};
+const compares = (slug: string) => INTENT[slug]?.compares ?? "key specs, price and discount";
+
+/* the H1: "Best Smart TV Deals in India Today", "Best 43 Inch Smart TVs in India", "Best Refrigerators Under ₹25,000 in India" */
+export const categoryH1 = (catSlug: string, cat: string, sub?: string) =>
+  sub ? `Best ${searchName(catSlug, cat, sub)} in India` : INTENT[catSlug]?.h1 ?? `Best ${cat} Deals in India Today`;
+
+/* search titles and descriptions: what the page is, the month, what it compares, and how many picks it has today */
 export async function categoryMetadata(catSlug: string, subSlug?: string): Promise<Metadata> {
-  const { cat, sub } = await find(catSlug, subSlug);
-  return {
-    title: sub ? `Best ${cat.name} ${sub.name} – Value Verdict` : `Best ${cat.name} Deals by Budget – Value Verdict`,
-    description: (sub?.description || cat.description) || undefined,
-    alternates: { canonical: sub ? `/${cat.slug}/${sub.slug}` : `/${cat.slug}` },
-  };
+  const [{ db, cat, sub }, month, { picks }] = await Promise.all([find(catSlug, subSlug), monthYear(), getPicks()]);
+  const finds = !sub && !subsOf(db, cat.category_id).length;
+  const lead = (d?: string) => (d ? d.replace(/\.?$/, ". ") : "");
+  if (sub) {
+    const n = picksIn(picks, `${cat.slug}/${sub.slug}`).length, name = searchName(cat.slug, cat.name, sub.name);
+    /* titles without "| Value Verdict": Google shows the site name on its own line, so the words that matter fit */
+    return pageMeta(
+      `Best ${name} in India (${month}): ${n ? `Top ${n} Picks Today` : "Today's Picks"}`,
+      `${lead(sub.description)}Today's ${n ? `top ${n} ` : ""}${name.toLowerCase().replace("smart tvs", "smart TVs")} on Amazon.in, compared on ${compares(cat.slug)}, with pros and cons.`,
+      `/${cat.slug}/${sub.slug}`);
+  }
+  if (finds) return pageMeta(
+    `${cat.name}: Today's Best Amazon.in Deals (${month})`,
+    `${lead(cat.description)}Today's highest-value picks by section, with key specs, pros and cons. Prices checked every 3 hours.`,
+    `/${cat.slug}`);
+  return pageMeta(
+    `Best ${searchName(cat.slug, cat.name)} in India (${month}): Deals by ${cat.slug === "tvs" ? "Screen Size" : "Budget"}`,
+    `${lead(cat.description)}Today's best Amazon.in picks compared on ${compares(cat.slug)}, with pros and cons.`,
+    `/${cat.slug}`);
 }
 
 /* /refrigerators (all budgets, grouped) and /refrigerators/under-25k (one budget) */
 export default async function CategoryPage({ catSlug, subSlug }: { catSlug: string; subSlug?: string }) {
   const { db, cat, subs, sub } = await find(catSlug, subSlug);
   const base = sub ? prodsOfSub(db, sub.subcategory_id) : prodsOfCat(db, cat.category_id);
-  /* Categories column "amazon_deals" = TRUE: also show live Amazon deals; sheet products (if any) still show below */
-  const live = isYes(cat.amazon_deals), showSheet = base.length > 0 || !live;
-  const title = sub ? `${cat.name} ${sub.name}` : cat.name;
+  /* Categories column "amazon_deals" = TRUE: live Amazon deals; with hand-picked products they follow them.
+     SHOW_CATALOG = false hides the products, so the page shows only live deals. */
+  const live = isYes(cat.amazon_deals), showSheet = SHOW_CATALOG && (base.length > 0 || !live);
+  const title = sub ? pageName(cat.name, sub.name) : cat.name;
   const groups = (sub ? [sub] : subs).map((s) => ({ sub: s, items: prodsOfSub(db, s.subcategory_id) }));
 
+  /* budget chips: hand-picked product counts when the catalog is shown, otherwise today's top picks per budget */
+  const { picks, at } = await getPicks();
+  const count = (n: number, s?: { slug: string; subcategory_id: string }) =>
+    SHOW_CATALOG ? <small>{n}</small> : s ? <small>{picksIn(picks, `${cat.slug}/${s.slug}`).length || ""}</small> : null;
+  const chips = subs.length > 0 && (
+    <div className="budget-bar budget-group" id="budgets">
+      <span className="budget-bar-label">Your budget</span>
+      <div className="chips">
+        <Link className={`chip ${!sub ? "on" : ""}`} href={`/${cat.slug}`}>All budgets{SHOW_CATALOG && count(prodsOfCat(db, cat.category_id).length)}</Link>
+        {subs.map((s) => (
+          <Link key={s.slug} className={`chip ${sub?.slug === s.slug ? "on" : ""}`} href={`/${cat.slug}/${s.slug}`}
+            title={SHOW_CATALOG ? undefined : `Today's top picks ${s.name.toLowerCase()}`}>{s.name}{count(prodsOfSub(db, s.subcategory_id).length, s)}</Link>
+        ))}
+      </div>
+    </div>
+  );
+  const t = themeFor(cat.slug);
+
   return (
-    <section>
+    <section style={{ "--g-from": t.from, "--g-to": t.to } as React.CSSProperties}>
       <div className="wrap">
         <div className="crumbs"><Link href="/">Home</Link> / <Link href={`/${cat.slug}`}>{cat.name}</Link>{sub && ` / ${sub.name}`}</div>
-        <div className="sec-head"><div><h2>{title}</h2><p>{sub ? sub.description : cat.description}</p></div></div>
-        <PromiseBox n={base.length || (live ? "today's" : 0)} catName={title} custom={cat.promise} customPoints={cat.promise_points} />
-        {live && !sub && <LiveDeals only={!showSheet} />}
-        {showSheet && (
+        <JsonLd data={breadcrumbs([["Home", "/"], [cat.name, `/${cat.slug}`], ...(sub ? [[sub.name, `/${cat.slug}/${sub.slug}`] as [string, string]] : [])])} />
+        <div className="sec-head"><div><h1>{categoryH1(cat.slug, cat.name, sub?.name)}</h1><p>{sub ? sub.description : cat.description}</p></div></div>
+        {subs.length > 0 && <CategoryJourney catSlug={cat.slug} catName={cat.name} onBudget={Boolean(sub)} />}
+        {showSheet
+          ? <PromiseBox n={base.length} catName={title} custom={cat.promise} customPoints={cat.promise_points} />
+          : <PromiseBox n="today's" catName={title} custom={cat.promise} customPoints={cat.promise_points} deals category={cat.slug} updated={live && at ? pickedAt(at) : undefined} />}
+        {showSheet ? (
           <>
-            <div className="chips">
-              <Link className={`chip ${!sub ? "on" : ""}`} href={`/${cat.slug}`}>All<small>{prodsOfCat(db, cat.category_id).length}</small></Link>
-              {subs.map((s) => (
-                <Link key={s.slug} className={`chip ${sub?.slug === s.slug ? "on" : ""}`} href={`/${cat.slug}/${s.slug}`}>{s.name}<small>{prodsOfSub(db, s.subcategory_id).length}</small></Link>
-              ))}
-            </div>
+            {chips}
             <CategoryListing key={`${cat.slug}/${sub?.slug ?? ""}`} groups={groups} cat={cat} groupTitles={!sub} offersBanner={OFFERS_BANNER} />
+            {/* hand-picked products come first; live Amazon deals for the category follow on its main page */}
+            {live && !sub && <LiveDeals category={cat.slug} only={false} heading={`Today's ${cat.name} deals on Amazon`} />}
+          </>
+        ) : (
+          <>
+            {chips}
+            {!live
+              ? <div className="empty">Deals for this category are coming soon.</div>
+              : (
+                <div id="picks" className="budget-group">
+                  <DealsWithPicks catSlug={cat.slug} subs={subs.map((s) => ({ slug: s.slug, name: s.name }))} sub={sub && { slug: sub.slug, name: sub.name }} />
+                </div>
+              )}
           </>
         )}
+        <CategoryGuide catSlug={cat.slug} catName={cat.name} main={!sub} />
       </div>
     </section>
+  );
+}
+
+/* under the page title: the four steps (learn → budget → compare → buy), "pick a budget" highlighted on the
+   category page and "compare picks" on a budget page; "learn" opens the category's buying guide when there is one */
+async function CategoryJourney({ catSlug, catName, onBudget }: { catSlug: string; catName: string; onBudget: boolean }) {
+  const guide = guideFor((await getGuides()).guides, catSlug);
+  return <JourneyBar catSlug={catSlug} catName={catName} current={onBudget ? 3 : 2} guideSlug={guide?.slug} guideMinutes={guide && readMinutes(guide)} />;
+}
+
+/* below the deals: the category's buying guide in brief (key points + link), and on the main category page its FAQs */
+async function CategoryGuide({ catSlug, catName, main }: { catSlug: string; catName: string; main: boolean }) {
+  const { guides, preview } = await getGuides();
+  const guide = guideFor(guides, catSlug);
+  if (!guide) return null;
+  return (
+    <div className="category-guide">
+      {preview && <PreviewBanner guide={guide} />}
+      <GuideTeaser guide={guide} catName={catName} />
+      {main && <Faqs faqs={guide.faqs} heading={`${catName}: common questions`} />}
+    </div>
+  );
+}
+
+/* Deals-only pages: today's AI picks first (server-rendered, so search engines see them), then "See all deals".
+   Budget page: its top 5. Category page: each budget's top 5. A category without budgets (Amazon Finds): its picks
+   by section. Before the first AI run there are no picks, and the page shows all saved deals as before. */
+async function DealsWithPicks({ catSlug, subs, sub }: { catSlug: string; subs: { slug: string; name: string }[]; sub?: { slug: string; name: string } }) {
+  const { picks, at } = await getPicks();
+  /* "picked by AI" wording is switched off for now; to show it again, use this note instead:
+     Picked by AI from Amazon.in deals on {pickedAt(at)} IST, judging specs, brand, price and discount. Prices change often; the price on Amazon at checkout applies. */
+  const note = <p className="picks-note">Deals from Amazon.in as of {pickedAt(at)} IST. Prices change often; the price on Amazon at checkout applies.</p>;
+  const all = <LiveDeals key={`${catSlug}/${sub?.slug ?? ""}`} category={catSlug} sub={sub?.slug} only banner={OFFERS_BANNER} />;
+  /* "Today at a glance" links to the category's guide; on a TV size page, straight to its screen-size section */
+  const guide = guideFor((await getGuides()).guides, catSlug);
+  const sizeSection = sub && guide?.sections.find((x) => /size/i.test(x.heading));
+  const glance = (items: DealPick[]) => (
+    <Glance category={catSlug} items={items}
+      guideHref={guide && (sizeSection ? `/guides/${guide.slug}#${sectionId(sizeSection.heading)}` : `/guides/${guide.slug}`)}
+      guideLabel={sizeSection ? `Which screen size suits your room? ${guide!.title.split(":")[0]}` : undefined} />
+  );
+
+  if (sub) {
+    const top = picksIn(picks, `${catSlug}/${sub.slug}`);
+    if (!top.length) return all;
+    return (
+      <>
+        <div className="offers-banner">{OFFERS_BANNER}</div>
+        <JsonLd data={dealList(`Top ${top.length} ${sub.name} deals`, top)} />
+        {glance(top)}
+        <div className="picks-head"><h2>Top {top.length} picks · {sub.name}</h2></div>
+        <PickGrid items={top} />
+        {note}
+        <SeeAllDeals category={catSlug} sub={sub.slug} label={`See all deals ${sub.name.toLowerCase().startsWith("under") || sub.name.toLowerCase().startsWith("above") ? sub.name.toLowerCase() : `in ${sub.name}`}`} />
+      </>
+    );
+  }
+
+  if (subs.length) {
+    const groups = subs.map((s) => ({ ...s, top: picksIn(picks, `${catSlug}/${s.slug}`) })).filter((g) => g.top.length);
+    if (!groups.length) return all;
+    return (
+      <>
+        <div className="offers-banner">{OFFERS_BANNER}</div>
+        <JsonLd data={dealList("Top picks by budget", groups.flatMap((g) => g.top))} />
+        {glance(groups.flatMap((g) => g.top))}
+        {/* id = budget slug, so /tvs#55-inch-tvs (home page budget chips) scrolls to that budget's picks */}
+        {groups.map((g) => (
+          <div key={g.slug} id={g.slug} className="budget-group">
+            <div className="picks-head"><h2>{g.name} · top {g.top.length}</h2><Link href={`/${catSlug}/${g.slug}`}>See all {g.name} →</Link></div>
+            <PickGrid items={g.top} />
+          </div>
+        ))}
+        <ScrollToHash />
+        {note}
+      </>
+    );
+  }
+
+  const top = picksIn(picks, catSlug);
+  if (!top.length) return all;
+  /* group by section, sections in the order of their best pick */
+  const sections: { name: string; items: DealPick[] }[] = [];
+  for (const p of top) {
+    const s = sections.find((x) => x.name === p.section) || sections[sections.push({ name: p.section, items: [] }) - 1];
+    s.items.push(p);
+  }
+  return (
+    <>
+      <div className="offers-banner">{OFFERS_BANNER}</div>
+      <JsonLd data={dealList("Today's top deals", top)} />
+      {sections.map((s) => (
+        <div key={s.name}>
+          <div className="picks-head"><h2>{s.name || "Picks"} · {s.items.length}</h2></div>
+          <PickGrid items={s.items} />
+        </div>
+      ))}
+      {note}
+      <SeeAllDeals category={catSlug} label="See all deals" />
+    </>
   );
 }

@@ -1,0 +1,4 @@
+# Skip a site rebuild when a commit only touches the reel video generator, its music/backgrounds or the PC scripts.
+# reels/channel.mjs, when.mjs, shared.mjs and schedule.json are NOT excluded: the Telegram Netlify function uses them.
+[build]
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)reels/audio' ':(exclude)reels/backgrounds' ':(exclude)reels/samples' ':(exclude)reels/seo' ':(exclude)reels/generate.mjs' ':(exclude)reels/template.mjs' ':(exclude)reels/youtube.mjs' ':(exclude)reels/music.mjs' ':(exclude)reels/music-inbox.mjs' ':(exclude)reels/copy.mjs' ':(exclude)reels/audio.mjs' ':(exclude)pc'"

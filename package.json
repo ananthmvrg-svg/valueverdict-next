@@ -6,9 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "research": "esbuild scripts/research.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/research.mjs --log-level=warning && node node_modules/.cache/research.mjs",
+    "research:local": "esbuild scripts/research.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/research.mjs --log-level=warning && node --env-file=.env.local --dns-result-order=ipv4first node_modules/.cache/research.mjs",
+    "keywords": "esbuild scripts/keywords.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/keywords.mjs --log-level=warning && node --env-file=.env.local --dns-result-order=ipv4first node_modules/.cache/keywords.mjs",
+    "report": "esbuild scripts/report.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/report.mjs --log-level=warning && node node_modules/.cache/report.mjs",
+    "report:local": "esbuild scripts/report.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/report.mjs --log-level=warning && node --env-file=.env.local --dns-result-order=ipv4first node_modules/.cache/report.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -19,6 +26,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4",
+    "esbuild": "0.25.12"
   }
 }

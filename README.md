@@ -14,7 +14,7 @@ npm run build      # production build (also fetches the catalog)
 ## Where things live
 
 - `src/lib/config.ts` – editable text, tracking IDs, Flipkart switch
-- `src/lib/catalog.ts` – loads the catalog (Google Sheet for now; database next), cached 1 hour
+- `src/lib/catalog.ts` – loads the catalog from Supabase (`lib/db.ts`), cached 1 hour
 - `src/components/` – header menu, product card, filters, live Amazon deals
 - `src/app/` – pages: `/`, `/[category]`, `/[category]/[sub]`, `/api/amazon-deals`
 
