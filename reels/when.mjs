@@ -1,13 +1,10 @@
-/* Daily schedule, read by the workflows (India time, 24-hour "HH:MM").
-   Order: a one-day override in schedule.json, then the REELS_TIME repository variable, then schedule.json "time".
-   node when.mjs reels   → prints go=true when it's at or past today's time (the workflow also checks it hasn't run today)
+/* Daily schedule, read by the reels, the Telegram Netlify function and pc/run-job.ps1 (India time, 24-hour "HH:MM").
+   Order: a one-day override in schedule.json, then the REELS_TIME environment variable, then schedule.json "time".
+   node when.mjs reels   → prints go=true when it's at or past today's time 
    node when.mjs show    → prints today's times */
-import { readFileSync, appendFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const cfg = JSON.parse(readFileSync(join(here, "schedule.json"), "utf8"));
+import { appendFileSync } from "node:fs";
+/* imported (not read from disk) so it is bundled into the Netlify function too */
+import cfg from "./schedule.json" with { type: "json" };
 const valid = (t) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(String(t || "").trim()) ? String(t).trim().padStart(5, "0") : null;
 
 export const istNow = () => new Date(Date.now() + 5.5 * 3600e3);

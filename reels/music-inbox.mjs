@@ -1,5 +1,5 @@
 /* Picks up "🗑 Remove this track" taps from the Telegram bot chat (buttons sent by music.mjs) and deletes those
-   tracks from reels/audio/. Run by the Telegram Channel workflow every 15 minutes, which then commits the removal.
+   tracks from reels/audio/. Run daily on the PC before the reels (pc/run-job.ps1 reels), which then commits the removal.
    Only taps from TELEGRAM_CHAT_ID (your own chat with the bot) count. Env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. */
 import { existsSync, rmSync } from "node:fs";
 import { dirname, join, basename } from "node:path";

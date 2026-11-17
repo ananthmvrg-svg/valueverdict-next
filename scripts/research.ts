@@ -1,4 +1,4 @@
-/* Weekly market research (Pipeline B), run by .github/workflows/research.yml every Sunday at 4 AM IST,
+/* Weekly market research (Pipeline B), run on the PC every Sunday at 4 AM IST (pc/run-job.ps1 research),
    or by hand: npm run research:local (uses .env.local), add -- --dry-run to research and check without saving.
    Exits with an error code when the research fails, so the GitHub run shows red; the site keeps last week's plan. */
 import { runResearch } from "../src/lib/research";

@@ -6,7 +6,7 @@ import { keywordLines } from "./research";
 import type { KeywordRow } from "./keywords";
 import { logCost, monthSpend, overBudget, MONTHLY_BUDGET } from "./costs";
 
-/* Phase 6: the weekly report (Monday 5 AM IST, .github/workflows/report.yml, or npm run report:local).
+/* Phase 6: the weekly report (Monday 5 AM IST, pc/run-job.ps1 report, or npm run report:local).
    1. numbers, gathered and added up by code (never by the model): GA4 visits, pages, sources and our click
       events; Search Console searches; imported keyword data; last week's research plan; this month's AI spend;
       the actions the previous report suggested;

@@ -1,4 +1,4 @@
-/* Weekly report (Phase 6), run by .github/workflows/report.yml every Monday at 5 AM IST,
+/* Weekly report (Phase 6), run on the PC every Monday at 5 AM IST (pc/run-job.ps1 report),
    or by hand: npm run report:local (uses .env.local); add -- --dry-run to write it without saving.
    Prints the report and, on GitHub, adds it to the run's summary page. Changes nothing on the site. */
 import { appendFileSync } from "node:fs";

@@ -3,7 +3,7 @@
 Two extra reels come from the mixed lists: **Today's Top 10 Deals** (first 10 of the Top 100) and **Top 10 Amazon Finds**
 (the #1 of each Amazon Finds section); both point to the website for the rest.
 
-Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the same AI picks the website shows
+Every day at 8:00 AM IST (after the 6 AM picks run), your PC (`pc/run-job.ps1 reels`, see `pc/README.md`) reads the same AI picks the website shows
 (Supabase `deal_picks`) and makes one reel per budget page, e.g. Refrigerators · Under ₹35,000, with its top 1–5 picks:
 
 - Hook slide (product photos + category + budget), one slide per pick, call-to-action slide
@@ -23,8 +23,8 @@ Every day at 8:00 AM IST (after the 6 AM picks run), GitHub Actions reads the sa
     budget page whose picks or their order changed since the last ZIP** (all of them the first time; 🔄 in the list).
     Unchanged pages are left out, so the same reel is never posted twice.
   - `AUTO_POST=true`: only `MANUAL_REELS` (default `top-100,amazon-finds`); the rest are for automatic posting.
-  All reels are always in the run's `reels-kit` artifact.
-- Telegram gets one message with that ZIP (attached when under 50 MB, else a download button to a GitHub release; the last 7 are kept)
+  All reels are always in `reels/out/ValueVerdict_all_*.zip` on the PC.
+- Telegram gets one message with that ZIP (attached when under 50 MB; a bigger one stays in `reels/out/` on the PC)
 
 AI hooks (`copy.mjs`): one Claude call per run writes the hook title, emotional line, honest urgency line, follow line,
 caption opener and post title for every page, using the season from `season.json` (edit it for the next festival) and only
@@ -33,14 +33,13 @@ already uses; without it, plain lines are used.
 
 Prices on slides and posts carry the time Amazon confirmed them; post reels the same day.
 
-Run now from the phone: GitHub app → this repo → Actions → **Daily Reels** → **Run workflow**
-(optional: only some category slugs, picks per reel). Repo secrets: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+Run now: `powershell -ExecutionPolicy Bypass -File .\pc\run-job.ps1 reels`. Secrets live in `.env.local`.
 
 Local: `cd reels && npm install && npx playwright install chromium && npm run sample` (needs Node 22.18+, ffmpeg, zip).
 Optional: put Amazon's official "Available at Amazon" badge (Associates Central) at `reels/amazon-badge.png` and it replaces the "on Amazon.in" text chip.
 Design lives in `template.mjs`; data, timings, captions and hashtags in `generate.mjs`.
 
-## Telegram channel (`channel.mjs`, workflow "Telegram Channel")
+## Telegram channel (`channel.mjs`, Netlify function `telegram-channel`)
 
 - **8:00 AM IST, then each time the website re-checks prices (9, 12, 3, 6, 9; posted when the re-check is done, at the
   latest an hour later):** the "Today's best picks" menu (with "Prices just re-checked") with a button per category (website pages, Top 100, Amazon Finds), the newest one pinned.
@@ -48,14 +47,14 @@ Design lives in `template.mjs`; data, timings, captions and hashtags in `generat
   best for, two pros, and buttons **🛒 Buy on Amazon** (direct affiliate link) and **📊 Compare top 5** (website).
   Every 10th post is a **💥 loot deal** (₹500 or less, 60%+ off, from everything Amazon returned today), and every
   post has a **📤 Share with a friend** button. **9:30 PM:** "Today's Top 5 deals" in one post.
-  Categories take turns (Top 100, Amazon Finds, #1 and #2 of every budget page); a product posted in the last 2 days is skipped (state kept in the Actions cache).
+  Categories take turns (Top 100, Amazon Finds, #1 and #2 of every budget page); a product posted in the last 2 days is skipped (state kept in the Supabase table `job_state`).
 - Needs the `TELEGRAM_BOT_TOKEN` secret, the bot as channel admin (post + pin), and optionally a `TELEGRAM_CHANNEL` variable.
 - Try it: `node channel.mjs --menu --dry-run` or `node channel.mjs --deal --dry-run --count=3`.
 
 ## YouTube Shorts (`youtube.mjs`)
 
 **Now:** uploads are paused. Every reel's `youtube/` folder has `<name>_youtube.txt` (title, description, tags, hashtags).
-Tick "youtube" in Run workflow to upload private Shorts again (it reuses that metadata, no second search).
+Add `-Youtube` to `pc/run-job.ps1 reels` to upload private Shorts again (it reuses that metadata, no second search).
 
 
 - Uploads the day's best 6 reels as **private** Shorts: Today's Top 10 Deals, Top 10 Amazon Finds, and 4 budget pages that take turns.

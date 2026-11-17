@@ -8,11 +8,12 @@
 
    Deals come from the same AI picks the website shows (price confirmed by Amazon in the last 24 hours):
    Top 100, Amazon Finds and the #1 of every budget page. Categories take turns, and a product posted in the
-   last 3 days is skipped. The state file is kept between runs by the workflow's cache. */
+   last 2 days is skipped. State: STATE_STORE=supabase keeps it in the Supabase table job_state (row "telegram-channel",
+   needs SUPABASE_SECRET_KEY; used by netlify/functions/telegram-channel.mts), otherwise in STATE_FILE. */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SITE_URL, select, shortName, clean, brandCase } from "./shared.mjs";
+import { SITE_URL, SUPABASE_URL, select, shortName, clean, brandCase } from "./shared.mjs";
 import { startTime, dealsUntil, dealsPerDay, summaryTime, minutes, nowMinutes } from "./when.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -27,7 +28,7 @@ const UTM = "utm_source=telegram&utm_medium=channel";
 const REPEAT_DAYS = 2; /* ~50 posts a day: a product may come back after two days (sooner only if nothing new is left) */
 
 const ist = (d = new Date()) => new Date(d.getTime() + 5.5 * 3600e3);
-const DATE = ist().toISOString().slice(0, 10);
+let DATE = ist().toISOString().slice(0, 10); /* set again at the start of every run (Netlify reuses warm modules) */
 const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 const inr = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
 const site = (path) => `${SITE_URL}${path}${path.includes("?") ? "&" : "?"}${UTM}`;
@@ -174,17 +175,34 @@ function dealPost(item) {
   };
 }
 
-function loadState() {
+/* where the posted-products memory lives: Supabase on Netlify (no disk that survives between runs), a file locally */
+const STATE_ROW = "telegram-channel";
+const inDb = () => process.env.STATE_STORE === "supabase";
+async function db(method, path, body) {
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!key) throw new Error("STATE_STORE=supabase needs SUPABASE_SECRET_KEY");
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { method, headers: { apikey: key, "content-type": "application/json",
+    ...(method === "POST" ? { Prefer: "resolution=merge-duplicates,return=minimal" } : {}) }, body: body && JSON.stringify(body) });
+  if (!r.ok) throw new Error(`Supabase job_state: HTTP ${r.status} ${await r.text()}`);
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+async function loadState() {
+  if (inDb()) {
+    const rows = await db("GET", `job_state?name=eq.${STATE_ROW}&select=data`);
+    return { posted: {}, ...(rows?.[0]?.data || {}) };
+  }
   try { return JSON.parse(readFileSync(STATE_FILE, "utf8")); } catch { return { posted: {} }; }
 }
-function saveState(s) {
+async function saveState(s) {
   const cutoff = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
-  for (const [asin, day] of Object.entries(s.posted)) if (day < cutoff) delete s.posted[asin];
-  if (!DRY) writeFileSync(STATE_FILE, JSON.stringify(s, null, 1));
+  for (const [asin, day] of Object.entries(s.posted || {})) if (day < cutoff) delete s.posted[asin];
+  if (DRY) return;
+  if (inDb()) await db("POST", "job_state?on_conflict=name", { name: STATE_ROW, data: s, updated_at: new Date().toISOString() });
+  else writeFileSync(STATE_FILE, JSON.stringify(s, null, 1));
 }
 
 async function deals(data, count = COUNT, lootFirst = false) {
-  const state = loadState();
+  const state = await loadState();
   const recent = new Date(Date.now() - REPEAT_DAYS * 864e5).toISOString().slice(0, 10);
   const all = queue(data), when = (x) => state.posted[x.p.data.asin];
   let fresh = all.filter((x) => !(when(x) >= recent));
@@ -215,7 +233,7 @@ async function deals(data, count = COUNT, lootFirst = false) {
     console.log(`✔ posted ${item.p.data.asin} (${item.label || item.p.group_key})`);
   }
   state.day = DATE; state.next = start; /* repeats are filtered next time, so the same index is the next new item */
-  saveState(state);
+  await saveState(state);
   return posted;
 }
 
@@ -255,20 +273,20 @@ async function pricesChecked(slot) {
      A late or skipped GitHub run is made up by the next one (at most 3 at a time);
    - at SUMMARY_TIME (default 21:30), today's top 5 deals in one post. */
 async function auto() {
-  const state = loadState(), now = nowMinutes(), start = minutes(startTime()), end = minutes(dealsUntil());
+  const state = await loadState(), now = nowMinutes(), start = minutes(startTime()), end = minutes(dealsUntil());
   if (now < start) { console.log(`before today's start (${startTime()} IST), nothing to do`); return; }
   const slot = priceSlot(now);
   if (state.menuDay !== DATE) {
     await menu(await loadData());
-    state.menuDay = DATE; state.menuAt = slot && slot <= start ? slot : 0; saveState(state); return;
+    state.menuDay = DATE; state.menuAt = slot && slot <= start ? slot : 0; await saveState(state); return;
   }
   if (slot && slot > (state.menuAt || 0) && now <= end && (now >= slot + 60 || await pricesChecked(slot))) {
     await menu(await loadData(), true);
-    state.menuAt = slot; saveState(state); return;
+    state.menuAt = slot; await saveState(state); return;
   }
   if (now >= minutes(summaryTime()) && state.summaryDay !== DATE && now <= end + 60) {
     await summary(await loadData());
-    state.summaryDay = DATE; saveState(state); return;
+    state.summaryDay = DATE; await saveState(state); return;
   }
   const first = start + 30, total = dealsPerDay();
   if (now < first || now > end + 15) { console.log("outside deal hours"); return; }
@@ -276,12 +294,22 @@ async function auto() {
   const done = Object.values(state.posted || {}).filter((d) => d === DATE).length; /* posted today */
   if (due <= done) { console.log(`on schedule (${done}/${total} today)`); return; }
   const n = await deals(await loadData(), Math.min(3, due - done), done % 10 === 4);
-  const after = loadState(); after.lastDealAt = new Date().toISOString(); saveState(after);
+  const after = await loadState(); after.lastDealAt = new Date().toISOString(); await saveState(after);
   console.log(`${done + n}/${total} deals today`);
 }
 
-if (flag("--auto")) await auto();
-else if (flag("--menu")) await menu(await loadData());
-else if (flag("--deal")) await deals(await loadData(), COUNT, flag("--loot"));
-else if (flag("--summary")) await summary(await loadData());
-else console.log("Use --auto, --menu or --deal (add --dry-run to preview)");
+/* one run; mode = auto | menu | deal | summary. Exported for netlify/functions/telegram-channel.mts */
+export async function run(mode = "auto") {
+  DATE = ist().toISOString().slice(0, 10);
+  if (mode === "auto") return auto();
+  if (mode === "menu") return menu(await loadData());
+  if (mode === "deal") return deals(await loadData(), COUNT, flag("--loot"));
+  if (mode === "summary") return summary(await loadData());
+  throw new Error(`unknown mode ${mode}`);
+}
+
+if (process.argv[1] && /channel\.mjs$/.test(process.argv[1])) {
+  const mode = ["auto", "menu", "deal", "summary"].find((m) => flag(`--${m}`));
+  if (mode) await run(mode);
+  else console.log("Use --auto, --menu, --deal or --summary (add --dry-run to preview)");
+}

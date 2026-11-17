@@ -20,7 +20,7 @@
    MAX_ITEMS=5                    picks per reel (top N by rank)
    Prices (slides and post.jpg) are stamped with the time Amazon confirmed them, since they change daily. */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync, writeFileSync, readFileSync, statSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -335,39 +335,31 @@ const OPP = {}; /* vidIQ opportunity per reel (monthly searches x ease of its ma
      yourself with a trending sound (Today's Top 10 Deals, Top 10 Amazon Finds);
    - AUTO_POST off (default, everything posted by hand): MANUAL_REELS plus every budget page whose picks or their
      order changed since the last ZIP (all of them the first time). Unchanged pages are left out, so you never post
-     the same reel twice. The last-sent picks are kept in reels-state.json (Actions cache).
-   Every reel, changed or not, is in the second ZIP kept with the GitHub run. */
+     the same reel twice. The last-sent picks are kept in reels-state.json.
+   Every reel, changed or not, is in the second ZIP (ValueVerdict_all_*.zip in reels/out). */
 const AUTO_POST = /^(1|true|yes|on)$/i.test(String(process.env.AUTO_POST || "").trim());
 const STATE_FILE = process.env.REELS_STATE || join(here, "reels-state.json");
 const sent = (() => { try { return JSON.parse(readFileSync(STATE_FILE, "utf8")); } catch { return {}; } })();
 const sig = (r) => r.items.map((p) => p.asin).join(",");
 const changed = (r) => !sent[r.slug] || sent[r.slug] !== sig(r);
 const manual = reels.filter((r) => isManual(r) || (!AUTO_POST && changed(r)));
+/* zip on Linux/macOS; Windows 10+ has no zip command but its built-in tar writes .zip files with -a */
+function zipUp(file, paths) {
+  if (process.platform === "win32") execFileSync("tar", ["-a", "-c", "-f", file, ...paths], { cwd: outDir });
+  else execFileSync("zip", ["-qr", file, ...paths], { cwd: outDir });
+}
 const all = join(outDir, `ValueVerdict_all_${STAMP}.zip`);
 rmSync(all, { force: true });
-execFileSync("zip", ["-qr", all, name], { cwd: outDir });
+zipUp(all, [name]);
 const zip = join(outDir, `${name}.zip`);
 rmSync(zip, { force: true });
-if (manual.length) execFileSync("zip", ["-qr", zip, ...manual.map((r) => join(name, r.slug))], { cwd: outDir });
-else execFileSync("cp", [all, zip]);
+if (manual.length) zipUp(zip, manual.map((r) => join(name, r.slug)));
+else copyFileSync(all, zip);
 const mb = statSync(zip).size / 1048576;
 const unchanged = reels.filter((r) => !manual.includes(r));
 console.log(`✔ ${reels.length} reels → ${all}; to post yourself: ${manual.map((r) => r.slug).join(", ") || "all"} → ${zip} (${mb.toFixed(0)} MB)`);
 
-/* Telegram bots can send files up to 50 MB; a bigger ZIP goes to a GitHub release (when run in GitHub Actions)
-   and Telegram gets one message with a download button. Old reel releases are pruned to the last 7. */
-function publishRelease() {
-  const repo = process.env.GITHUB_REPOSITORY, tag = `reels-${STAMP}`;
-  execFileSync("gh", ["release", "create", tag, zip, "--repo", repo, "--title", `Reels ${STAMP.replace("_", " ")} IST`,
-    "--notes", `${reels.length} reels: video, cover, post, Instagram and YouTube texts and slides for each.`], { stdio: "inherit" });
-  try {
-    const old = execFileSync("gh", ["release", "list", "--repo", repo, "--limit", "100", "--json", "tagName", "--jq", ".[].tagName"], { encoding: "utf8" })
-      .split("\n").filter((t) => t.startsWith("reels-")).sort().reverse().slice(7);
-    for (const t of old) execFileSync("gh", ["release", "delete", t, "--repo", repo, "--yes", "--cleanup-tag"], { stdio: "inherit" });
-  } catch (e) { console.warn("old releases not pruned:", e.message); }
-  return `https://github.com/${repo}/releases/download/${tag}/${name}.zip`;
-}
-
+/* Telegram bots can send files up to 50 MB; a bigger ZIP stays on this computer (reels/out) and Telegram gets the list. */
 if (SEND) {
   if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) throw new Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or run with --no-send)");
   /* 3 a day: Today's Top Deals, Amazon Finds and the budget page with the biggest search opportunity (vidIQ);
@@ -387,10 +379,7 @@ if (SEND) {
     await tg("sendDocument", { caption: short ? text : `🎬 Value Verdict reels · ${STAMP.replace("_", " ")} IST (${manual.length} reels, list below)` }, { field: "document", path: zip, name: `${name}.zip` });
     if (!short) await tg("sendMessage", { text });
   }
-  else if (process.env.GITHUB_ACTIONS) {
-    const url = publishRelease();
-    await tg("sendMessage", { text, reply_markup: JSON.stringify({ inline_keyboard: [[{ text: `⬇️ Download ZIP (${mb.toFixed(0)} MB)`, url }]] }) });
-  } else await tg("sendMessage", { text: `${text}\nToo big for Telegram (${mb.toFixed(0)} MB): find it in ${zip}` });
+  else await tg("sendMessage", { text: `${text}\nToo big for Telegram (${mb.toFixed(0)} MB): find it in ${zip}` });
   console.log("✔ sent to Telegram");
   /* remember what was sent, so tomorrow only changed pages come */
   for (const r of manual) sent[r.slug] = sig(r);

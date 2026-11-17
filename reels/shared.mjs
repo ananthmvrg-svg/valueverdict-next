@@ -5,10 +5,11 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/* site URL and the public read-only Supabase key come from the website config: one source of truth */
-const config = readFileSync(join(here, "..", "src", "lib", "config.ts"), "utf8");
+/* site URL and the public read-only Supabase key come from the website config: one source of truth.
+   Inside the Netlify function that file isn't on disk; the function passes the values in as environment variables. */
+const config = (() => { try { return readFileSync(join(here, "..", "src", "lib", "config.ts"), "utf8"); } catch { return ""; } })();
 const pick = (re) => config.match(re)?.[1];
-export const SITE_URL = (pick(/SITE_URL\s*=\s*"([^"]+)"/) || "https://valueverdict.in").replace(/\/$/, "");
+export const SITE_URL = (process.env.SITE_URL || pick(/SITE_URL\s*=\s*"([^"]+)"/) || "https://valueverdict.in").replace(/\/$/, "");
 export const SUPABASE_URL = process.env.SUPABASE_URL || pick(/SUPABASE_URL\s*=.*?"(https:[^"]+)"/);
 export const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || pick(/SUPABASE_KEY\s*=.*?"(sb_[^"]+)"/);
 

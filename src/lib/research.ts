@@ -7,7 +7,7 @@ import { searchConsole, type GscData } from "./gsc";
 import { addUsage, logCost, overBudget, type Usage } from "./costs";
 import { momentum, type KeywordRow } from "./keywords";
 
-/* Pipeline B: weekly market research (Sunday 4 AM IST, GitHub Actions: .github/workflows/research.yml).
+/* Pipeline B: weekly market research (Sunday 4 AM IST, on the PC: pc/run-job.ps1 research).
    1. inputs: our categories and searches, today's candidates with their Amazon.in best-seller rank (a same-day
       snapshot, never stored as history), searches that found little, the date and season;
       Search Console queries, and imported keyword data (Keyword Planner volumes, Google Trends);

@@ -2,7 +2,7 @@
    clips, MP3, about $0.04 each). New tracks go into reels/audio/, where audio.mjs rotates them through the reels.
 
    node music.mjs --starter         30 tracks: 10 festive, 10 Telugu folk / mass beat, 10 upbeat everyday
-   node music.mjs --weekly          5 new tracks (2 season, 1 folk, 2 upbeat); the workflow runs this every Sunday
+   node music.mjs --weekly          5 new tracks (2 season, 1 folk, 2 upbeat); the PC runs this every Sunday (pc/run-job.ps1 music)
    node music.mjs --count=N --style=festive|folk|upbeat   just these
    --dry-run                        print the prompts, call nothing
    Env: GEMINI_API_KEY (Google AI Studio key with billing on), TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (optional:
